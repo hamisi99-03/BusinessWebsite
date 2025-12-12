@@ -35,8 +35,12 @@ class Order(models.Model):
         return sum(item.price * item.quantity for item in self.items.all())
 
     def get_total_paid(self):
-        """Calculate total completed payments"""
-        return sum(payment.amount for payment in self.payments.filter(status='completed'))
+        """Calculate total completed + pending payments"""
+        return sum(
+        payment.amount
+        for payment in self.payments.filter(status__in=['completed', 'pending'])
+    )
+
 
     def get_outstanding_balance(self):
         """Calculate outstanding balance (total - paid)"""
@@ -72,11 +76,11 @@ class Debt(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='debts')
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     outstanding_balance = models.DecimalField(max_digits=10, decimal_places=2)
-    due_date = models.DateField()
+    paid_at = models.DateField(null=True, blank=True)
     is_paid = models.BooleanField(default=False)
 
     def calculate_outstanding_balance(self):
-        total_paid = sum(payment.amount for payment in self.order.payments.filter(status='completed')) # Sum of completed payments 
+        total_paid = sum(payment.amount for payment in self.order.payments.filter(status__in=['completed','pending'])) # Sum of completed payments 
 
         total_order_amount = sum(item.price * item.quantity for item in self.order.items.all())  # sum of order items
 

@@ -43,4 +43,13 @@ class DebtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Debt
         fields = '__all__'
+        
+class PaymentSerializer(serializers.ModelSerializer):
+    outstanding_balance = serializers.SerializerMethodField()
 
+    class Meta:
+        model = Payment
+        fields = ['id', 'order', 'amount', 'payment_method', 'status', 'outstanding_balance']
+
+    def get_outstanding_balance(self, obj):
+        return obj.order.get_outstanding_balance()
