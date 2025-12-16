@@ -1,0 +1,16 @@
+{% extends "ecommerce/base.html" %}
+
+{% block title %}My Debts{% endblock %}
+
+{% block content %}
+<h2>My Debts</h2>
+<ul class="list-group">
+  {% for debt in debts %}
+    <li class="list-group-item">
+      Debt {{ debt.id }} - Balance: {{ debt.outstanding_balance }} - Paid: {{ debt.is_paid }} - Paid At: {{ debt.paid_at }}
+    </li>
+  {% empty %}
+    <li class="list-group-item">No debts yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

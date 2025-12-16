@@ -1,0 +1,48 @@
+{% extends "ecommerce/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2>Welcome, {{ user.username }}</h2>
+
+<div class="row">
+  <div class="col-md-4">
+    <h3>My Orders</h3>
+    <ul class="list-group">
+      {% for order in orders %}
+        <li class="list-group-item">
+          Order {{ order.id }} - {{ order.status }} - Outstanding: {{ order.get_outstanding_balance }}
+        </li>
+      {% empty %}
+        <li class="list-group-item">No orders yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="col-md-4">
+    <h3>My Debts</h3>
+    <ul class="list-group">
+      {% for debt in debts %}
+        <li class="list-group-item">
+          Debt {{ debt.id }} - Balance: {{ debt.outstanding_balance }} - Paid: {{ debt.is_paid }}
+        </li>
+      {% empty %}
+        <li class="list-group-item">No debts yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="col-md-4">
+    <h3>My Payments</h3>
+    <ul class="list-group">
+      {% for payment in payments %}
+        <li class="list-group-item">
+          {{ payment.amount }} via {{ payment.method }} - Status: {{ payment.status }}
+        </li>
+      {% empty %}
+        <li class="list-group-item">No payments recorded yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

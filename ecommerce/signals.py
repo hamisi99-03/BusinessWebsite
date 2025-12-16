@@ -4,6 +4,8 @@ from django.db.models.signals import post_save
 from django.utils import timezone
 from django.dispatch import receiver
 from .models import OrderItem, Payment, Debt, Order
+from django.contrib.auth import get_user_model
+from .models import Customer
 
 @receiver(pre_save, sender=OrderItem)
 def set_price_from_product(sender, instance, **kwargs):
@@ -48,3 +50,10 @@ def update_debt_after_orderitem(sender, instance, **kwargs):
         defaults={'outstanding_balance': 0, 'is_paid': False, 'paid_at': None}
     )
     debt.calculate_outstanding_balance()
+
+User = get_user_model()
+
+@receiver(post_save, sender=User)
+def create_customer(sender, instance, created, **kwargs):
+    if created:
+        Customer.objects.create(user=instance)
