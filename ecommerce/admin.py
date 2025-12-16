@@ -1,23 +1,41 @@
 from django.contrib import admin
-from .models import Payment
 from .models import Customer, Product, Order, OrderItem, Payment, Debt
 
-admin.site.register(Customer)
-admin.site.register(Product)
-admin.site.register(Order)
-admin.site.register(OrderItem)
-#admin.site.register(Payment)
-#admin.site.register(Debt)
+# --- Customer ---
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ('user', 'phone_number', 'address')
+    search_fields = ('user__username',)
 
+# --- Product ---
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'price', 'stock')
+    search_fields = ('name',)
 
-@admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
-    list_display = ('order', 'amount', 'payment_method', 'status', 'outstanding_balance')
+# --- Inline definitions ---
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
 
-    def outstanding_balance(self, obj):
-        return obj.order.get_outstanding_balance()
-    outstanding_balance.short_description = "Needs Paid"
+class PaymentInline(admin.TabularInline):
+    model = Payment
+    extra = 0
 
+# --- Order ---
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'customer', 'order_date', 'status',
+        'get_total_amount', 'get_total_paid', 'get_outstanding_balance'
+    )
+    list_filter = ('status', 'order_date')
+    search_fields = ('customer__user__username',)
+    inlines = [OrderItemInline, PaymentInline]   # 👈 Items + Payments editable inline
+
+# --- Debt ---
 @admin.register(Debt)
 class DebtAdmin(admin.ModelAdmin):
-    list_display = ('order', 'customer', 'outstanding_balance', 'is_paid', 'paid_at')
+    list_display = ('customer', 'order', 'outstanding_balance', 'is_paid', 'paid_at')
+    list_filter = ('is_paid',)
+    search_fields = ('customer__user__username',)

@@ -7,11 +7,18 @@
 
 <div class="row">
   <div class="col-md-4">
-    <h3>My Orders</h3>
+    <!-- Make My Orders clickable -->
+    <h3>
+      <a href="{% url 'orders_list' %}" class="text-decoration-none">
+        My Orders
+      </a>
+    </h3>
     <ul class="list-group">
       {% for order in orders %}
         <li class="list-group-item">
-          Order {{ order.id }} - {{ order.status }} - Outstanding: {{ order.get_outstanding_balance }}
+          <a href="{% url 'order_detail' order.id %}">
+            Order {{ order.id }} - {{ order.status }} - Outstanding: {{ order.get_outstanding_balance }}
+          </a>
         </li>
       {% empty %}
         <li class="list-group-item">No orders yet.</li>

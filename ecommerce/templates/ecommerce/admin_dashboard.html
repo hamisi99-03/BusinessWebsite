@@ -1,0 +1,83 @@
+{% extends "ecommerce/base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<h2>Admin Dashboard</h2>
+
+<div class="row">
+  <!-- Orders -->
+  <div class="col-md-6">
+    <h3>All Orders</h3>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>ID</th><th>Customer</th><th>Status</th>
+          <th>Total</th><th>Paid</th><th>Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td><a href="{% url 'order_detail' order.id %}">{{ order.id }}</a></td>
+          <td>{{ order.customer.user.username }}</td>
+          <td>{{ order.status }}</td>
+          <td>{{ order.get_total_amount }}</td>
+          <td>{{ order.get_total_paid }}</td>
+          <td>{{ order.get_outstanding_balance }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Debts -->
+  <div class="col-md-6">
+    <h3>All Debts</h3>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Customer</th><th>Order</th><th>Balance</th><th>Paid</th><th>Paid At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for debt in debts %}
+        <tr>
+          <td>{{ debt.customer.user.username }}</td>
+          <td>{{ debt.order.id }}</td>
+          <td>{{ debt.outstanding_balance }}</td>
+          <td>{{ debt.is_paid }}</td>
+          <td>{{ debt.paid_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Payments -->
+<div class="row mt-4">
+  <div class="col-md-12">
+    <h3>Payments</h3>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+        <tr>
+          <td>{{ payment.order.id }}</td>
+          <td>{{ payment.order.customer.user.username }}</td>
+          <td>{{ payment.amount }}</td>
+          <td>{{ payment.payment_method }}</td>
+          <td>{{ payment.status }}</td>
+          <td>{{ payment.payment_date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

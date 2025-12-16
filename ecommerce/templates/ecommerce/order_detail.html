@@ -1,0 +1,33 @@
+{% extends "ecommerce/base.html" %}
+
+{% block title %}Order {{ order.id }}{% endblock %}
+
+{% block content %}
+<h2>Order {{ order.id }}</h2>
+<p>Status: {{ order.status }}</p>
+<p>Created: {{ order.order_date }}</p>
+
+<h3>Items</h3>
+<ul class="list-group">
+  {% for item in order.items.all %}
+    <li class="list-group-item">
+      {{ item.product.name }} — Qty: {{ item.quantity }} — Price: {{ item.price }}
+    </li>
+  {% empty %}
+    <li class="list-group-item">No items in this order.</li>
+  {% endfor %}
+</ul>
+
+<h3>Payments</h3>
+<ul class="list-group">
+  {% for payment in order.payments.all %}
+    <li class="list-group-item">
+      {{ payment.amount }} via {{ payment.method }} — Status: {{ payment.status }}
+    </li>
+  {% empty %}
+    <li class="list-group-item">No payments recorded yet.</li>
+  {% endfor %}
+</ul>
+
+<a href="{% url 'orders_list' %}" class="btn btn-secondary mt-3">Back to Orders</a>
+{% endblock %}

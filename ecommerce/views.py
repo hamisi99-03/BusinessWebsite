@@ -6,11 +6,12 @@ from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
 from .models import Customer, Product, Order, OrderItem, Payment, Debt
+from .forms import OrderForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
     OrderItemSerializer, PaymentSerializer, DebtSerializer
 )
-
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.shortcuts import render, redirect, get_object_or_404
@@ -122,6 +123,22 @@ def debts_list_view(request):
 @login_required
 def profile_view(request):
     return render(request, 'ecommerce/profile.html', {'user': request.user})
+@login_required
+def order_product_view(request):
+    if request.method == 'POST':
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            product = form.cleaned_data['product']
+            quantity = form.cleaned_data['quantity']
+
+            order = Order.objects.create(customer=request.user.customer, status='pending')
+            OrderItem.objects.create(order=order, product=product, quantity=quantity, price=product.price)
+
+            return redirect('orders_list')
+    else:
+        form = OrderForm()
+
+    return render(request, 'ecommerce/order_product.html', {'form': form})
 
 # -------------------
 # API Profile Endpoint
@@ -141,3 +158,49 @@ class ProfileView(APIView):
             "profile_photo": getattr(user, "profile_photo", None),
         }
         return Response(data)
+    
+
+@login_required
+def order_product_view(request):
+    if request.method == 'POST':
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            product = form.cleaned_data['product']
+            quantity = form.cleaned_data['quantity']
+
+            # get or create an order for this customer
+            order = Order.objects.create(customer=request.user.customer, status='pending')
+
+            # add item
+            OrderItem.objects.create(order=order, product=product, quantity=quantity, price=product.price)
+
+            return redirect('orders_list')
+    else:
+        form = OrderForm()
+
+    return render(request, 'ecommerce/order_product.html', {'form': form})
+
+@staff_member_required
+def admin_dashboard(request):
+    orders = Order.objects.all()
+    debts = Debt.objects.all()
+    payments = Payment.objects.all()
+    return render(request, 'ecommerce/admin_dashboard.html', {
+        'orders': orders,
+        'debts': debts,
+        'payments': payments
+    })
+def custom_login(request):
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            #  Redirect based on role
+            if user.is_staff:   # admin user
+                return redirect('admin_dashboard')
+            else:               # customer user
+                return redirect('dashboard')
+    else:
+        form = AuthenticationForm()
+    return render(request, "auth/login.html", {"form": form})

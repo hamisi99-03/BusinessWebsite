@@ -5,9 +5,10 @@ from rest_framework.authtoken.views import obtain_auth_token
 from .views import (
     CustomerViewSet, ProductViewSet, OrderViewSet, OrderItemViewSet,
     PaymentViewSet, DebtViewSet,
-    register_view, login_view, logout_view, dashboard_view,
-    orders_list_view, order_detail_view, debts_list_view,
-    profile_view, ProfileView  
+    register_view, login_view, logout_view,
+    dashboard_view, orders_list_view, order_detail_view, debts_list_view,
+    profile_view, ProfileView, order_product_view,
+    custom_login, admin_dashboard   #  use custom_login + admin_dashboard
 )
 
 router = DefaultRouter()
@@ -22,19 +23,23 @@ urlpatterns = [
     # DRF router endpoints
     path('', include(router.urls)),
 
-    #  Authentication endpoints
+    # Authentication endpoints
     path('auth/login/', obtain_auth_token, name='api_token_auth'),   # token login
     path('auth/register/', register_view, name='register'),          # function view
-    path('auth/login-page/', login_view, name='login'),              # function view for page login
+    path('auth/login-page/', custom_login, name='login'),            # custom login with redirect logic
     path('auth/logout/', logout_view, name='logout'),                # logout
     path('auth/profile/', ProfileView.as_view(), name='profile'),    # APIView class
 
-    #  Customer pages
+    # Customer pages
     path('dashboard/', dashboard_view, name='dashboard'),
-    path('orders/', orders_list_view, name='orders_list'),
-    path('orders/<int:pk>/', order_detail_view, name='order_detail'),
+    path('orders/list', orders_list_view, name='orders_list'),
+    path('orders/detail/<int:pk>/', order_detail_view, name='order_detail'),
     path('debts/', debts_list_view, name='debts_list'),
     path('profile-page/', profile_view, name='profile_page'),        # template profile
+    path('order-product/', order_product_view, name='order_product'),
+
+    # Admin dashboard (protected by @staff_member_required)
+    path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
 
     # browsable API login/logout
     path('api-auth/', include('rest_framework.urls')),
