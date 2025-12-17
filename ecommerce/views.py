@@ -20,7 +20,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-
+from django.core.exceptions import ValidationError
 
 # -------------------
 # DRF ViewSets
@@ -217,9 +217,15 @@ def add_or_update_payment(request, pk=None):
     if request.method == "POST":
         form = PaymentForm(request.POST, instance=payment)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Payment saved successfully.")
-            return redirect("admin_dashboard")
+            try:
+                form.save()
+                messages.success(request, "Payment saved successfully.")
+                return redirect("admin_dashboard")
+            except ValidationError as e:
+                # 👇 show friendly error message
+                messages.error(request, f"Error: {e.message}")
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
         form = PaymentForm(instance=payment)
 

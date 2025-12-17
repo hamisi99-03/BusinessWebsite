@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -38,14 +39,14 @@ class Order(models.Model):
         """Calculate total completed + pending payments"""
         return sum(
         payment.amount
-        for payment in self.payments.filter(status__in=['completed', 'pending'])
+        for payment in self.payments.filter(status__in=['completed'])
     )
 
 
     def get_outstanding_balance(self):
         """Calculate outstanding balance (total - paid)"""
-        return self.get_total_amount() - self.get_total_paid()
-
+        balance = self.get_total_amount() - self.get_total_paid()
+        return max(balance, 0)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
@@ -69,6 +70,13 @@ class Payment(models.Model):
         ('pending', 'Pending'),
         ('completed', 'Completed'),
         ('failed', 'Failed')], default='pending')
+    def clean(self):
+        outstanding = self.order.get_outstanding_balance()
+        if self.amount > outstanding:
+            raise ValidationError(f"Payment exceeds outstanding balance ({outstanding}).")
+
+    def save(self, *args, **kwargs):
+        self.clean()  # run validation before saving
 
     def __str__(self):
         return f"{self.amount} via {self.payment_method} for Order {self.order.id}"
@@ -80,14 +88,31 @@ class Debt(models.Model):
     is_paid = models.BooleanField(default=False)
 
     def calculate_outstanding_balance(self):
-        total_paid = sum(payment.amount for payment in self.order.payments.filter(status__in=['completed','pending'])) # Sum of completed payments 
+        # Sum of payments (only completed ones should reduce debt)
+        total_paid = sum(
+            payment.amount for payment in self.order.payments.filter(status='completed')
+        )
 
-        total_order_amount = sum(item.price * item.quantity for item in self.order.items.all())  # sum of order items
+        # Total order amount = sum of items
+        total_order_amount = sum(
+            item.price * item.quantity for item in self.order.items.all()
+        )
 
-        self.outstanding_balance = total_order_amount - total_paid # calculate outstanding balance
+        # Clamp balance at zero
+        balance = total_order_amount - total_paid
+        self.outstanding_balance = max(balance, 0)
 
-        self.is_paid = self.outstanding_balance <= 0 # mark debt as paid if balance is zero or less
-        self.save() # save changes to the database
+        # Mark debt as paid if balance is zero
+        if self.outstanding_balance == 0:
+            if not self.is_paid:
+                self.is_paid = True
+                if not self.paid_at:
+                    from django.utils import timezone
+                    self.paid_at = timezone.now().date()
+        else:
+            self.is_paid = False
+            self.paid_at = None
 
+        self.save()
     def __str__(self):
         return f"Debt of {self.outstanding_balance} for {self.customer.user.username}"

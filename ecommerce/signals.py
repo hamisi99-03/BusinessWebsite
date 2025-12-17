@@ -22,13 +22,23 @@ def update_debt_after_payment(sender, instance, **kwargs):
         defaults={
             'outstanding_balance': order.get_total_amount() - order.get_total_paid(),
             'is_paid': False,
-            'paid_at': None  
+            'paid_at': None
         }
     )
+
+    # Recalculate balance
     debt.calculate_outstanding_balance()
-    if debt.is_paid and debt.paid_at is None:
-        debt.paid_at = timezone.now()  # Set the paid_at date when debt is fully paid
-        debt.save()
+
+    #  Clamp to zero if negative
+    if debt.outstanding_balance < 0:
+        debt.outstanding_balance = 0
+
+    # Mark as paid if balance is zero
+    if debt.outstanding_balance == 0 and not debt.is_paid:
+        debt.is_paid = True
+        debt.paid_at = timezone.now()
+
+    debt.save()
 
 @receiver(post_save, sender=Order)
 def create_debt_for_order(sender, instance, created, **kwargs):
