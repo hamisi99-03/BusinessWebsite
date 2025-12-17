@@ -18,6 +18,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 # -------------------
 # DRF ViewSets
@@ -204,3 +205,20 @@ def custom_login(request):
     else:
         form = AuthenticationForm()
     return render(request, "auth/login.html", {"form": form})
+@staff_member_required
+@require_POST
+def update_order_status(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    order.status = request.POST.get("status")
+    order.save()
+    return redirect("admin_dashboard")
+
+@staff_member_required
+@require_POST
+def update_payment(request, pk):
+    payment = get_object_or_404(Payment, pk=pk)
+    payment.amount = request.POST.get("amount")
+    payment.status = request.POST.get("status")
+    payment.save()
+    #  Debt auto-updates via signal
+    return redirect("admin_dashboard")

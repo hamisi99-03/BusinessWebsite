@@ -8,7 +8,7 @@ from .views import (
     register_view, login_view, logout_view,
     dashboard_view, orders_list_view, order_detail_view, debts_list_view,
     profile_view, ProfileView, order_product_view,
-    custom_login, admin_dashboard   #  use custom_login + admin_dashboard
+    custom_login, admin_dashboard, update_order_status, update_payment   #  use custom_login + admin_dashboard
 )
 
 router = DefaultRouter()
@@ -40,6 +40,8 @@ urlpatterns = [
 
     # Admin dashboard (protected by @staff_member_required)
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
+    path('admin-dashboard/update-order/<int:pk>/', update_order_status, name='update_order_status'),
+    path('admin-dashboard/update-payment/<int:pk>/', update_payment, name='update_payment'),
 
     # browsable API login/logout
     path('api-auth/', include('rest_framework.urls')),
