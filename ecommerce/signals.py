@@ -67,3 +67,8 @@ User = get_user_model()
 def create_customer(sender, instance, created, **kwargs):
     if created:
         Customer.objects.create(user=instance)
+
+@receiver(post_save, sender=Payment)
+def update_debt_after_payment(sender, instance, **kwargs):
+    print(f"Signal fired for Payment {instance.id}, Order {instance.order.id}")
+    ...

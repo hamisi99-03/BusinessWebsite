@@ -77,6 +77,7 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         self.clean()  # run validation before saving
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.amount} via {self.payment_method} for Order {self.order.id}"

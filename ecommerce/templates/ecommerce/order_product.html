@@ -1,16 +1,64 @@
 {% extends "ecommerce/base.html" %}
 
-{% block title %}Order Product{% endblock %}
+{% block title %}Place Order{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <h2 class="mb-4">Order a Product</h2>
-    <form method="post">
-      {% csrf_token %}
-      {{ form.as_p }}
-      <button type="submit" class="btn btn-success">Place Order</button>
-    </form>
+<h2>Place New Order</h2>
+
+<form method="post" id="order-form">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label for="id_product" class="form-label">Product</label>
+    <select name="product" id="id_product" class="form-select">
+      {% for product in form.fields.product.queryset %}
+        <option value="{{ product.id }}" data-price="{{ product.price }}">
+          {{ product.name }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <!-- Dynamic price display -->
+    <p class="mt-2">Price: <span id="product-price">Select a product</span></p>
   </div>
-</div>
+
+  <div class="mb-3">
+    <label for="id_quantity" class="form-label">Quantity</label>
+    {{ form.quantity }}
+  </div>
+
+  <button type="submit" class="btn btn-primary">Place Order</button>
+</form>
+
+<!-- JavaScript for dynamic price + confirmation -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const productSelect = document.getElementById("id_product");
+  const priceDisplay = document.getElementById("product-price");
+  const orderForm = document.getElementById("order-form");
+  const quantityInput = document.getElementById("id_quantity");
+
+  // Update price dynamically when product changes
+  productSelect.addEventListener("change", function() {
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    const price = selectedOption.getAttribute("data-price");
+    priceDisplay.textContent = price ? `KSh ${price}` : "Select a product";
+  });
+
+  // Confirm before submitting
+  orderForm.addEventListener("submit", function(event) {
+    const selectedOption = productSelect.options[productSelect.selectedIndex];
+    const productName = selectedOption.text;
+    const productPrice = selectedOption.getAttribute("data-price");
+    const quantity = quantityInput.value;
+
+    const total = productPrice ? (parseFloat(productPrice) * parseInt(quantity)) : 0;
+
+    const confirmMessage = `Confirm order:\n\nProduct: ${productName}\nPrice: KSh ${productPrice}\nQuantity: ${quantity}\nTotal: KSh ${total}\n\nDo you want to proceed?`;
+
+    if (!confirm(confirmMessage)) {
+      event.preventDefault(); // stop form submission if user cancels
+    }
+  });
+});
+</script>
 {% endblock %}

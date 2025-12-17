@@ -22,6 +22,8 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
+from decimal import Decimal
+
 # -------------------
 # DRF ViewSets
 # -------------------
@@ -134,8 +136,19 @@ def order_product_view(request):
             product = form.cleaned_data['product']
             quantity = form.cleaned_data['quantity']
 
+            # Create order
             order = Order.objects.create(customer=request.user.customer, status='pending')
-            OrderItem.objects.create(order=order, product=product, quantity=quantity, price=product.price)
+
+            # Add item
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=quantity,
+                price=product.price
+            )
+
+            #  Confirmation message
+            messages.success(request, f"Order #{order.id} placed successfully for {product.name}!")
 
             return redirect('orders_list')
     else:
@@ -197,15 +210,21 @@ def update_order_status(request, pk):
     order.save()
     return redirect("admin_dashboard")
 
+from decimal import Decimal
+
 @staff_member_required
 @require_POST
 def update_payment(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
-    payment.amount = request.POST.get("amount")
-    payment.status = request.POST.get("status")
-    payment.save()
-    #  Debt auto-updates via signal
+    try:
+        payment.amount = Decimal(request.POST.get("amount"))
+        payment.status = request.POST.get("status")
+        payment.save()   # 👈 triggers post_save signal
+        messages.success(request, f"Payment #{payment.id} updated successfully.")
+    except Exception as e:
+        messages.error(request, f"Error updating payment: {e}")
     return redirect("admin_dashboard")
+
 
 @staff_member_required
 def add_or_update_payment(request, pk=None):
