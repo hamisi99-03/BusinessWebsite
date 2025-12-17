@@ -4,7 +4,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 from .views import (
     CustomerViewSet, ProductViewSet, OrderViewSet, OrderItemViewSet,
-    PaymentViewSet, DebtViewSet,
+    PaymentViewSet, DebtViewSet, add_or_update_payment,
     register_view, login_view, logout_view,
     dashboard_view, orders_list_view, order_detail_view, debts_list_view,
     profile_view, ProfileView, order_product_view,
@@ -42,6 +42,8 @@ urlpatterns = [
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
     path('admin-dashboard/update-order/<int:pk>/', update_order_status, name='update_order_status'),
     path('admin-dashboard/update-payment/<int:pk>/', update_payment, name='update_payment'),
+    path('admin-dashboard/payment/add/', add_or_update_payment, name='add_payment'),
+    path('admin-dashboard/payment/<int:pk>/edit/', add_or_update_payment, name='edit_payment'),
 
     # browsable API login/logout
     path('api-auth/', include('rest_framework.urls')),

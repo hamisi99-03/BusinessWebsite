@@ -1,0 +1,12 @@
+{% extends "ecommerce/base.html" %}
+
+{% block title %}Manage Payment{% endblock %}
+
+{% block content %}
+<h2>{% if form.instance.pk %}Edit Payment{% else %}Add Payment{% endif %}</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary">Save</button>
+</form>
+{% endblock %}

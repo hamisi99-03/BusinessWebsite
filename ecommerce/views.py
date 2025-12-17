@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
 from .models import Customer, Product, Order, OrderItem, Payment, Debt
-from .forms import OrderForm
+from .forms import OrderForm, PaymentForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
     OrderItemSerializer, PaymentSerializer, DebtSerializer
@@ -19,6 +19,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from django.contrib import messages
+
 
 # -------------------
 # DRF ViewSets
@@ -161,25 +163,7 @@ class ProfileView(APIView):
         return Response(data)
     
 
-@login_required
-def order_product_view(request):
-    if request.method == 'POST':
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            product = form.cleaned_data['product']
-            quantity = form.cleaned_data['quantity']
 
-            # get or create an order for this customer
-            order = Order.objects.create(customer=request.user.customer, status='pending')
-
-            # add item
-            OrderItem.objects.create(order=order, product=product, quantity=quantity, price=product.price)
-
-            return redirect('orders_list')
-    else:
-        form = OrderForm()
-
-    return render(request, 'ecommerce/order_product.html', {'form': form})
 
 @staff_member_required
 def admin_dashboard(request):
@@ -222,3 +206,21 @@ def update_payment(request, pk):
     payment.save()
     #  Debt auto-updates via signal
     return redirect("admin_dashboard")
+
+@staff_member_required
+def add_or_update_payment(request, pk=None):
+    if pk:
+        payment = get_object_or_404(Payment, pk=pk)
+    else:
+        payment = None
+
+    if request.method == "POST":
+        form = PaymentForm(request.POST, instance=payment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Payment saved successfully.")
+            return redirect("admin_dashboard")
+    else:
+        form = PaymentForm(instance=payment)
+
+    return render(request, "ecommerce/payment_form.html", {"form": form})
