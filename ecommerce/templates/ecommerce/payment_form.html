@@ -10,7 +10,10 @@
   <div class="card-body">
     <h5 class="card-title">Order #{{ order.id }}</h5>
     <p><strong>Customer:</strong> {{ order.customer.user.username }}</p>
-    <p><strong>Status:</strong> {{ order.status }}</p>
+    <div class="mb-3">
+  <label>Status:</label>
+  <p class="form-control-plaintext">{{ payment.status }}</p>
+</div>
     <p><strong>Total Amount:</strong> {{ order.get_total_amount }}</p>
     <p><strong>Total Paid:</strong> {{ order.get_total_paid }}</p>
     <p><strong>Outstanding Balance:</strong> {{ order.get_outstanding_balance }}</p>

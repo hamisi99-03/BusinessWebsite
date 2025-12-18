@@ -68,7 +68,7 @@ class Payment(models.Model):
     )
     status = models.CharField(
         max_length=50,
-        choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')],
+        choices=[('pending', 'Pending'), ('completed', 'Completed')],
         default='pending'
     )
 
@@ -88,6 +88,13 @@ class Payment(models.Model):
     def save(self, *args, **kwargs):
         self.clean()  # run validation before saving
         super().save(*args, **kwargs)
+        total_paid = sum(p.amount for p in self.order.payments.all())
+        if total_paid >= self.order.get_total_amount():
+            # fully paid → mark all as completed
+            self.order.payments.update(status='completed')
+        else:
+            # still balance → mark all as pending
+            self.order.payments.update(status='pending')
 
     def __str__(self):
         return f"{self.amount} via {self.payment_method} for Order {self.order.id}"
