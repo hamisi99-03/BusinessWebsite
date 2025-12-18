@@ -8,43 +8,66 @@
 <div class="row">
   <!-- Orders -->
   <div class="col-md-6">
-   <h3>All Orders</h3>
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>ID</th><th>Customer</th><th>Status</th><th>Total</th><th>Paid</th><th>Balance</th><th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for order in orders %}
-    <tr>
-      <td>{{ order.id }}</td>
-      <td>{{ order.customer.user.username }}</td>
-      <td>{{ order.status }}</td>
-      <td>{{ order.get_total_amount }}</td>
-      <td>{{ order.get_total_paid }}</td>
-      <td>{{ order.get_outstanding_balance }}</td>
-      <td>
-        <form method="post" action="{% url 'update_order_status' order.id %}">
-          {% csrf_token %}
-          <select name="status" class="form-select form-select-sm">
-            <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
-            <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
-            <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
-          </select>
-          <button type="submit" class="btn btn-sm btn-primary">Update</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    <h3>All Orders</h3>
 
+    <!-- Orders filter -->
+    <form method="get" class="mb-3">
+      <select name="order_status" class="form-select form-select-sm">
+        <option value="">All Statuses</option>
+        <option value="pending" {% if request.GET.order_status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="shipped" {% if request.GET.order_status == 'shipped' %}selected{% endif %}>Shipped</option>
+        <option value="delivered" {% if request.GET.order_status == 'delivered' %}selected{% endif %}>Delivered</option>
+        <option value="canceled" {% if request.GET.order_status == 'canceled' %}selected{% endif %}>Canceled</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm mt-2">Filter Orders</button>
+    </form>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>ID</th><th>Customer</th><th>Status</th><th>Total</th><th>Paid</th><th>Balance</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ order.id }}</td>
+          <td>{{ order.customer.user.username }}</td>
+          <td>{{ order.status }}</td>
+          <td>{{ order.get_total_amount }}</td>
+          <td>{{ order.get_total_paid }}</td>
+          <td>{{ order.get_outstanding_balance }}</td>
+          <td>
+            <form method="post" action="{% url 'update_order_status' order.id %}">
+              {% csrf_token %}
+              <select name="status" class="form-select form-select-sm">
+                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+              </select>
+              <button type="submit" class="btn btn-sm btn-primary">Update</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 
   <!-- Debts -->
   <div class="col-md-6">
     <h3>All Debts</h3>
+
+    <!-- Debts filter -->
+    <form method="get" class="mb-3">
+      <select name="debt_status" class="form-select form-select-sm">
+        <option value="">All Debts</option>
+        <option value="paid" {% if request.GET.debt_status == 'paid' %}selected{% endif %}>Paid</option>
+        <option value="unpaid" {% if request.GET.debt_status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm mt-2">Filter Debts</button>
+    </form>
+
     <table class="table table-striped">
       <thead>
         <tr>
@@ -69,39 +92,59 @@
 <!-- Payments -->
 <div class="row mt-4">
   <div class="col-md-12">
-   <h3>Payments</h3>
-  <a href="{% url 'add_payment' %}" class="btn btn-success mb-2">Add New Payment</a>
+    <h3>Payments</h3>
 
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for payment in payments %}
-    <tr>
-      <td>{{ payment.order.id }}</td>
-      <td>{{ payment.order.customer.user.username }}</td>
-      <td>{{ payment.amount }}</td>
-      <td>{{ payment.payment_method }}</td>
-      <td>{{ payment.status }}</td>
-      <td>{{ payment.payment_date }}</td>
-      <td>
-        <form method="post" action="{% url 'update_payment' payment.id %}">
-          {% csrf_token %}
-          <input type="number" name="amount" value="{{ payment.amount }}" class="form-control form-control-sm" />
-          <select name="status" class="form-select form-select-sm">
-            <option value="pending" {% if payment.status == 'pending' %}selected{% endif %}>Pending</option>
-            <option value="completed" {% if payment.status == 'completed' %}selected{% endif %}>Completed</option>
-          </select>
-          <button type="submit" class="btn btn-sm btn-success">Save</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    <!-- Payments filter -->
+<form method="get" class="mb-3 row">
+  <div class="col-md-4">
+    <select name="payment_status" class="form-select form-select-sm">
+      <option value="">All Payments</option>
+      <option value="pending" {% if request.GET.payment_status == 'pending' %}selected{% endif %}>Pending</option>
+      <option value="completed" {% if request.GET.payment_status == 'completed' %}selected{% endif %}>Completed</option>
+      <option value="failed" {% if request.GET.payment_status == 'failed' %}selected{% endif %}>Failed</option>
+    </select>
+  </div>
+  <div class="col-md-4">
+    <!-- Date filter -->
+    <input type="date" name="payment_date" value="{{ request.GET.payment_date }}" class="form-control form-control-sm" />
+  </div>
+  <div class="col-md-4">
+    <button type="submit" class="btn btn-primary btn-sm">Filter Payments</button>
+  </div>
+</form>
+
+    <a href="{% url 'add_payment' %}" class="btn btn-success mb-2">Add New Payment</a>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for payment in payments %}
+        <tr>
+          <td>{{ payment.order.id }}</td>
+          <td>{{ payment.order.customer.user.username }}</td>
+          <td>{{ payment.amount }}</td>
+          <td>{{ payment.payment_method }}</td>
+          <td>{{ payment.status }}</td>
+          <td>{{ payment.payment_date }}</td>
+          <td>
+            <form method="post" action="{% url 'update_payment' payment.id %}">
+              {% csrf_token %}
+              <input type="number" name="amount" value="{{ payment.amount }}" class="form-control form-control-sm" />
+              <select name="status" class="form-select form-select-sm">
+                <option value="pending" {% if payment.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="completed" {% if payment.status == 'completed' %}selected{% endif %}>Completed</option>
+              </select>
+              <button type="submit" class="btn btn-sm btn-success">Save</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 {% endblock %}

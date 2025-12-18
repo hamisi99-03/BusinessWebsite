@@ -113,8 +113,13 @@ def dashboard_view(request):
 @login_required
 def orders_list_view(request):
     orders = Order.objects.filter(customer=request.user.customer)
-    return render(request, 'ecommerce/orders_list.html', {'orders': orders})
 
+    # Apply filter by status
+    status = request.GET.get('status')
+    if status:
+        orders = orders.filter(status=status)
+
+    return render(request, 'ecommerce/orders_list.html', {'orders': orders})
 @login_required
 def order_detail_view(request, pk):
     order = get_object_or_404(Order, pk=pk, customer=request.user.customer)
@@ -123,6 +128,14 @@ def order_detail_view(request, pk):
 @login_required
 def debts_list_view(request):
     debts = Debt.objects.filter(customer=request.user.customer)
+
+    # Apply filter by paid/unpaid
+    debt_status = request.GET.get('debt_status')
+    if debt_status == 'paid':
+        debts = debts.filter(is_paid=True)
+    elif debt_status == 'unpaid':
+        debts = debts.filter(is_paid=False)
+
     return render(request, 'ecommerce/debts_list.html', {'debts': debts})
 
 @login_required
@@ -183,11 +196,34 @@ def admin_dashboard(request):
     orders = Order.objects.all()
     debts = Debt.objects.all()
     payments = Payment.objects.all()
+
+    # Orders filter
+    order_status = request.GET.get('order_status')
+    if order_status:
+        orders = orders.filter(status=order_status)
+
+    # Debts filter
+    debt_status = request.GET.get('debt_status')
+    if debt_status == 'paid':
+        debts = debts.filter(is_paid=True)
+    elif debt_status == 'unpaid':
+        debts = debts.filter(is_paid=False)
+
+    # Payments filter
+    payment_status = request.GET.get('payment_status')
+    if payment_status:
+        payments = payments.filter(status=payment_status)
+
+    payment_date = request.GET.get('payment_date')
+    if payment_date:
+        payments = payments.filter(payment_date__date=payment_date)
+
     return render(request, 'ecommerce/admin_dashboard.html', {
         'orders': orders,
         'debts': debts,
         'payments': payments
     })
+
 def custom_login(request):
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
@@ -249,3 +285,14 @@ def add_or_update_payment(request, pk=None):
         form = PaymentForm(instance=payment)
 
     return render(request, "ecommerce/payment_form.html", {"form": form})
+
+@login_required
+def payments_list_view(request):
+    payments = Payment.objects.filter(order__customer=request.user.customer)
+
+    # Apply filter by payment status
+    payment_status = request.GET.get('payment_status')
+    if payment_status:
+        payments = payments.filter(status=payment_status)
+
+    return render(request, 'ecommerce/payments_list.html', {'payments': payments})

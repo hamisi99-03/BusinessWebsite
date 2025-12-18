@@ -4,6 +4,19 @@
 
 {% block content %}
 <h2>My Orders</h2>
+
+<!-- Filter form -->
+<form method="get" class="mb-3">
+  <select name="status" class="form-select form-select-sm">
+    <option value="">All Orders</option>
+    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+    <option value="shipped" {% if request.GET.status == 'shipped' %}selected{% endif %}>Shipped</option>
+    <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>Delivered</option>
+    <option value="canceled" {% if request.GET.status == 'canceled' %}selected{% endif %}>Canceled</option>
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm mt-2">Filter</button>
+</form>
+
 <ul class="list-group">
   {% for order in orders %}
     <li class="list-group-item">
