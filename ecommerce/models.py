@@ -47,6 +47,8 @@ class Order(models.Model):
         balance = self.get_total_amount() - self.get_total_paid()
         return max(balance, 0)
 
+from django.core.exceptions import ValidationError
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -55,7 +57,50 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in Order {self.order.id}"
-    
+
+    def clean(self):
+        #  Prevent ordering more than available stock
+        if self.pk:
+            # If updating, include old quantity back before validation
+            old_quantity = OrderItem.objects.get(pk=self.pk).quantity
+            available_stock = self.product.stock + old_quantity
+        else:
+            available_stock = self.product.stock
+
+        if self.quantity > available_stock:
+            raise ValidationError(f"Only {available_stock} items left in stock.")
+
+    def save(self, *args, **kwargs):
+        # Run validation first
+        if self.pk:
+            # If updating, restore old quantity before checking
+            old_quantity = OrderItem.objects.get(pk=self.pk).quantity
+            available_stock = self.product.stock + old_quantity
+        else:
+            available_stock = self.product.stock
+
+        if self.quantity > available_stock:
+            raise ValidationError(f"Only {available_stock} items left in stock.")
+
+        super().save(*args, **kwargs)
+
+        # Subtract new quantity safely
+        if self.pk:
+            # If updating, restore old quantity before subtracting
+            old_quantity = OrderItem.objects.get(pk=self.pk).quantity
+            self.product.stock += old_quantity
+
+        self.product.stock -= self.quantity
+        if self.product.stock < 0:
+            self.product.stock = 0  # safeguard
+        self.product.save()
+
+    def delete(self, *args, **kwargs):
+        #  Restore stock when item is removed
+        self.product.stock += self.quantity
+        self.product.save()
+        super().delete(*args, **kwargs)
+
 
 class Payment(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payments')

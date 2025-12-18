@@ -21,7 +21,6 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-
 from decimal import Decimal
 
 # -------------------
@@ -149,18 +148,30 @@ def order_product_view(request):
             product = form.cleaned_data['product']
             quantity = form.cleaned_data['quantity']
 
-            # Create order
+            #  Check stock before creating anything
+            if product.stock <= 0:
+                messages.error(request, f"{product.name} is out of stock.")
+                return redirect('orders_list')
+
+            if quantity > product.stock:
+                messages.error(request, f"Only {product.stock} items left in stock.")
+                return redirect('orders_list')
+
+            #  Only create order if stock is valid
             order = Order.objects.create(customer=request.user.customer, status='pending')
 
             # Add item
-            OrderItem.objects.create(
+            order_item = OrderItem(
                 order=order,
                 product=product,
                 quantity=quantity,
                 price=product.price
             )
+            order_item.save()  # ✅ ensures your custom save() runs
 
-            #  Confirmation message
+    
+
+            # Confirmation message
             messages.success(request, f"Order #{order.id} placed successfully for {product.name}!")
 
             return redirect('orders_list')
@@ -191,9 +202,7 @@ class ProfileView(APIView):
 
 
 
-from .models import Order, Debt, Payment, Product
-from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render
+
 
 @staff_member_required
 def admin_dashboard(request):

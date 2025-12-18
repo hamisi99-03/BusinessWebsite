@@ -1,6 +1,6 @@
 
 from django.db.models.signals import pre_save
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.utils import timezone
 from django.dispatch import receiver
 from .models import OrderItem, Payment, Debt, Order
@@ -62,3 +62,13 @@ def create_customer(sender, instance, created, **kwargs):
 def update_debt_after_payment(sender, instance, **kwargs):
     print(f"Signal fired for Payment {instance.id}, Order {instance.order.id}")
     ...
+@receiver(post_save, sender=OrderItem)
+def reduce_stock(sender, instance, created, **kwargs):
+    if created:
+        instance.product.stock -= instance.quantity
+        instance.product.save()
+
+@receiver(post_delete, sender=OrderItem)
+def restore_stock(sender, instance, **kwargs):
+    instance.product.stock += instance.quantity
+    instance.product.save()
