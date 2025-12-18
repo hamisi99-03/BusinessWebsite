@@ -19,3 +19,8 @@ class PaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
         fields = ['order', 'amount', 'payment_method', 'status']
+        
+class ProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ["name", "description", "price", "stock"]

@@ -38,10 +38,9 @@ class Order(models.Model):
     def get_total_paid(self):
         """Calculate total completed + pending payments"""
         return sum(
-        payment.amount
-        for payment in self.payments.filter(status__in=['completed'])
-    )
-
+            payment.amount
+            for payment in self.payments.filter(status__in=['completed', 'pending'])
+        )
 
     def get_outstanding_balance(self):
         """Calculate outstanding balance (total - paid)"""
@@ -59,21 +58,32 @@ class OrderItem(models.Model):
     
 
 class Payment(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE,related_name='payments')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payments')
     payment_date = models.DateTimeField(auto_now_add=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_method = models.CharField(max_length=50, choices=[
-        ('cash','Cash'),
-        ('mpesa', 'M-pesa'),
-    ], default='cash')
-    status = models.CharField(max_length=50, choices=[
-        ('pending', 'Pending'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed')], default='pending')
+    payment_method = models.CharField(
+        max_length=50,
+        choices=[('cash','Cash'), ('mpesa', 'M-pesa')],
+        default='cash'
+    )
+    status = models.CharField(
+        max_length=50,
+        choices=[('pending', 'Pending'), ('completed', 'Completed'), ('failed', 'Failed')],
+        default='pending'
+    )
+
     def clean(self):
-        outstanding = self.order.get_outstanding_balance()
-        if self.amount > outstanding:
-            raise ValidationError(f"Payment exceeds outstanding balance ({outstanding}).")
+        # Exclude current payment when editing
+        total_paid_excluding_current = sum(
+            p.amount for p in self.order.payments.exclude(pk=self.pk)
+        )
+        new_total_paid = total_paid_excluding_current + self.amount
+
+        if new_total_paid > self.order.get_total_amount():
+            raise ValidationError(
+                f"Payment exceeds order total ({self.order.get_total_amount()}). "
+                f"Max allowed is {self.order.get_total_amount() - total_paid_excluding_current}."
+            )
 
     def save(self, *args, **kwargs):
         self.clean()  # run validation before saving
@@ -81,6 +91,7 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.amount} via {self.payment_method} for Order {self.order.id}"
+
 class Debt(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='debts')
     order = models.ForeignKey(Order, on_delete=models.CASCADE)

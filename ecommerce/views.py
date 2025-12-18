@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
 from .models import Customer, Product, Order, OrderItem, Payment, Debt
-from .forms import OrderForm, PaymentForm
+from .forms import OrderForm, PaymentForm, ProductForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
     OrderItemSerializer, PaymentSerializer, DebtSerializer
@@ -191,11 +191,16 @@ class ProfileView(APIView):
 
 
 
+from .models import Order, Debt, Payment, Product
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render
+
 @staff_member_required
 def admin_dashboard(request):
     orders = Order.objects.all()
     debts = Debt.objects.all()
     payments = Payment.objects.all()
+    products = Product.objects.all()   # ✅ include products
 
     # Orders filter
     order_status = request.GET.get('order_status')
@@ -218,10 +223,12 @@ def admin_dashboard(request):
     if payment_date:
         payments = payments.filter(payment_date__date=payment_date)
 
+    # Return products to template context
     return render(request, 'ecommerce/admin_dashboard.html', {
         'orders': orders,
         'debts': debts,
-        'payments': payments
+        'payments': payments,
+        'products': products
     })
 
 def custom_login(request):
@@ -272,35 +279,55 @@ def update_payment(request, pk):
 
 
 @staff_member_required
-def add_or_update_payment(request, pk=None):
-    if pk:
-        payment = get_object_or_404(Payment, pk=pk)
-        order = payment.order
+def add_payment(request, order_id):
+    order = get_object_or_404(Order, pk=order_id)
+
+    if request.method == "POST":
+        form = PaymentForm(request.POST)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            payment.order = order
+            payment.save()
+
+            # Ensure debt exists and update it
+            debt, created = Debt.objects.get_or_create(
+                order=order,
+                customer=order.customer,
+                defaults={
+                    "outstanding_balance": order.get_total_amount(),
+                    "is_paid": False,
+                    "paid_at": None,
+                }
+            )
+            debt.calculate_outstanding_balance()
+
+            messages.success(request, "Payment added successfully.")
+            return redirect("admin_dashboard")
     else:
-        payment = None
-        # get order_id from query string
-        order_id = request.GET.get("order_id")
-        order = get_object_or_404(Order, pk=order_id) if order_id else None
+        form = PaymentForm()
+
+    return render(request, "ecommerce/payment_form.html", {"form": form, "order": order})
+
+@staff_member_required
+def update_payment(request, pk):
+    payment = get_object_or_404(Payment, pk=pk)
+    order = payment.order
 
     if request.method == "POST":
         form = PaymentForm(request.POST, instance=payment)
         if form.is_valid():
-            payment = form.save(commit=False)
-            if order:
-                payment.order = order  #  link payment to order
-            payment.save()
-            messages.success(request, "Payment saved successfully.")
+            form.save()
+
+            debt = Debt.objects.filter(order=order).first()
+            if debt:
+                debt.calculate_outstanding_balance()
+
+            messages.success(request, "Payment updated successfully.")
             return redirect("admin_dashboard")
-        else:
-            messages.error(request, "Please correct the errors below.")
     else:
         form = PaymentForm(instance=payment)
 
-    return render(request, "ecommerce/payment_form.html", {
-        "form": form,
-        "order": order,
-        "payment": payment
-    })
+    return render(request, "ecommerce/payment_form.html", {"form": form, "order": order, "payment": payment})
 
 @login_required
 def payments_list_view(request):
@@ -312,3 +339,32 @@ def payments_list_view(request):
         payments = payments.filter(status=payment_status)
 
     return render(request, 'ecommerce/payments_list.html', {'payments': payments})
+
+@staff_member_required
+def add_product(request):
+    if request.method == "POST":
+        form = ProductForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("admin_dashboard")
+    else:
+        form = ProductForm()
+    return render(request, "ecommerce/product_form.html", {"form": form})
+@staff_member_required
+def update_product(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == "POST":
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect("admin_dashboard")
+    else:
+        form = ProductForm(instance=product)
+    return render(request, "ecommerce/product_form.html", {"form": form, "product": product})
+@staff_member_required
+def delete_product(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if request.method == "POST":  # confirm deletion
+        product.delete()
+        return redirect("admin_dashboard")
+    return render(request, "ecommerce/confirm_delete.html", {"product": product})

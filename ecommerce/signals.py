@@ -26,19 +26,9 @@ def update_debt_after_payment(sender, instance, **kwargs):
         }
     )
 
-    # Recalculate balance
+    # Recalculate balance using your model method
     debt.calculate_outstanding_balance()
 
-    #  Clamp to zero if negative
-    if debt.outstanding_balance < 0:
-        debt.outstanding_balance = 0
-
-    # Mark as paid if balance is zero
-    if debt.outstanding_balance == 0 and not debt.is_paid:
-        debt.is_paid = True
-        debt.paid_at = timezone.now()
-
-    debt.save()
 
 @receiver(post_save, sender=Order)
 def create_debt_for_order(sender, instance, created, **kwargs):

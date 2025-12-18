@@ -47,8 +47,8 @@
               </select>
               <button type="submit" class="btn btn-sm btn-primary">Update</button>
             </form>
-            <!-- Add Payment button tied to this order -->
-            <a href="{% url 'add_payment' %}?order_id={{ order.id }}" class="btn btn-sm btn-success mt-2">Add Payment</a>
+            <!-- ✅ Add Payment button tied to this order -->
+            <a href="{% url 'add_payment' order.id %}" class="btn btn-sm btn-success mt-2">Add Payment</a>
           </td>
         </tr>
         {% endfor %}
@@ -59,8 +59,6 @@
   <!-- Debts -->
   <div class="col-md-6">
     <h3>All Debts</h3>
-
-    <!-- Debts filter -->
     <form method="get" class="mb-3">
       <select name="debt_status" class="form-select form-select-sm">
         <option value="">All Debts</option>
@@ -81,7 +79,7 @@
         <tr>
           <td>{{ debt.customer.user.username }}</td>
           <td>{{ debt.order.id }}</td>
-          <td>{{ debt.outstanding_balance }}</td>
+          <td>{{ debt.order.get_outstanding_balance }}</td>
           <td>{{ debt.is_paid }}</td>
           <td>{{ debt.paid_at }}</td>
         </tr>
@@ -95,8 +93,6 @@
 <div class="row mt-4">
   <div class="col-md-12">
     <h3>Payments</h3>
-
-    <!-- Payments filter -->
     <form method="get" class="mb-3 row">
       <div class="col-md-4">
         <select name="payment_status" class="form-select form-select-sm">
@@ -107,7 +103,6 @@
         </select>
       </div>
       <div class="col-md-4">
-        <!-- Date filter -->
         <input type="date" name="payment_date" value="{{ request.GET.payment_date }}" class="form-control form-control-sm" />
       </div>
       <div class="col-md-4">
@@ -131,8 +126,39 @@
           <td>{{ payment.status }}</td>
           <td>{{ payment.payment_date }}</td>
           <td>
-            <!-- Update button instead of inline form -->
-            <a href="{% url 'update_payment' payment.id %}" class="btn btn-sm btn-primary">Update</a>
+            <!-- ✅ Corrected: use 'edit_payment' -->
+            <a href="{% url 'edit_payment' payment.id %}" class="btn btn-sm btn-primary">Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Products -->
+<div class="row mt-4">
+  <div class="col-md-12">
+    <h3>Products</h3>
+    <a href="{% url 'add_product' %}" class="btn btn-success mb-2">Add Product</a>
+
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>ID</th><th>Name</th><th>Description</th><th>Price</th><th>Stock</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+        <tr>
+          <td>{{ product.id }}</td>
+          <td>{{ product.name }}</td>
+          <td>{{ product.description }}</td>
+          <td>{{ product.price }}</td>
+          <td>{{ product.stock }}</td>
+          <td>
+            <a href="{% url 'update_product' product.id %}" class="btn btn-sm btn-primary">Edit</a>
+            <a href="{% url 'delete_product' product.id %}" class="btn btn-sm btn-danger">Delete</a>
           </td>
         </tr>
         {% endfor %}

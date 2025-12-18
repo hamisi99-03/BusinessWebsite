@@ -8,10 +8,14 @@ class CustomerAdmin(admin.ModelAdmin):
     search_fields = ('user__username',)
 
 # --- Product ---
+from django.contrib import admin
+from .models import Product
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'price', 'stock')
-    search_fields = ('name',)
+    list_display = ("id", "name", "price", "stock")
+    search_fields = ("name",)
+    list_filter = ("price",)
 
 # --- Inline definitions ---
 class OrderItemInline(admin.TabularInline):
