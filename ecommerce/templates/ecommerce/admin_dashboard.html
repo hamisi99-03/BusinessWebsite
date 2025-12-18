@@ -47,6 +47,8 @@
               </select>
               <button type="submit" class="btn btn-sm btn-primary">Update</button>
             </form>
+            <!-- Add Payment button tied to this order -->
+            <a href="{% url 'add_payment' %}?order_id={{ order.id }}" class="btn btn-sm btn-success mt-2">Add Payment</a>
           </td>
         </tr>
         {% endfor %}
@@ -95,25 +97,23 @@
     <h3>Payments</h3>
 
     <!-- Payments filter -->
-<form method="get" class="mb-3 row">
-  <div class="col-md-4">
-    <select name="payment_status" class="form-select form-select-sm">
-      <option value="">All Payments</option>
-      <option value="pending" {% if request.GET.payment_status == 'pending' %}selected{% endif %}>Pending</option>
-      <option value="completed" {% if request.GET.payment_status == 'completed' %}selected{% endif %}>Completed</option>
-      <option value="failed" {% if request.GET.payment_status == 'failed' %}selected{% endif %}>Failed</option>
-    </select>
-  </div>
-  <div class="col-md-4">
-    <!-- Date filter -->
-    <input type="date" name="payment_date" value="{{ request.GET.payment_date }}" class="form-control form-control-sm" />
-  </div>
-  <div class="col-md-4">
-    <button type="submit" class="btn btn-primary btn-sm">Filter Payments</button>
-  </div>
-</form>
-
-    <a href="{% url 'add_payment' %}" class="btn btn-success mb-2">Add New Payment</a>
+    <form method="get" class="mb-3 row">
+      <div class="col-md-4">
+        <select name="payment_status" class="form-select form-select-sm">
+          <option value="">All Payments</option>
+          <option value="pending" {% if request.GET.payment_status == 'pending' %}selected{% endif %}>Pending</option>
+          <option value="completed" {% if request.GET.payment_status == 'completed' %}selected{% endif %}>Completed</option>
+          <option value="failed" {% if request.GET.payment_status == 'failed' %}selected{% endif %}>Failed</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <!-- Date filter -->
+        <input type="date" name="payment_date" value="{{ request.GET.payment_date }}" class="form-control form-control-sm" />
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary btn-sm">Filter Payments</button>
+      </div>
+    </form>
 
     <table class="table table-striped">
       <thead>
@@ -131,15 +131,8 @@
           <td>{{ payment.status }}</td>
           <td>{{ payment.payment_date }}</td>
           <td>
-            <form method="post" action="{% url 'update_payment' payment.id %}">
-              {% csrf_token %}
-              <input type="number" name="amount" value="{{ payment.amount }}" class="form-control form-control-sm" />
-              <select name="status" class="form-select form-select-sm">
-                <option value="pending" {% if payment.status == 'pending' %}selected{% endif %}>Pending</option>
-                <option value="completed" {% if payment.status == 'completed' %}selected{% endif %}>Completed</option>
-              </select>
-              <button type="submit" class="btn btn-sm btn-success">Save</button>
-            </form>
+            <!-- Update button instead of inline form -->
+            <a href="{% url 'update_payment' payment.id %}" class="btn btn-sm btn-primary">Update</a>
           </td>
         </tr>
         {% endfor %}

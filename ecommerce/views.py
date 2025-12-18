@@ -249,42 +249,58 @@ def update_order_status(request, pk):
 from decimal import Decimal
 
 @staff_member_required
-@require_POST
 def update_payment(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
-    try:
-        payment.amount = Decimal(request.POST.get("amount"))
-        payment.status = request.POST.get("status")
-        payment.save()   # 👈 triggers post_save signal
-        messages.success(request, f"Payment #{payment.id} updated successfully.")
-    except Exception as e:
-        messages.error(request, f"Error updating payment: {e}")
-    return redirect("admin_dashboard")
+    order = payment.order  # ✅ always fetch the related order
+
+    if request.method == "POST":
+        try:
+            payment.amount = Decimal(request.POST.get("amount"))
+            payment.status = request.POST.get("status")
+            payment.save()   # triggers post_save signal
+            messages.success(request, f"Payment #{payment.id} updated successfully.")
+            return redirect("admin_dashboard")
+        except Exception as e:
+            messages.error(request, f"Error updating payment: {e}")
+    else:
+        # Render a template with order + payment details
+        return render(request, "ecommerce/payment_form.html", {
+            "form": PaymentForm(instance=payment),
+            "payment": payment,
+            "order": order
+        })
 
 
 @staff_member_required
 def add_or_update_payment(request, pk=None):
     if pk:
         payment = get_object_or_404(Payment, pk=pk)
+        order = payment.order
     else:
         payment = None
+        # get order_id from query string
+        order_id = request.GET.get("order_id")
+        order = get_object_or_404(Order, pk=order_id) if order_id else None
 
     if request.method == "POST":
         form = PaymentForm(request.POST, instance=payment)
         if form.is_valid():
-            try:
-                form.save()
-                messages.success(request, "Payment saved successfully.")
-                return redirect("admin_dashboard")
-            except ValidationError as e:
-                # 👇 show friendly error message
-                messages.error(request, f"Error: {e.message}")
+            payment = form.save(commit=False)
+            if order:
+                payment.order = order  #  link payment to order
+            payment.save()
+            messages.success(request, "Payment saved successfully.")
+            return redirect("admin_dashboard")
         else:
             messages.error(request, "Please correct the errors below.")
     else:
         form = PaymentForm(instance=payment)
 
-    return render(request, "ecommerce/payment_form.html", {"form": form})
+    return render(request, "ecommerce/payment_form.html", {
+        "form": form,
+        "order": order,
+        "payment": payment
+    })
 
 @login_required
 def payments_list_view(request):

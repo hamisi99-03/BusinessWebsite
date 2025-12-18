@@ -1,12 +1,28 @@
 {% extends "ecommerce/base.html" %}
 
-{% block title %}Manage Payment{% endblock %}
+{% block title %}Payment{% endblock %}
 
 {% block content %}
-<h2>{% if form.instance.pk %}Edit Payment{% else %}Add Payment{% endif %}</h2>
+<h2>{% if payment %}Update{% else %}Add{% endif %} Payment</h2>
+
+{% if order %}
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title">Order #{{ order.id }}</h5>
+    <p><strong>Customer:</strong> {{ order.customer.user.username }}</p>
+    <p><strong>Status:</strong> {{ order.status }}</p>
+    <p><strong>Total Amount:</strong> {{ order.get_total_amount }}</p>
+    <p><strong>Total Paid:</strong> {{ order.get_total_paid }}</p>
+    <p><strong>Outstanding Balance:</strong> {{ order.get_outstanding_balance }}</p>
+  </div>
+</div>
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
   {{ form.as_p }}
-  <button type="submit" class="btn btn-primary">Save</button>
+  <button type="submit" class="btn btn-primary">
+    {% if payment %}Update{% else %}Save{% endif %} Payment
+  </button>
 </form>
 {% endblock %}
