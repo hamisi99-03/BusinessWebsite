@@ -57,7 +57,7 @@ class ProductImageForm(forms.ModelForm):
         self.fields["image"].required = False
 
 
-# ✅ Custom formset enforcing at least one image
+#  Custom formset enforcing at least one image
 class ProductImageBaseFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
@@ -71,7 +71,7 @@ class ProductImageBaseFormSet(BaseInlineFormSet):
             raise forms.ValidationError("Each product must have at least one image.")
 
 
-# ✅ Inline formset linking Product → ProductImage
+#  Inline formset linking Product → ProductImage
 ProductImageFormSet = inlineformset_factory(
     Product,
     ProductImage,

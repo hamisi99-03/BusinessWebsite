@@ -168,7 +168,7 @@ def order_product_view(request):
                 quantity=quantity,
                 price=product.price
             )
-            order_item.save()  # ✅ ensures your custom save() runs
+            order_item.save()  
 
     
 
@@ -210,7 +210,7 @@ def admin_dashboard(request):
     orders = Order.objects.all()
     debts = Debt.objects.all()
     payments = Payment.objects.all()
-    products = Product.objects.all()   # ✅ include products
+    products = Product.objects.all()  
 
     # Orders filter
     order_status = request.GET.get('order_status')
@@ -268,7 +268,7 @@ from decimal import Decimal
 @staff_member_required
 def update_payment(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
-    order = payment.order  # ✅ always fetch the related order
+    order = payment.order  #  always fetch the related order
 
     if request.method == "POST":
         try:

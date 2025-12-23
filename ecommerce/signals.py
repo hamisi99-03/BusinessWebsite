@@ -10,7 +10,7 @@ from .models import ProductImage
 
 
 
-print("✅ ecommerce.signals loaded")
+
 @receiver(pre_save, sender=OrderItem)
 def set_price_from_product(sender, instance, **kwargs):
     if instance.product:

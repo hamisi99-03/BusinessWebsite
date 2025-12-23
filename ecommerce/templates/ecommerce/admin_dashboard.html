@@ -47,7 +47,7 @@
               </select>
               <button type="submit" class="btn btn-sm btn-primary">Update</button>
             </form>
-            <!-- ✅ Add Payment button tied to this order -->
+            <!--  Add Payment button tied to this order -->
             <a href="{% url 'add_payment' order.id %}" class="btn btn-sm btn-success mt-2">Add Payment</a>
           </td>
         </tr>
@@ -126,7 +126,7 @@
           <td>{{ payment.status }}</td>
           <td>{{ payment.payment_date }}</td>
           <td>
-            <!-- ✅ Corrected: use 'edit_payment' -->
+            <!--  Corrected: use 'edit_payment' -->
             <a href="{% url 'edit_payment' payment.id %}" class="btn btn-sm btn-primary">Edit</a>
           </td>
         </tr>
@@ -156,7 +156,7 @@
                       {% if img.image %}
                         <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ product.name }}">
                       {% else %}
-                        <!-- ✅ Fallback placeholder if image file missing -->
+                        <!--  Fallback placeholder if image file missing -->
                         <img src="{% static 'img/placeholder.png' %}" class="d-block w-100" alt="No image available">
                       {% endif %}
                     </div>
