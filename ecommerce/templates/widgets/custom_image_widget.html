@@ -1,0 +1,11 @@
+{% if widget.value %}
+  <div style="margin-bottom:10px;">
+    <p><strong>Current image:</strong></p>
+    <img src="{{ widget.value.url }}" style="height:80px;width:auto;" alt="Existing image">
+  </div>
+{% endif %}
+
+<div style="margin-top:10px;">
+  <p><strong>Upload new image:</strong></p>
+  <input type="file" name="{{ widget.name }}" id="{{ widget.attrs.id }}">
+</div>

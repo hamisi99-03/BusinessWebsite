@@ -1,46 +1,48 @@
 {% extends "ecommerce/base.html" %}
+{% load static %}
 
 {% block title %}Products{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Available Products</h2>
+<h2>Product List</h2>
 
-<div class="row">
-    {% for product in products %}
-        <div class="col-md-4">
-            <div class="card mb-4 shadow-sm">
-
-                <!-- ✅ Multiple images carousel -->
-                {% if product.images.exists %}
-                <div id="productCarousel{{ product.id }}" class="carousel slide" data-bs-ride="carousel">
-                  <div class="carousel-inner">
-                    {% for img in product.images.all %}
-                      <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                        <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ product.name }}">
-                      </div>
-                    {% endfor %}
-                  </div>
-                  <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel{{ product.id }}" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon"></span>
-                  </button>
-                  <button class="carousel-control-next" type="button" data-bs-target="#productCarousel{{ product.id }}" data-bs-slide="next">
-                    <span class="carousel-control-next-icon"></span>
-                  </button>
-                </div>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Stock</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>
+                {% if product.images.first %}
+                    <img src="{{ product.images.first.image.url }}" style="height:60px;width:auto;" alt="{{ product.name }}">
                 {% else %}
-                  <!-- ✅ Fallback if no images -->
-                  <img src="{% static 'img/placeholder.png' %}" class="card-img-top" alt="No image available">
+                    <img src="{% static 'img/placeholder.png' %}" style="height:60px;width:auto;" alt="No image">
                 {% endif %}
+            </td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.description|truncatewords:15 }}</td>
+            <td>${{ product.price }}</td>
+            <td>{{ product.stock }}</td>
+            <td>
+                <a href="{% url 'edit_product' product.id %}" class="btn btn-sm btn-primary">Edit</a>
+                <a href="{% url 'delete_product' product.id %}" class="btn btn-sm btn-danger">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6">No products available.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-                <div class="card-body">
-                    <h5 class="card-title">{{ product.name }}</h5>
-                    <p class="card-text">{{ product.description|truncatewords:15 }}</p>
-                    <p><strong>Price:</strong> Ksh {{ product.price }}</p>
-                    <p><strong>Stock:</strong> {{ product.stock }}</p>
-                    <a href="{% url 'order_product' product.id %}" class="btn btn-primary">Order</a>
-                </div>
-            </div>
-        </div>
-    {% endfor %}
-</div>
+<a href="{% url 'add_product' %}" class="btn btn-success">Add New Product</a>
 {% endblock %}

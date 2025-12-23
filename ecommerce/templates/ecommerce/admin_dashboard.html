@@ -1,5 +1,5 @@
 {% extends "ecommerce/base.html" %}
-
+{% load static %}
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
@@ -146,13 +146,38 @@
       {% for product in products %}
         <div class="col-md-4">
           <div class="card mb-4 shadow-sm">
-            {% if product.image %}
-              <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+
+            <!-- Show product images (carousel if multiple) -->
+            {% if product.images.exists %}
+              <div id="productCarousel{{ product.id }}" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                  {% for img in product.images.all %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                      {% if img.image %}
+                        <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ product.name }}">
+                      {% else %}
+                        <!-- ✅ Fallback placeholder if image file missing -->
+                        <img src="{% static 'img/placeholder.png' %}" class="d-block w-100" alt="No image available">
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel{{ product.id }}" data-bs-slide="prev">
+                  <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#productCarousel{{ product.id }}" data-bs-slide="next">
+                  <span class="carousel-control-next-icon"></span>
+                </button>
+              </div>
+            {% else %}
+              <!-- Fallback placeholder if no images at all -->
+              <img src="{% static 'img/placeholder.png' %}" class="card-img-top" alt="No image available">
             {% endif %}
+
             <div class="card-body">
               <h5 class="card-title">{{ product.name }}</h5>
               <p class="card-text">{{ product.description|truncatewords:15 }}</p>
-              <p><strong>Price:</strong> ksh{{ product.price }}</p>
+              <p><strong>Price:</strong> Ksh {{ product.price }}</p>
               <p><strong>Stock:</strong> {{ product.stock }}</p>
               <div class="d-flex justify-content-between">
                 <a href="{% url 'update_product' product.id %}" class="btn btn-sm btn-primary">Edit</a>

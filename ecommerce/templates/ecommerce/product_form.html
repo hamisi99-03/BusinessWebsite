@@ -1,56 +1,66 @@
 {% extends "ecommerce/base.html" %}
-{% block title %}Add Product{% endblock %}
+{% load static %}
+
+{% block title %}Edit Product{% endblock %}
 
 {% block content %}
-<h2>Add Product</h2>
+<h2>Edit Product</h2>
+
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.as_p }}
 
     <h4>Upload Images</h4>
+    {{ formset.non_form_errors }}
     {{ formset.management_form }}
-    <div id="image-formset">
-        {% for subform in formset %}
-            <div class="image-form">
-                {{ subform.image }}
-                <button type="button" class="btn btn-sm btn-danger remove-image">Remove</button>
-            </div>
-        {% endfor %}
+
+<div id="image-formset">
+    {% for subform in formset %}
+        {{ subform.errors }}
+        <div class="image-form mb-3">
+            {{ subform.image }}
+            <label>{{ subform.DELETE }} Remove</label>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Hidden empty form template -->
+<div id="empty-form" style="display:none;">
+    <div class="image-form mb-3">
+        {{ formset.empty_form.image }}
+        <label>{{ formset.empty_form.DELETE }} Remove</label>
+    </div>
+</div>
+
+<button type="button" id="add-image">Add another image</button>
+
+    <!-- Empty form template for JS cloning -->
+    <div id="empty-form" style="display:none;">
+        <div class="image-form mb-3" style="border:1px dashed #aaa; padding:10px;">
+            <p><strong>Upload image:</strong></p>
+            {{ formset.empty_form.image }}
+            <label>{{ formset.empty_form.DELETE }} Remove</label>
+        </div>
     </div>
 
     <button type="button" id="add-image" class="btn btn-sm btn-secondary">Add another image</button>
     <br><br>
     <button type="submit" class="btn btn-success">Save</button>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">Back</a>
 </form>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    let formsetDiv = document.getElementById("image-formset");
-    let addBtn = document.getElementById("add-image");
-    let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+    const addBtn = document.getElementById("add-image");
+    const formsetDiv = document.getElementById("image-formset");
+    const emptyFormDiv = document.getElementById("empty-form").innerHTML;
+    const totalForms = document.getElementById("id_form-TOTAL_FORMS");
 
     addBtn.addEventListener("click", function() {
-        let currentForms = formsetDiv.querySelectorAll(".image-form").length;
-        let newFormIndex = currentForms;
-        let emptyFormTemplate = formsetDiv.querySelector(".image-form").cloneNode(true);
-
-        // reset the cloned input
-        let input = emptyFormTemplate.querySelector("input");
-        input.value = "";
-        input.name = input.name.replace(/-\d+-/, "-" + newFormIndex + "-");
-        input.id = "id_form-" + newFormIndex + "-image";
-
-        // update TOTAL_FORMS
-        totalForms.value = parseInt(totalForms.value) + 1;
-
-        formsetDiv.appendChild(emptyFormTemplate);
-    });
-
-    formsetDiv.addEventListener("click", function(e) {
-        if (e.target.classList.contains("remove-image")) {
-            e.target.parentElement.remove();
-            totalForms.value = parseInt(totalForms.value) - 1;
-        }
+        let newFormIndex = parseInt(totalForms.value);
+        let newFormHtml = emptyFormDiv.replace(/__prefix__/g, newFormIndex);
+        formsetDiv.insertAdjacentHTML("beforeend", newFormHtml);
+        totalForms.value = newFormIndex + 1;  // ✅ update management form
     });
 });
 </script>

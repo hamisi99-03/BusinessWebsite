@@ -20,10 +20,16 @@ class Product(models.Model):
         return self.name
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name="images", on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="products/")
+    image = models.ImageField(upload_to="products/", blank=True, null=True)
 
+    
     def __str__(self):
         return f"Image for {self.product.name}"
+    
+    def delete(self, *args, **kwargs):
+        self.image.delete(save=False)  # delete the file from disk
+        super().delete(*args, **kwargs)
+
 
 class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
@@ -187,3 +193,5 @@ class Debt(models.Model):
         self.save()
     def __str__(self):
         return f"Debt of {self.outstanding_balance} for {self.customer.user.username}"
+    
+

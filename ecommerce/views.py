@@ -23,6 +23,7 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 from django.shortcuts import render,redirect
+from .forms import inlineformset_factory
 # -------------------
 # DRF ViewSets
 # -------------------
@@ -365,18 +366,29 @@ def add_product(request):
         formset = ProductImageFormSet(queryset=ProductImage.objects.none())
     return render(request, "ecommerce/product_form.html", {"form": form, "formset": formset})
 
+ProductImageFormSet = inlineformset_factory(
+    Product,
+    ProductImage,
+    fields=('image',),
+    extra=1,
+    can_delete=True
+)
 
-@staff_member_required
 def update_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    if request.method == "POST":
-        form = ProductForm(request.POST, request.FILES, instance=product) 
-        if form.is_valid():
-            form.save()
-            return redirect("admin_dashboard")
-    else:
-        form = ProductForm(instance=product)
-    return render(request, "ecommerce/product_form.html", {"form": form, "product": product})
+    form = ProductForm(request.POST or None, instance=product)
+    formset = ProductImageFormSet(request.POST or None, request.FILES or None, instance=product)
+
+    if form.is_valid() and formset.is_valid():
+        form.save()
+        formset.save()
+        return redirect("admin_dashboard")  # or your dashboard URL
+
+    return render(request, "ecommerce/product_form.html", {
+        "form": form,
+        "formset": formset,
+    })
+
 @staff_member_required
 def delete_product(request, pk):
     product = get_object_or_404(Product, pk=pk)

@@ -6,7 +6,11 @@ from django.dispatch import receiver
 from .models import OrderItem, Payment, Debt, Order
 from django.contrib.auth import get_user_model
 from .models import Customer
+from .models import ProductImage
 
+
+
+print("✅ ecommerce.signals loaded")
 @receiver(pre_save, sender=OrderItem)
 def set_price_from_product(sender, instance, **kwargs):
     if instance.product:
@@ -72,3 +76,10 @@ def reduce_stock(sender, instance, created, **kwargs):
 def restore_stock(sender, instance, **kwargs):
     instance.product.stock += instance.quantity
     instance.product.save()
+
+@receiver(post_delete, sender=ProductImage)
+def delete_product_image_file(sender, instance, **kwargs):
+    print("Signal fired for:", instance)
+    if instance.image:
+        print("Deleting file:", instance.image.path)
+        instance.image.delete(save=False)
