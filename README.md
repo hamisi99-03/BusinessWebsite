@@ -7,8 +7,6 @@ This project demonstrates a full-stack workflow with admin/product dashboards, a
 
 ## 🚀 Features
 - Product management (CRUD operations)
-- Multiple product images with add/remove functionality
-- Custom image widget for clean admin UX
 - Order and payment workflow
 - Inventory tracking and stock validation
 - Admin dashboard for managing products and orders
