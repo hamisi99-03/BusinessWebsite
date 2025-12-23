@@ -1,0 +1,46 @@
+{% extends "ecommerce/base.html" %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Available Products</h2>
+
+<div class="row">
+    {% for product in products %}
+        <div class="col-md-4">
+            <div class="card mb-4 shadow-sm">
+
+                <!-- ✅ Multiple images carousel -->
+                {% if product.images.exists %}
+                <div id="productCarousel{{ product.id }}" class="carousel slide" data-bs-ride="carousel">
+                  <div class="carousel-inner">
+                    {% for img in product.images.all %}
+                      <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ product.name }}">
+                      </div>
+                    {% endfor %}
+                  </div>
+                  <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel{{ product.id }}" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                  </button>
+                  <button class="carousel-control-next" type="button" data-bs-target="#productCarousel{{ product.id }}" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                  </button>
+                </div>
+                {% else %}
+                  <!-- ✅ Fallback if no images -->
+                  <img src="{% static 'img/placeholder.png' %}" class="card-img-top" alt="No image available">
+                {% endif %}
+
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <p class="card-text">{{ product.description|truncatewords:15 }}</p>
+                    <p><strong>Price:</strong> Ksh {{ product.price }}</p>
+                    <p><strong>Stock:</strong> {{ product.stock }}</p>
+                    <a href="{% url 'order_product' product.id %}" class="btn btn-primary">Order</a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

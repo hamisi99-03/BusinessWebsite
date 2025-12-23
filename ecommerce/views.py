@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
-from .models import Customer, Product, Order, OrderItem, Payment, Debt
-from .forms import OrderForm, PaymentForm, ProductForm
+from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage
+from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
     OrderItemSerializer, PaymentSerializer, DebtSerializer
@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from decimal import Decimal
-
+from django.shortcuts import render,redirect
 # -------------------
 # DRF ViewSets
 # -------------------
@@ -353,17 +353,24 @@ def payments_list_view(request):
 def add_product(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
-        if form.is_valid():
-            form.save()
+        formset = ProductImageFormSet(request.POST, request.FILES, queryset=ProductImage.objects.none())
+        if form.is_valid() and formset.is_valid():
+            product = form.save()
+            for f in formset.cleaned_data:
+                if f and 'image' in f:
+                    ProductImage.objects.create(product=product, image=f['image'])
             return redirect("admin_dashboard")
     else:
         form = ProductForm()
-    return render(request, "ecommerce/product_form.html", {"form": form})
+        formset = ProductImageFormSet(queryset=ProductImage.objects.none())
+    return render(request, "ecommerce/product_form.html", {"form": form, "formset": formset})
+
+
 @staff_member_required
 def update_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == "POST":
-        form = ProductForm(request.POST, instance=product)
+        form = ProductForm(request.POST, request.FILES, instance=product) 
         if form.is_valid():
             form.save()
             return redirect("admin_dashboard")
@@ -377,3 +384,10 @@ def delete_product(request, pk):
         product.delete()
         return redirect("admin_dashboard")
     return render(request, "ecommerce/confirm_delete.html", {"product": product})
+def product_list(request):
+    products = Product.objects.all()
+    return render(request, "ecommerce/product_list.html", {"products": products})
+@staff_member_required
+def admin_products_list(request):
+    products = Product.objects.all()
+    return render(request, "ecommerce/admin_products_list.html", {"products": products})

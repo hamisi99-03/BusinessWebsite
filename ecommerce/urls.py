@@ -1,6 +1,8 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
+from django.conf import settings
+from django.conf.urls.static import static
 
 from .views import (
     CustomerViewSet, ProductViewSet, OrderViewSet, OrderItemViewSet,
@@ -8,7 +10,7 @@ from .views import (
     register_view, login_view, logout_view,
     dashboard_view, orders_list_view, order_detail_view, debts_list_view,
     profile_view, ProfileView, order_product_view,
-    custom_login, admin_dashboard, update_order_status, update_payment,add_product, update_product, delete_product  #  use custom_login + admin_dashboard
+    custom_login, admin_dashboard, update_order_status, update_payment,add_product, update_product, delete_product, product_list, admin_products_list  #  use custom_login + admin_dashboard
 )
 
 router = DefaultRouter()
@@ -37,6 +39,7 @@ urlpatterns = [
     path('debts/', debts_list_view, name='debts_list'),
     path('profile-page/', profile_view, name='profile_page'),        # template profile
     path('order-product/', order_product_view, name='order_product'),
+    path('products/', product_list, name='product_list'),
 
     # Admin dashboard (protected by @staff_member_required)
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
@@ -50,6 +53,7 @@ urlpatterns = [
     path("admin-dashboard/add-product/", add_product, name="add_product"),
     path("admin-dashboard/product/<int:pk>/edit/", update_product, name="update_product"),
     path("admin-dashboard/product/<int:pk>/delete/", delete_product, name="delete_product"),
+    path("admin-dashboard/products/", admin_products_list, name="admin_products_list"),
 
 
 
@@ -57,3 +61,5 @@ urlpatterns = [
     # browsable API login/logout
     path('api-auth/', include('rest_framework.urls')),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

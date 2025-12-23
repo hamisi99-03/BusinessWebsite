@@ -1,13 +1,57 @@
 {% extends "ecommerce/base.html" %}
-
 {% block title %}Add Product{% endblock %}
 
 {% block content %}
 <h2>Add Product</h2>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit" class="btn btn-primary">Save Product</button>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <h4>Upload Images</h4>
+    {{ formset.management_form }}
+    <div id="image-formset">
+        {% for subform in formset %}
+            <div class="image-form">
+                {{ subform.image }}
+                <button type="button" class="btn btn-sm btn-danger remove-image">Remove</button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <button type="button" id="add-image" class="btn btn-sm btn-secondary">Add another image</button>
+    <br><br>
+    <button type="submit" class="btn btn-success">Save</button>
 </form>
-<a href="javascript:history.back()" class="btn btn-secondary mt-3">Back</a>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let formsetDiv = document.getElementById("image-formset");
+    let addBtn = document.getElementById("add-image");
+    let totalForms = document.querySelector("#id_form-TOTAL_FORMS");
+
+    addBtn.addEventListener("click", function() {
+        let currentForms = formsetDiv.querySelectorAll(".image-form").length;
+        let newFormIndex = currentForms;
+        let emptyFormTemplate = formsetDiv.querySelector(".image-form").cloneNode(true);
+
+        // reset the cloned input
+        let input = emptyFormTemplate.querySelector("input");
+        input.value = "";
+        input.name = input.name.replace(/-\d+-/, "-" + newFormIndex + "-");
+        input.id = "id_form-" + newFormIndex + "-image";
+
+        // update TOTAL_FORMS
+        totalForms.value = parseInt(totalForms.value) + 1;
+
+        formsetDiv.appendChild(emptyFormTemplate);
+    });
+
+    formsetDiv.addEventListener("click", function(e) {
+        if (e.target.classList.contains("remove-image")) {
+            e.target.parentElement.remove();
+            totalForms.value = parseInt(totalForms.value) - 1;
+        }
+    });
+});
+</script>
 {% endblock %}
