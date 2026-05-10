@@ -108,7 +108,7 @@ def dashboard_view(request):
         total_orders = orders.count()
         total_spent = sum(o.get_total_amount() for o in orders)
         outstanding = sum(o.get_outstanding_balance() for o in orders)
-        pending_orders = orders.filter(status='Pending').count()
+        pending_orders = orders.filter(status='pending').count()
         recent_orders = orders[:5]
         
     except Customer.DoesNotExist:
