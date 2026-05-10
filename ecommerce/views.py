@@ -105,8 +105,8 @@ def dashboard_view(request):
 
     # Dashboard metrics
     total_orders = orders.count()
-    total_spent = sum(o.get_total_amount for o in orders)
-    outstanding = sum(o.get_outstanding_balance for o in orders)
+    total_spent = sum(o.get_total_amount() for o in orders)
+    outstanding = sum(o.get_outstanding_balance() for o in orders)
     pending_orders = orders.filter(status='Pending').count()
 
     recent_orders = orders.order_by('-order_date')[:5]
