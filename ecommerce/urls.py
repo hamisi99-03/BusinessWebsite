@@ -39,7 +39,8 @@ urlpatterns = [
     path('debts/', debts_list_view, name='debts_list'),
     path('profile-page/', profile_view, name='profile_page'),        # template profile
     path('order-product/', order_product_view, name='order_product'),
-    path('products/', product_list, name='product_list'),
+    path('store/products/', product_list, name='product_list'),
+
 
     # Admin dashboard (protected by @staff_member_required)
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),

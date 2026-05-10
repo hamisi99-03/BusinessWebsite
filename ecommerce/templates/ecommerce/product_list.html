@@ -1,48 +1,127 @@
 {% extends "ecommerce/base.html" %}
-{% load static %}
-
-{% block title %}Products{% endblock %}
+{% block title %}Products — BizStore{% endblock %}
 
 {% block content %}
-<h2>Product List</h2>
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Products</h1>
+    <p>Browse and order available items</p>
+  </div>
+</div>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Image</th>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Price</th>
-            <th>Stock</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for product in products %}
-        <tr>
-            <td>
-                {% if product.images.first %}
-                    <img src="{{ product.images.first.image.url }}" style="height:60px;width:auto;" alt="{{ product.name }}">
-                {% else %}
-                    <img src="{% static 'img/placeholder.png' %}" style="height:60px;width:auto;" alt="No image">
-                {% endif %}
-            </td>
-            <td>{{ product.name }}</td>
-            <td>{{ product.description|truncatewords:15 }}</td>
-            <td>${{ product.price }}</td>
-            <td>{{ product.stock }}</td>
-            <td>
-                <a href="{% url 'edit_product' product.id %}" class="btn btn-sm btn-primary">Edit</a>
-                <a href="{% url 'delete_product' product.id %}" class="btn btn-sm btn-danger">Delete</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="6">No products available.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!-- SEARCH & FILTER BAR -->
+<div class="card mb-4 p-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="input-group" style="max-width:320px;">
+      <span class="input-group-text bg-white border-end-0" style="border:1px solid var(--border);border-radius:8px 0 0 8px;">
+        <i class="bi bi-search" style="color:var(--muted);"></i>
+      </span>
+      <input type="text" id="productSearch" class="form-control border-start-0"
+             placeholder="Search products..."
+             style="border:1px solid var(--border);border-left:none;border-radius:0 8px 8px 0;">
+    </div>
+    <select id="stockFilter" class="form-select" style="max-width:160px;">
+      <option value="all">All Stock</option>
+      <option value="instock">In Stock</option>
+      <option value="outofstock">Out of Stock</option>
+    </select>
+    <span class="ms-auto" style="font-size:0.8rem;color:var(--muted);">
+      <span id="productCount">{{ products|length }}</span> products
+    </span>
+  </div>
+</div>
 
-<a href="{% url 'add_product' %}" class="btn btn-success">Add New Product</a>
+<!-- PRODUCT GRID -->
+<div class="row g-3" id="productGrid">
+  {% for product in products %}
+  <div class="col-6 col-md-4 col-xl-3 product-item"
+       data-name="{{ product.name|lower }}"
+       data-stock="{{ product.stock }}">
+    <div class="product-card h-100">
+      <!-- Image -->
+      {% if product.images.first %}
+        <img src="{{ product.images.first.image.url }}" alt="{{ product.name }}">
+      {% else %}
+        <div style="aspect-ratio:1;background:#F3F4F6;display:flex;align-items:center;
+                    justify-content:center;color:var(--muted);">
+          <i class="bi bi-image fs-1"></i>
+        </div>
+      {% endif %}
+
+      <!-- Info -->
+      <div class="product-info">
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <div class="product-name">{{ product.name }}</div>
+          {% if product.stock > 0 %}
+            <span class="stock-badge" style="background:#D1FAE5;color:#065F46;">
+              {{ product.stock }} left
+            </span>
+          {% else %}
+            <span class="stock-badge" style="background:#FEE2E2;color:#991B1B;">
+              Out of Stock
+            </span>
+          {% endif %}
+        </div>
+        {% if product.description %}
+          <p style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;
+                    display:-webkit-box;-webkit-line-clamp:2;
+                    -webkit-box-orient:vertical;overflow:hidden;">
+            {{ product.description }}
+          </p>
+        {% endif %}
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <div class="product-price">KSh {{ product.price }}</div>
+          {% if product.stock > 0 %}
+            <a href="{% url 'order_product' %}?product_id={{ product.id }}"
+               class="btn btn-primary btn-sm">
+              <i class="bi bi-cart-plus me-1"></i> Order
+            </a>
+          {% else %}
+            <button class="btn btn-sm" disabled
+                    style="background:#F3F4F6;color:var(--muted);border-radius:8px;
+                           font-weight:600;font-size:0.8rem;padding:0.4rem 0.9rem;">
+              Unavailable
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5" style="color:var(--muted);">
+    <i class="bi bi-box-seam fs-1 d-block mb-3"></i>
+    <div style="font-weight:600;font-size:1rem;">No products available yet</div>
+    <div style="font-size:0.875rem;">Check back soon.</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Live search + filter script -->
+<script>
+  const searchInput = document.getElementById('productSearch');
+  const stockFilter = document.getElementById('stockFilter');
+  const items = document.querySelectorAll('.product-item');
+  const countEl = document.getElementById('productCount');
+
+  function filterProducts() {
+    const q = searchInput.value.toLowerCase();
+    const stock = stockFilter.value;
+    let visible = 0;
+    items.forEach(item => {
+      const nameMatch = item.dataset.name.includes(q);
+      const stockVal = parseInt(item.dataset.stock);
+      const stockMatch = stock === 'all'
+        || (stock === 'instock' && stockVal > 0)
+        || (stock === 'outofstock' && stockVal === 0);
+      const show = nameMatch && stockMatch;
+      item.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    countEl.textContent = visible;
+  }
+
+  searchInput.addEventListener('input', filterProducts);
+  stockFilter.addEventListener('change', filterProducts);
+</script>
 {% endblock %}
+

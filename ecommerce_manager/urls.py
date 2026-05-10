@@ -16,13 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-
-from ecommerce.views import login_view
+from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('ecommerce.urls')),
-    # Default landing page -> login
-    path('', login_view, name='login'),
+    path('', lambda request: redirect('/api/auth/login-page/')),
 ]
+
+
 

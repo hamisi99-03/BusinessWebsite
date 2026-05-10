@@ -1,64 +1,174 @@
 {% extends "ecommerce/base.html" %}
-
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard — BizStore{% endblock %}
 
 {% block content %}
-<h2>Welcome, {{ user.username }}</h2>
-
-<div class="row">
-  <div class="col-md-4">
-    <!-- Make My Orders clickable -->
-    <h3>
-      <a href="{% url 'orders_list' %}" class="text-decoration-none">
-        My Orders
-      </a>
-    </h3>
-     <!-- Place New Order button -->
-  {% if request.user.is_authenticated and not request.user.is_staff %}
-    <a href="{% url 'order_product' %}" class="btn btn-success mb-2">
-      Place New Order
-    </a>
-  {% endif %}
-
-
-    <ul class="list-group">
-      {% for order in orders %}
-        <li class="list-group-item">
-          <a href="{% url 'order_detail' order.id %}">
-            Order {{ order.id }} - {{ order.status }} - Outstanding: {{ order.get_outstanding_balance }}
-          </a>
-        </li>
-      {% empty %}
-        <li class="list-group-item">No orders yet.</li>
-      {% endfor %}
-    </ul>
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Good to see you, {{ user.username }} 👋</h1>
+    <p>Here's what's happening with your store today.</p>
   </div>
+  <a href="{% url 'order_product' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i> New Order
+  </a>
+</div>
 
-  <div class="col-md-4">
-    <h3>My Debts</h3>
-    <ul class="list-group">
-      {% for debt in debts %}
-        <li class="list-group-item">
-          Debt {{ debt.id }} - Balance: {{ debt.outstanding_balance }} - Paid: {{ debt.is_paid }}
-        </li>
-      {% empty %}
-        <li class="list-group-item">No debts yet.</li>
-      {% endfor %}
-    </ul>
+<!-- STAT CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Total Orders</div>
+          <div class="stat-value">{{ total_orders|default:"0" }}</div>
+        </div>
+        <div class="stat-icon" style="background:#EEF2FF;">
+          <i class="bi bi-receipt" style="color:#4F46E5;"></i>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="col-md-4">
-    <h3>My Payments</h3>
-    <ul class="list-group">
-      {% for payment in payments %}
-        <li class="list-group-item">
-          {{ payment.amount }} via {{ payment.method }} - Status: {{ payment.status }}
-        </li>
-      {% empty %}
-        <li class="list-group-item">No payments recorded yet.</li>
-      {% endfor %}
-    </ul>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Total Spent</div>
+          <div class="stat-value">KSh {{ total_spent|default:"0" }}</div>
+        </div>
+        <div class="stat-icon" style="background:#D1FAE5;">
+          <i class="bi bi-cash-stack" style="color:#10B981;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Outstanding Balance</div>
+          <div class="stat-value">KSh {{ outstanding|default:"0" }}</div>
+        </div>
+        <div class="stat-icon" style="background:#FEF3C7;">
+          <i class="bi bi-exclamation-circle" style="color:#F59E0B;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Pending Orders</div>
+          <div class="stat-value">{{ pending_orders|default:"0" }}</div>
+        </div>
+        <div class="stat-icon" style="background:#FEE2E2;">
+          <i class="bi bi-clock-history" style="color:#EF4444;"></i>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
-<a href="javascript:history.back()" class="btn btn-secondary mt-3">Back</a>
+
+<!-- RECENT ORDERS TABLE -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-receipt me-2"></i>Recent Orders</span>
+    <a href="{% url 'orders_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Paid</th>
+            <th>Balance</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for order in recent_orders %}
+          <tr>
+            <td><span class="fw-600">#{{ order.id }}</span></td>
+            <td>{{ order.order_date|date:"M d, Y" }}</td>
+            <td>{{ order.orderitem_set.count }} item(s)</td>
+            <td>KSh {{ order.get_total_amount }}</td>
+            <td>KSh {{ order.get_total_paid }}</td>
+            <td>
+              {% if order.get_outstanding_balance > 0 %}
+                <span style="color:#EF4444;font-weight:600;">
+                  KSh {{ order.get_outstanding_balance }}
+                </span>
+              {% else %}
+                <span style="color:#10B981;font-weight:600;">Paid</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge-status badge-{{ order.status|lower }}">
+                {{ order.status }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+                View
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-4" style="color:var(--muted);">
+              <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+              No orders yet. <a href="{% url 'order_product' %}">Place your first order</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK LINKS -->
+<div class="row g-3 mt-2">
+  <div class="col-md-4">
+    <a href="{% url 'product_list' %}" class="card text-decoration-none p-3 d-flex flex-row align-items-center gap-3">
+      <div class="stat-icon" style="background:#EEF2FF;">
+        <i class="bi bi-grid" style="color:#4F46E5;"></i>
+      </div>
+      <div>
+        <div class="fw-700" style="color:var(--text);">Browse Products</div>
+        <div style="font-size:0.8rem;color:var(--muted);">View all available items</div>
+      </div>
+      <i class="bi bi-arrow-right ms-auto" style="color:var(--muted);"></i>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'orders_list' %}" class="card text-decoration-none p-3 d-flex flex-row align-items-center gap-3">
+      <div class="stat-icon" style="background:#D1FAE5;">
+        <i class="bi bi-list-check" style="color:#10B981;"></i>
+      </div>
+      <div>
+        <div class="fw-700" style="color:var(--text);">My Orders</div>
+        <div style="font-size:0.8rem;color:var(--muted);">Track order status</div>
+      </div>
+      <i class="bi bi-arrow-right ms-auto" style="color:var(--muted);"></i>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'debts_list' %}" class="card text-decoration-none p-3 d-flex flex-row align-items-center gap-3">
+      <div class="stat-icon" style="background:#FEF3C7;">
+        <i class="bi bi-wallet2" style="color:#F59E0B;"></i>
+      </div>
+      <div>
+        <div class="fw-700" style="color:var(--text);">My Debts</div>
+        <div style="font-size:0.8rem;color:var(--muted);">View outstanding balances</div>
+      </div>
+      <i class="bi bi-arrow-right ms-auto" style="color:var(--muted);"></i>
+    </a>
+  </div>
+</div>
 {% endblock %}
+
