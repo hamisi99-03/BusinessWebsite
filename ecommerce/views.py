@@ -159,16 +159,23 @@ def order_detail_view(request, pk):
 
 @login_required
 def debts_list_view(request):
-    debts = Debt.objects.filter(customer=request.user.customer)
+    try:
+        customer = Customer.objects.get(user=request.user)
+        debts = Debt.objects.filter(customer=customer).select_related('order')
+        total_outstanding = sum(
+            d.outstanding_balance for d in debts if not d.is_paid
+        )
+        paid_count = debts.filter(is_paid=True).count()
+    except Customer.DoesNotExist:
+        debts = []
+        total_outstanding = 0
+        paid_count = 0
 
-    # Apply filter by paid/unpaid
-    debt_status = request.GET.get('debt_status')
-    if debt_status == 'paid':
-        debts = debts.filter(is_paid=True)
-    elif debt_status == 'unpaid':
-        debts = debts.filter(is_paid=False)
-
-    return render(request, 'ecommerce/debts_list.html', {'debts': debts})
+    return render(request, 'ecommerce/debts_list.html', {
+        'debts': debts,
+        'total_outstanding': total_outstanding,
+        'paid_count': paid_count,
+    })
 
 @login_required
 def profile_view(request):

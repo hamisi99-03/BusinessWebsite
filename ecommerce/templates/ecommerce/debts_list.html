@@ -1,17 +1,144 @@
 {% extends "ecommerce/base.html" %}
-
-{% block title %}My Debts{% endblock %}
+{% block title %}My Debts — BizStore{% endblock %}
 
 {% block content %}
-<h2>My Debts</h2>
-<ul class="list-group">
-  {% for debt in debts %}
-    <li class="list-group-item">
-      Debt {{ debt.id }} - Balance: {{ debt.outstanding_balance }} - Paid: {{ debt.is_paid }} - Paid At: {{ debt.paid_at }}
-    </li>
-  {% empty %}
-    <li class="list-group-item">No debts yet.</li>
-  {% endfor %}
-</ul>
-<a href="javascript:history.back()" class="btn btn-secondary mt-3">Back</a>
+<div class="page-header">
+  <h1>My Debts</h1>
+  <p>Outstanding balances and payment history</p>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Total orders</div>
+          <div class="stat-value">{{ debts|length }}</div>
+        </div>
+        <div class="stat-icon" style="background:#EEF2FF;">
+          <i class="bi bi-receipt" style="color:#4F46E5;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Outstanding</div>
+          <div class="stat-value" style="color:#EF4444;">
+            KSh {{ total_outstanding }}
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#FEE2E2;">
+          <i class="bi bi-exclamation-circle" style="color:#EF4444;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Fully Paid</div>
+          <div class="stat-value" style="color:#10B981;">
+            {{ paid_count }}
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#D1FAE5;">
+          <i class="bi bi-check-circle" style="color:#10B981;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DEBTS TABLE -->
+<div class="card">
+  <div class="card-header">
+    <i class="bi bi-wallet2 me-2"></i>Debt Records
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Order Date</th>
+            <th>Order Total</th>
+            <th>Outstanding</th>
+            <th>Status</th>
+            <th>Paid On</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for debt in debts %}
+          <tr>
+            <td>
+              <span style="font-weight:700;color:#4F46E5;">
+                #{{ debt.order.id }}
+              </span>
+            </td>
+            <td style="color:#6B7280;">
+              {{ debt.order.order_date|date:"M d, Y" }}
+            </td>
+            <td style="font-weight:600;">
+              KSh {{ debt.order.get_total_amount }}
+            </td>
+            <td>
+              {% if debt.outstanding_balance > 0 %}
+                <span style="color:#EF4444;font-weight:700;">
+                  KSh {{ debt.outstanding_balance }}
+                </span>
+              {% else %}
+                <span style="color:#10B981;font-weight:600;">
+                  KSh 0
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if debt.is_paid %}
+                <span class="badge-status badge-delivered">
+                  <i class="bi bi-check-circle-fill me-1"></i>Paid
+                </span>
+              {% else %}
+                <span class="badge-status badge-pending">
+                  <i class="bi bi-clock me-1"></i>Unpaid
+                </span>
+              {% endif %}
+            </td>
+            <td style="color:#6B7280;">
+              {% if debt.paid_at %}
+                {{ debt.paid_at|date:"M d, Y" }}
+              {% else %}
+                <span style="color:#D1D5DB;">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'order_detail' debt.order.id %}"
+                 class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-eye me-1"></i> View Order
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5" style="color:#6B7280;">
+              <i class="bi bi-check-circle fs-1 d-block mb-3" 
+                 style="color:#D1FAE5;"></i>
+              <div style="font-weight:600;">No debts found</div>
+              <div style="font-size:0.875rem;">
+                You're all clear!
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}
+

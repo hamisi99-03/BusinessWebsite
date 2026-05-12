@@ -3,6 +3,8 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
 from django.conf import settings
 from django.conf.urls.static import static
+from django.shortcuts import redirect
+
 
 from .views import (
     CustomerViewSet, ProductViewSet, OrderViewSet, OrderItemViewSet,
@@ -22,8 +24,12 @@ router.register(r'payments', PaymentViewSet)
 router.register(r'debts', DebtViewSet)
 
 urlpatterns = [
+    # Backwards-compat redirect: avoid DRF /api/debts/ intercepting template route
+    path('debts/', lambda request: redirect('/api/my-debts/')),
+
     # DRF router endpoints
     path('', include(router.urls)),
+
 
     # Authentication endpoints
     path('auth/login/', obtain_auth_token, name='api_token_auth'),   # token login
@@ -36,7 +42,7 @@ urlpatterns = [
     path('dashboard/', dashboard_view, name='dashboard'),
     path('orders/list', orders_list_view, name='orders_list'),
     path('orders/detail/<int:pk>/', order_detail_view, name='order_detail'),
-    path('debts/', debts_list_view, name='debts_list'),
+    path('my-debts/', debts_list_view, name='debts_list'),
     path('profile-page/', profile_view, name='profile_page'),        # template profile
     path('order-product/', order_product_view, name='order_product'),
     path('store/products/', product_list, name='product_list'),
