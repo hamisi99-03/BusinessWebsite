@@ -247,7 +247,7 @@ class ProfileView(APIView):
 @staff_member_required
 def admin_dashboard(request):
     orders = Order.objects.all().order_by('-order_date')
-    debts = Debt.objects.all().select_related('customer', 'order')
+    debts = Debt.objects.filter(is_paid=False).select_related('customer', 'order')
     payments = Payment.objects.all().order_by('-payment_date').select_related('order', 'order__customer')
     products = Product.objects.all().prefetch_related('images')
 
