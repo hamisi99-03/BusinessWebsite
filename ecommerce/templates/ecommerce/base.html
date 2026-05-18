@@ -309,20 +309,16 @@
     <a class="navbar-brand me-4" href="{% url 'dashboard' %}">
       <i class="bi bi-bag-fill me-1"></i> BizStore
     </a>
-    <div class="ms-auto d-flex align-items-center gap-3">
-      {% if user.is_staff %}
-      <a href="{% url 'admin_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
-        <i class="bi bi-speedometer2 me-1"></i> Admin
-      </a>
-      <a href="{% url 'payment_list' %}"
-         class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}">
-        <i class="bi bi-credit-card me-1"></i> Payments
-      </a>
-      {% endif %}
-
-      <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-        <i class="bi bi-house me-1"></i> Home
-      </a>
+      <div class="ms-auto d-flex align-items-center gap-3">
+        {% if user.is_staff %}
+        <a href="{% url 'admin_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+          <i class="bi bi-speedometer2 me-1"></i> Admin
+        </a>
+        <a href="{% url 'payment_list' %}"
+          class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}">
+          <i class="bi bi-credit-card me-1"></i> Payments
+        </a>
+        {% endif %}
     <a href="{% url 'product_list' %}" class="nav-link {% if request.resolver_match.url_name == 'product_list' %}active{% endif %}">
       <i class="bi bi-grid me-1"></i> Products
     </a>
