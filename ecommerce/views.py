@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
 from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage
-from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet
+from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
     OrderItemSerializer, PaymentSerializer, DebtSerializer
@@ -24,6 +24,7 @@ from django.core.exceptions import ValidationError
 from decimal import Decimal
 from django.shortcuts import render,redirect
 from .forms import inlineformset_factory
+
 # -------------------
 # DRF ViewSets
 # -------------------
@@ -51,66 +52,60 @@ class DebtViewSet(viewsets.ModelViewSet):
     queryset = Debt.objects.all()
     serializer_class = DebtSerializer
 
-# -------------------
-# Auth Views
-# -------------------
 def register_view(request):
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
                     user = form.save()
-                    # Customer auto-created by signal, so no manual creation here
                     login(request, user)
+                    messages.success(request, 'Account created successfully! Welcome.')
                     return redirect('dashboard')
             except IntegrityError:
-                # Handles duplicate username/email or DB constraint errors
                 form.add_error(None, "A user with these details already exists.")
             except Exception as e:
-                # Catch-all for unexpected errors
                 form.add_error(None, f"Registration failed: {str(e)}")
         else:
-            # Form validation errors (password too weak, username invalid, etc.)
             form.add_error(None, "Please correct the errors below.")
     else:
-        form = UserCreationForm()
+        form = CustomUserCreationForm()
 
     return render(request, 'auth/register.html', {'form': form})
 
 
-
 def login_view(request):
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
+        form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
+            messages.success(request, 'You have been logged in successfully.')
             return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
     else:
-        form = AuthenticationForm()
+        form = CustomAuthenticationForm()
     return render(request, 'auth/login.html', {'form': form})
+
 
 @login_required
 def logout_view(request):
     logout(request)
     return HttpResponseRedirect(reverse('login'))
 
-# -------------------
-# Customer Pages
-# -------------------
 @login_required
 def dashboard_view(request):
     try:
         customer = Customer.objects.get(user=request.user)
         orders = Order.objects.filter(customer=customer).order_by('-order_date')
-        
+
         total_orders = orders.count()
         total_spent = sum(o.get_total_amount() for o in orders)
         outstanding = sum(o.get_outstanding_balance() for o in orders)
         pending_orders = orders.filter(status='pending').count()
         recent_orders = orders[:5]
-        
+
     except Customer.DoesNotExist:
         total_orders = 0
         total_spent = 0
@@ -150,21 +145,22 @@ def orders_list_view(request):
         'total_orders': total_orders,
         'pending_orders': pending_orders,
         'delivered_orders': delivered_orders,
-        'outstanding_total': outstanding_total,
+'outstanding_total': outstanding_total,
     })
+
+
 @login_required
 def order_detail_view(request, pk):
     order = get_object_or_404(Order, pk=pk, customer=request.user.customer)
     return render(request, 'ecommerce/order_detail.html', {'order': order})
+
 
 @login_required
 def debts_list_view(request):
     try:
         customer = Customer.objects.get(user=request.user)
         debts = Debt.objects.filter(customer=customer).select_related('order')
-        total_outstanding = sum(
-            d.outstanding_balance for d in debts if not d.is_paid
-        )
+        total_outstanding = sum(d.outstanding_balance for d in debts if not d.is_paid)
         paid_count = debts.filter(is_paid=True).count()
     except Customer.DoesNotExist:
         debts = []
@@ -177,9 +173,11 @@ def debts_list_view(request):
         'paid_count': paid_count,
     })
 
+
 @login_required
 def profile_view(request):
     return render(request, 'ecommerce/profile.html', {'user': request.user})
+
 @login_required
 def order_product_view(request):
     if request.method == 'POST':
@@ -188,7 +186,6 @@ def order_product_view(request):
             product = form.cleaned_data['product']
             quantity = form.cleaned_data['quantity']
 
-            #  Check stock before creating anything
             if product.stock <= 0:
                 messages.error(request, f"{product.name} is out of stock.")
                 return redirect('orders_list')
@@ -197,23 +194,17 @@ def order_product_view(request):
                 messages.error(request, f"Only {product.stock} items left in stock.")
                 return redirect('orders_list')
 
-            #  Only create order if stock is valid
             order = Order.objects.create(customer=request.user.customer, status='pending')
 
-            # Add item
             order_item = OrderItem(
                 order=order,
                 product=product,
                 quantity=quantity,
                 price=product.price
             )
-            order_item.save()  
+            order_item.save()
 
-    
-
-            # Confirmation message
             messages.success(request, f"Order #{order.id} placed successfully for {product.name}!")
-
             return redirect('orders_list')
     else:
         form = OrderForm()
@@ -224,6 +215,7 @@ def order_product_view(request):
 # API Profile Endpoint
 # -------------------
 User = get_user_model()
+
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -238,10 +230,6 @@ class ProfileView(APIView):
             "profile_photo": getattr(user, "profile_photo", None),
         }
         return Response(data)
-    
-
-
-
 
 
 @staff_member_required
@@ -253,6 +241,9 @@ def admin_dashboard(request):
 
     total_revenue = sum(o.get_total_paid() for o in orders)
     total_outstanding = sum(o.get_outstanding_balance() for o in orders)
+
+    pending_count = Order.objects.filter(status='pending').count()
+    low_stock_count = Product.objects.filter(stock__lte=3).count()
 
     status_choices = [
         ('pending', 'Pending'),
@@ -269,22 +260,46 @@ def admin_dashboard(request):
         'total_revenue': total_revenue,
         'total_outstanding': total_outstanding,
         'status_choices': status_choices,
+        'pending_count': pending_count,
+        'low_stock_count': low_stock_count,
     })
+
+
+@staff_member_required
+def payment_list_view(request):
+    payments = Payment.objects.all().order_by('-payment_date').select_related(
+        'order', 'order__customer', 'order__customer__user'
+    )
+
+    total_collected = sum(p.amount for p in payments)
+    mpesa_count = payments.filter(payment_method='mpesa').count()
+    cash_count = payments.filter(payment_method='cash').count()
+
+    return render(request, 'ecommerce/payment_list.html', {
+        'payments': payments,
+        'total_collected': total_collected,
+        'mpesa_count': mpesa_count,
+        'cash_count': cash_count,
+    })
+
 
 def custom_login(request):
     if request.method == "POST":
-        form = AuthenticationForm(request, data=request.POST)
+        form = CustomAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            #  Redirect based on role
-            if user.is_staff:   # admin user
+            messages.success(request, 'You have been logged in successfully.')
+            if user.is_staff:
                 return redirect('admin_dashboard')
-            else:               # customer user
-                return redirect('dashboard')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
     else:
-        form = AuthenticationForm()
+        form = CustomAuthenticationForm()
     return render(request, "auth/login.html", {"form": form})
+
+
 @staff_member_required
 @require_POST
 def update_order_status(request, pk):
@@ -293,29 +308,26 @@ def update_order_status(request, pk):
     order.save()
     return redirect("admin_dashboard")
 
-from decimal import Decimal
 
 @staff_member_required
 def update_payment(request, pk):
     payment = get_object_or_404(Payment, pk=pk)
-    order = payment.order  #  always fetch the related order
+    order = payment.order
 
     if request.method == "POST":
         try:
             payment.amount = Decimal(request.POST.get("amount"))
             payment.status = request.POST.get("status")
-            payment.save()   # triggers post_save signal
+            payment.save()
             messages.success(request, f"Payment #{payment.id} updated successfully.")
             return redirect("admin_dashboard")
         except Exception as e:
             messages.error(request, f"Error updating payment: {e}")
-    else:
-        # Render a template with order + payment details
-        return render(request, "ecommerce/payment_form.html", {
-            "form": PaymentForm(instance=payment),
-            "payment": payment,
-            "order": order
-        })
+            return render(request, "ecommerce/payment_form.html", {
+                "form": PaymentForm(instance=payment),
+                "payment": payment,
+                "order": order,
+            })
 
 
 @staff_member_required
@@ -329,62 +341,44 @@ def add_payment(request, order_id):
             payment.order = order
             payment.save()
 
-            # Ensure debt exists and update it
-            debt, created = Debt.objects.get_or_create(
+            debt, _ = Debt.objects.get_or_create(
                 order=order,
                 customer=order.customer,
                 defaults={
                     "outstanding_balance": order.get_total_amount(),
                     "is_paid": False,
                     "paid_at": None,
-                }
+                },
             )
             debt.calculate_outstanding_balance()
 
             messages.success(request, "Payment added successfully.")
             return redirect("admin_dashboard")
+
     else:
         form = PaymentForm()
 
     return render(request, "ecommerce/payment_form.html", {"form": form, "order": order})
 
-@staff_member_required
-def update_payment(request, pk):
-    payment = get_object_or_404(Payment, pk=pk)
-    order = payment.order
-
-    if request.method == "POST":
-        form = PaymentForm(request.POST, instance=payment)
-        if form.is_valid():
-            form.save()
-
-            debt = Debt.objects.filter(order=order).first()
-            if debt:
-                debt.calculate_outstanding_balance()
-
-            messages.success(request, "Payment updated successfully.")
-            return redirect("admin_dashboard")
-    else:
-        form = PaymentForm(instance=payment)
-
-    return render(request, "ecommerce/payment_form.html", {"form": form, "order": order, "payment": payment})
 
 @login_required
 def payments_list_view(request):
     payments = Payment.objects.filter(order__customer=request.user.customer)
 
-    # Apply filter by payment status
     payment_status = request.GET.get('payment_status')
     if payment_status:
         payments = payments.filter(status=payment_status)
 
     return render(request, 'ecommerce/payments_list.html', {'payments': payments})
 
+
 @staff_member_required
 def add_product(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
-        formset = ProductImageFormSet(request.POST, request.FILES, queryset=ProductImage.objects.none())
+        formset = ProductImageFormSet(
+            request.POST, request.FILES, queryset=ProductImage.objects.none()
+        )
         if form.is_valid() and formset.is_valid():
             product = form.save()
             for f in formset.cleaned_data:
@@ -394,7 +388,9 @@ def add_product(request):
     else:
         form = ProductForm()
         formset = ProductImageFormSet(queryset=ProductImage.objects.none())
+
     return render(request, "ecommerce/product_form.html", {"form": form, "formset": formset})
+
 
 ProductImageFormSet = inlineformset_factory(
     Product,
@@ -404,6 +400,7 @@ ProductImageFormSet = inlineformset_factory(
     can_delete=True
 )
 
+
 def update_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
     form = ProductForm(request.POST or None, instance=product)
@@ -412,23 +409,24 @@ def update_product(request, pk):
     if form.is_valid() and formset.is_valid():
         form.save()
         formset.save()
-        return redirect("admin_dashboard")  # or your dashboard URL
+        return redirect("admin_dashboard")
 
-    return render(request, "ecommerce/product_form.html", {
-        "form": form,
-        "formset": formset,
-    })
+    return render(request, "ecommerce/product_form.html", {"form": form, "formset": formset})
+
 
 @staff_member_required
 def delete_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    if request.method == "POST":  # confirm deletion
+    if request.method == "POST":
         product.delete()
         return redirect("admin_dashboard")
     return render(request, "ecommerce/confirm_delete.html", {"product": product})
+
+
 def product_list(request):
     products = Product.objects.all().prefetch_related('images')
     return render(request, "ecommerce/product_list.html", {"products": products})
+
 
 @staff_member_required
 def admin_products_list(request):
@@ -436,10 +434,10 @@ def admin_products_list(request):
     in_stock_count = products.filter(stock__gt=0).count()
     out_of_stock_count = products.filter(stock=0).count()
     total_value = sum(p.price * p.stock for p in products)
+
     return render(request, 'ecommerce/admin_products_list.html', {
         'products': products,
         'in_stock_count': in_stock_count,
         'out_of_stock_count': out_of_stock_count,
         'total_value': total_value,
     })
-

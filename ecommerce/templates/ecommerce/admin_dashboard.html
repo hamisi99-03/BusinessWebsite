@@ -2,32 +2,33 @@
 {% block title %}Admin Dashboard — BizStore{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1>Admin Dashboard</h1>
-  <p>Manage orders, payments, debts and products</p>
+
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Admin Dashboard</h1>
+    <p>Welcome back, {{ user.username }}. Here's your store overview.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'admin_products_list' %}" class="btn btn-outline-primary">
+      <i class="bi bi-box-seam me-1"></i> Products
+    </a>
+    <a href="{% url 'add_product' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Add Product
+    </a>
+  </div>
 </div>
 
-<!-- STAT CARDS -->
+<!-- KPI CARDS -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-xl-3">
-    <div class="stat-card">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <div class="stat-label mb-1">Total Orders</div>
-          <div class="stat-value">{{ orders|length }}</div>
-        </div>
-        <div class="stat-icon" style="background:#EEF2FF;">
-          <i class="bi bi-receipt" style="color:#4F46E5;"></i>
-        </div>
-      </div>
-    </div>
-  </div>
   <div class="col-6 col-xl-3">
     <div class="stat-card">
       <div class="d-flex justify-content-between align-items-start">
         <div>
           <div class="stat-label mb-1">Total Revenue</div>
           <div class="stat-value">KSh {{ total_revenue }}</div>
+          <div style="font-size:0.75rem;color:#10B981;margin-top:4px;">
+            <i class="bi bi-arrow-up-short"></i> All time collected
+          </div>
         </div>
         <div class="stat-icon" style="background:#D1FAE5;">
           <i class="bi bi-cash-stack" style="color:#10B981;"></i>
@@ -39,9 +40,30 @@
     <div class="stat-card">
       <div class="d-flex justify-content-between align-items-start">
         <div>
+          <div class="stat-label mb-1">Total Orders</div>
+          <div class="stat-value">{{ orders|length }}</div>
+          <div style="font-size:0.75rem;color:#4F46E5;margin-top:4px;">
+            <i class="bi bi-receipt me-1"></i>
+            {{ pending_count }} pending
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#EEF2FF;">
+          <i class="bi bi-bag-check" style="color:#4F46E5;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
           <div class="stat-label mb-1">Outstanding</div>
           <div class="stat-value" style="color:#EF4444;">
             KSh {{ total_outstanding }}
+          </div>
+          <div style="font-size:0.75rem;color:#EF4444;margin-top:4px;">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            {{ debts|length }} unpaid debt{{ debts|length|pluralize }}
           </div>
         </div>
         <div class="stat-icon" style="background:#FEE2E2;">
@@ -56,6 +78,10 @@
         <div>
           <div class="stat-label mb-1">Products</div>
           <div class="stat-value">{{ products|length }}</div>
+          <div style="font-size:0.75rem;color:#F59E0B;margin-top:4px;">
+            <i class="bi bi-box-seam me-1"></i>
+            {{ low_stock_count }} low stock
+          </div>
         </div>
         <div class="stat-icon" style="background:#FEF3C7;">
           <i class="bi bi-box-seam" style="color:#F59E0B;"></i>
@@ -65,341 +91,298 @@
   </div>
 </div>
 
-<!-- ORDERS SECTION -->
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-receipt me-2"></i>All Orders</span>
-    <div class="d-flex gap-2">
-      <select id="orderStatusFilter" class="form-select form-select-sm"
-              style="max-width:160px;">
-        <option value="all">All Statuses</option>
-        <option value="pending">Pending</option>
-        <option value="shipped">Shipped</option>
-        <option value="delivered">Delivered</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
+<!-- ORDERS + UNPAID DEBTS -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt me-2"></i>Recent Orders</span>
+        <select id="orderStatusFilter" class="form-select form-select-sm"
+                style="max-width:140px;">
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ordersBody">
+              {% for order in orders %}
+              <tr data-status="{{ order.status|lower }}">
+                <td>
+                  <span style="font-weight:700;color:#4F46E5;">
+                    #{{ order.id }}
+                  </span>
+                </td>
+                <td style="font-weight:500;">
+                  {{ order.customer.user.username }}
+                </td>
+                <td style="color:#6B7280;font-size:0.82rem;">
+                  {{ order.order_date|date:"M d, Y" }}
+                </td>
+                <td style="font-weight:700;">
+                  KSh {{ order.get_total_amount }}
+                </td>
+                <td>
+                  {% if order.get_outstanding_balance > 0 %}
+                    <span style="color:#EF4444;font-weight:700;">
+                      KSh {{ order.get_outstanding_balance }}
+                    </span>
+                  {% else %}
+                    <span style="color:#10B981;font-weight:600;">
+                      <i class="bi bi-check-circle-fill me-1"></i>Paid
+                    </span>
+                  {% endif %}
+                </td>
+                <td>
+                  <form method="POST"
+                        action="{% url 'update_order_status' order.id %}"
+                        style="display:inline;">
+                    {% csrf_token %}
+                    <select name="status"
+                            onchange="this.form.submit()"
+                            class="form-select form-select-sm"
+                            style="min-width:120px;border-radius:20px;
+                                   font-size:0.75rem;font-weight:600;">
+                      {% for val, label in status_choices %}
+                        <option value="{{ val }}"
+                          {% if order.status == val %}selected{% endif %}>
+                          {{ label }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </form>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{% url 'order_detail' order.id %}"
+                       class="btn btn-sm btn-outline-primary"
+                       title="View Order">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'add_payment' order.id %}"
+                       class="btn btn-sm btn-outline-success"
+                       title="Add Payment">
+                      <i class="bi bi-plus-circle"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-4"
+                    style="color:#6B7280;">
+                  <i class="bi bi-inbox d-block fs-3 mb-2"
+                     style="color:#D1D5DB;"></i>
+                  No orders yet
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>Total</th>
-            <th>Paid</th>
-            <th>Balance</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="ordersBody">
-          {% for order in orders %}
-          <tr data-status="{{ order.status|lower }}">
-            <td><span style="font-weight:700;color:#4F46E5;">#{{ order.id }}</span></td>
-            <td style="font-weight:500;">{{ order.customer.user.username }}</td>
-            <td style="color:#6B7280;">{{ order.order_date|date:"M d, Y" }}</td>
-            <td style="font-weight:700;">KSh {{ order.get_total_amount }}</td>
-            <td style="color:#10B981;font-weight:600;">KSh {{ order.get_total_paid }}</td>
-            <td>
-              {% if order.get_outstanding_balance > 0 %}
-                <span style="color:#EF4444;font-weight:700;">
-                  KSh {{ order.get_outstanding_balance }}
-                </span>
-              {% else %}
-                <span style="color:#10B981;font-weight:600;">
-                  <i class="bi bi-check-circle-fill me-1"></i>Paid
-                </span>
-              {% endif %}
-            </td>
-            <td>
-              <form method="POST"
-                    action="{% url 'update_order_status' order.id %}"
-                    style="display:inline;">
-                {% csrf_token %}
-                <select name="status"
-                        onchange="this.form.submit()"
-                        class="form-select form-select-sm"
-                        style="min-width:130px;border-radius:20px;
-                               font-size:0.75rem;font-weight:600;">
-                  {% for val, label in status_choices %}
-                    <option value="{{ val }}"
-                      {% if order.status == val %}selected{% endif %}>
-                      {{ label }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </form>
-            </td>
-            <td>
-              <div class="d-flex gap-1">
-                <a href="{% url 'order_detail' order.id %}"
-                   class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a href="{% url 'add_payment' order.id %}"
-                   class="btn btn-sm btn-outline-success">
-                  <i class="bi bi-plus-circle"></i>
-                </a>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-wallet2 me-2"></i>Unpaid Debts</span>
+        <span class="badge-status badge-pending">
+          {{ debts|length }} unpaid
+        </span>
+      </div>
+      <div class="card-body p-0">
+        {% for debt in debts %}
+        <div style="padding:1rem 1.25rem;
+                    border-bottom:1px solid #F3F4F6;">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div style="font-weight:600;font-size:0.875rem;">
+                {{ debt.customer.user.username }}
               </div>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="8" class="text-center py-4" style="color:#6B7280;">
-              No orders found
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- DEBTS SECTION -->
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-wallet2 me-2"></i>Unpaid Debts</span>
-    <span class="badge-status badge-pending">
-      {{ debts|length }} unpaid
-    </span>
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Order</th>
-            <th>Order Total</th>
-            <th>Outstanding</th>
-            <th>Status</th>
-            <th>Paid At</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for debt in debts %}
-          <tr>
-            <td style="font-weight:500;">{{ debt.customer.user.username }}</td>
-            <td>
-              <span style="font-weight:700;color:#4F46E5;">
-                #{{ debt.order.id }}
-              </span>
-            </td>
-            <td style="font-weight:600;">
-              KSh {{ debt.order.get_total_amount }}
-            </td>
-            <td>
-              {% if debt.outstanding_balance > 0 %}
-                <span style="color:#EF4444;font-weight:700;">
-                  KSh {{ debt.outstanding_balance }}
-                </span>
-              {% else %}
-                <span style="color:#10B981;font-weight:600;">KSh 0</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if debt.is_paid %}
-                <span class="badge-status badge-delivered">
-                  <i class="bi bi-check-circle-fill me-1"></i>Paid
-                </span>
-              {% else %}
-                <span class="badge-status badge-pending">
-                  <i class="bi bi-clock me-1"></i>Unpaid
-                </span>
-              {% endif %}
-            </td>
-            <td style="color:#6B7280;">
-              {% if debt.paid_at %}
-                {{ debt.paid_at|date:"M d, Y" }}
-              {% else %}
-                <span style="color:#D1D5DB;">—</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="6" class="text-center py-4" style="color:#6B7280;">
-              No debts found
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- PAYMENTS SECTION -->
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-credit-card me-2"></i>All Payments</span>
-    <div class="d-flex gap-2 align-items-center">
-      <input type="date" id="paymentDateFilter"
-             class="form-control form-control-sm"
-             style="max-width:180px;">
-      <button onclick="clearDateFilter()"
-              class="btn btn-sm btn-outline-secondary">
-        Clear
-      </button>
-    </div>
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Order</th>
-            <th>Customer</th>
-            <th>Amount</th>
-            <th>Method</th>
-            <th>Status</th>
-            <th>Date</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="paymentsBody">
-          {% for payment in payments %}
-          <tr data-date="{{ payment.payment_date|date:'Y-m-d' }}">
-            <td>
-              <span style="font-weight:700;color:#4F46E5;">
-                #{{ payment.order.id }}
-              </span>
-            </td>
-            <td style="font-weight:500;">
-              {{ payment.order.customer.user.username }}
-            </td>
-            <td style="font-weight:700;">KSh {{ payment.amount }}</td>
-            <td>
-              <span class="badge-status badge-{{ payment.payment_method|lower }}">
-                <i class="bi bi-{% if payment.payment_method == 'mpesa' %}phone{% else %}cash-coin{% endif %} me-1"></i>
-                {{ payment.payment_method|title }}
-              </span>
-            </td>
-            <td>
-              <span class="badge-status badge-{{ payment.status|lower }}">
-                {{ payment.status|title }}
-              </span>
-            </td>
-            <td style="color:#6B7280;">
-              {{ payment.payment_date|date:"M d, Y" }}
-            </td>
-            <td>
-              <a href="{% url 'edit_payment' payment.id %}"
-                 class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-pencil"></i>
-              </a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="7" class="text-center py-4" style="color:#6B7280;">
-              No payments found
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- PRODUCTS SECTION -->
-<div class="card mb-4">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span><i class="bi bi-box-seam me-2"></i>Products</span>
-    <a href="{% url 'add_product' %}" class="btn btn-sm btn-primary">
-      <i class="bi bi-plus-lg me-1"></i> Add Product
-    </a>
-  </div>
-  <div class="card-body">
-    <div class="row g-3">
-      {% for product in products %}
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="product-card h-100">
-          {% if product.images.first %}
-            <img src="{{ product.images.first.image.url }}"
-                 alt="{{ product.name }}">
-          {% else %}
-            <div style="aspect-ratio:1;background:#F3F4F6;display:flex;
-                        align-items:center;justify-content:center;
-                        color:#D1D5DB;">
-              <i class="bi bi-image fs-1"></i>
+              <div style="font-size:0.78rem;color:#6B7280;">
+                Order #{{ debt.order.id }} •
+                {{ debt.order.order_date|date:"M d, Y" }}
+              </div>
             </div>
-          {% endif %}
-          <div class="product-info">
-            <div class="d-flex justify-content-between align-items-start mb-1">
-              <div class="product-name">{{ product.name }}</div>
-              {% if product.stock > 0 %}
-                <span class="stock-badge"
-                      style="background:#D1FAE5;color:#065F46;">
-                  {{ product.stock }}
-                </span>
-              {% else %}
-                <span class="stock-badge"
-                      style="background:#FEE2E2;color:#991B1B;">
-                  0
-                </span>
-              {% endif %}
-            </div>
-            <p style="font-size:0.78rem;color:#6B7280;margin-bottom:8px;
-                      display:-webkit-box;-webkit-line-clamp:2;
-                      -webkit-box-orient:vertical;overflow:hidden;">
-              {{ product.description }}
-            </p>
-            <div class="product-price mb-2">KSh {{ product.price }}</div>
-            <div class="d-flex gap-2">
-              <a href="{% url 'update_product' product.id %}"
-                 class="btn btn-sm btn-outline-primary flex-fill">
-                <i class="bi bi-pencil me-1"></i>Edit
-              </a>
-              <a href="{% url 'delete_product' product.id %}"
-                 class="btn btn-sm btn-outline-danger flex-fill">
-                <i class="bi bi-trash me-1"></i>Delete
-              </a>
+            <div style="font-weight:800;color:#EF4444;font-size:0.95rem;">
+              KSh {{ debt.outstanding_balance }}
             </div>
           </div>
         </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:#6B7280;">
+          <i class="bi bi-check-circle fs-3 d-block mb-2"
+             style="color:#10B981;"></i>
+          <div style="font-size:0.875rem;">All debts cleared!</div>
+        </div>
+        {% endfor %}
       </div>
-      {% empty %}
-      <div class="col-12 text-center py-4" style="color:#6B7280;">
-        No products yet.
-        <a href="{% url 'add_product' %}">Add one</a>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENTS + STOCK -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-credit-card me-2"></i>Recent Payments</span>
+        <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-arrow-right me-1"></i> Manage All
+        </a>
       </div>
-      {% endfor %}
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for payment in payments %}
+              <tr>
+                <td>
+                  <span style="font-weight:700;color:#4F46E5;">
+                    #{{ payment.order.id }}
+                  </span>
+                </td>
+                <td style="font-weight:500;">
+                  {{ payment.order.customer.user.username }}
+                </td>
+                <td style="font-weight:700;">KSh {{ payment.amount }}</td>
+                <td>
+                  <span class="badge-status badge-{{ payment.payment_method|lower }}">
+                    {% if payment.payment_method == 'mpesa' %}
+                      <i class="bi bi-phone me-1"></i>
+                    {% else %}
+                      <i class="bi bi-cash-coin me-1"></i>
+                    {% endif %}
+                    {{ payment.payment_method|title }}
+                  </span>
+                </td>
+                <td style="color:#6B7280;font-size:0.82rem;">
+                  {{ payment.payment_date|date:"M d, Y" }}
+                </td>
+                <td>
+                  <a href="{% url 'edit_payment' payment.id %}"
+                     class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-4"
+                    style="color:#6B7280;">
+                  No payments recorded
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-box-seam me-2"></i>Stock Overview</span>
+        <a href="{% url 'admin_products_list' %}"
+           class="btn btn-sm btn-outline-primary">
+          View All
+        </a>
+      </div>
+      <div class="card-body p-0">
+        {% for product in products %}
+        <div style="padding:0.85rem 1.25rem;
+                    border-bottom:1px solid #F3F4F6;
+                    display:flex;align-items:center;gap:12px;">
+          {% if product.images.first %}
+            <img src="{{ product.images.first.image.url }}"
+                 style="width:44px;height:44px;border-radius:8px;
+                        object-fit:cover;flex-shrink:0;">
+          {% else %}
+            <div style="width:44px;height:44px;border-radius:8px;
+                        background:#F3F4F6;display:flex;
+                        align-items:center;justify-content:center;
+                        flex-shrink:0;">
+              <i class="bi bi-image" style="color:#D1D5DB;"></i>
+            </div>
+          {% endif %}
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.875rem;
+                        white-space:nowrap;overflow:hidden;
+                        text-overflow:ellipsis;">
+              {{ product.name }}
+            </div>
+            <div style="font-size:0.78rem;color:#6B7280;">
+              KSh {{ product.price }}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            {% if product.stock == 0 %}
+              <span class="badge-status badge-cancelled">Out</span>
+            {% elif product.stock <= 3 %}
+              <span class="badge-status badge-pending">
+                {{ product.stock }} left
+              </span>
+            {% else %}
+              <span class="badge-status badge-delivered">
+                {{ product.stock }} left
+              </span>
+            {% endif %}
+          </div>
+          <div style="flex-shrink:0;">
+            <a href="{% url 'update_product' product.id %}"
+               class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-pencil"></i>
+            </a>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:#6B7280;">
+          No products yet
+        </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-  // Order status filter
   document.getElementById('orderStatusFilter')
     .addEventListener('change', function() {
       const val = this.value;
       document.querySelectorAll('#ordersBody tr').forEach(row => {
-        row.style.display = 
+        row.style.display =
           val === 'all' || row.dataset.status === val ? '' : 'none';
       });
     });
-
-  // Payment date filter
-  document.getElementById('paymentDateFilter')
-    .addEventListener('change', function() {
-      const val = this.value;
-      document.querySelectorAll('#paymentsBody tr').forEach(row => {
-        row.style.display =
-          !val || row.dataset.date === val ? '' : 'none';
-      });
-    });
-
-  function clearDateFilter() {
-    document.getElementById('paymentDateFilter').value = '';
-    document.querySelectorAll('#paymentsBody tr')
-      .forEach(row => row.style.display = '');
-  }
 </script>
 {% endblock %}
 

@@ -1,0 +1,247 @@
+{% extends "ecommerce/base.html" %}
+{% block title %}Payments — Admin BizStore{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Payment Management</h1>
+    <p>Track and manage all customer payments</p>
+  </div>
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary">
+    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+  </a>
+</div>
+
+<!-- STAT CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Total Payments</div>
+          <div class="stat-value">{{ payments|length }}</div>
+        </div>
+        <div class="stat-icon" style="background:#EEF2FF;">
+          <i class="bi bi-credit-card" style="color:#4F46E5;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Total Collected</div>
+          <div class="stat-value" style="color:#10B981;">
+            KSh {{ total_collected }}
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#D1FAE5;">
+          <i class="bi bi-cash-stack" style="color:#10B981;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">M-Pesa</div>
+          <div class="stat-value" style="color:#4F46E5;">
+            {{ mpesa_count }}
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#EEF2FF;">
+          <i class="bi bi-phone" style="color:#4F46E5;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="stat-label mb-1">Cash</div>
+          <div class="stat-value" style="color:#F59E0B;">
+            {{ cash_count }}
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#FEF3C7;">
+          <i class="bi bi-cash-coin" style="color:#F59E0B;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="card mb-4 p-3">
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+    <div class="input-group" style="max-width:280px;">
+      <span class="input-group-text bg-white"
+            style="border:1px solid #E5E7EB;border-right:none;
+                   border-radius:8px 0 0 8px;">
+        <i class="bi bi-search" style="color:#9CA3AF;"></i>
+      </span>
+      <input type="text" id="paymentSearch" class="form-control"
+             placeholder="Search by order or customer..."
+             style="border-left:none;border-radius:0 8px 8px 0;">
+    </div>
+    <select id="methodFilter" class="form-select" style="max-width:150px;">
+      <option value="all">All Methods</option>
+      <option value="cash">Cash</option>
+      <option value="mpesa">M-Pesa</option>
+    </select>
+    <select id="statusFilter" class="form-select" style="max-width:150px;">
+      <option value="all">All Status</option>
+      <option value="completed">Completed</option>
+      <option value="pending">Pending</option>
+    </select>
+    <input type="date" id="dateFilter" class="form-control"
+           style="max-width:180px;">
+    <button onclick="clearFilters()"
+            class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-x-circle me-1"></i>Clear
+    </button>
+    <span class="ms-auto" style="font-size:0.8rem;color:#6B7280;">
+      <span id="paymentCount">{{ payments|length }}</span> payments
+    </span>
+  </div>
+</div>
+
+<!-- PAYMENTS TABLE -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Order</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="paymentsBody">
+          {% for payment in payments %}
+          <tr class="payment-row"
+              data-order="{{ payment.order.id }}"
+              data-customer="{{ payment.order.customer.user.username|lower }}"
+              data-method="{{ payment.payment_method|lower }}"
+              data-status="{{ payment.status|lower }}"
+              data-date="{{ payment.payment_date|date:'Y-m-d' }}">
+            <td style="color:#6B7280;font-size:0.82rem;">
+              #{{ payment.id }}
+            </td>
+            <td>
+              <a href="{% url 'order_detail' payment.order.id %}"
+                 style="font-weight:700;color:#4F46E5;
+                        text-decoration:none;">
+                #{{ payment.order.id }}
+              </a>
+            </td>
+            <td style="font-weight:500;">
+              {{ payment.order.customer.user.username }}
+            </td>
+            <td style="font-weight:700;">
+              KSh {{ payment.amount }}
+            </td>
+            <td>
+              <span class="badge-status badge-{{ payment.payment_method|lower }}">
+                {% if payment.payment_method == 'mpesa' %}
+                  <i class="bi bi-phone me-1"></i>
+                {% else %}
+                  <i class="bi bi-cash-coin me-1"></i>
+                {% endif %}
+                {{ payment.payment_method|title }}
+              </span>
+            </td>
+            <td>
+              <span class="badge-status badge-{{ payment.status|lower }}">
+                {{ payment.status|title }}
+              </span>
+            </td>
+            <td style="color:#6B7280;font-size:0.82rem;">
+              {{ payment.payment_date|date:"M d, Y" }}
+              <div style="font-size:0.72rem;">
+                {{ payment.payment_date|date:"g:i A" }}
+              </div>
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{% url 'edit_payment' payment.id %}"
+                   class="btn btn-sm btn-outline-primary"
+                   title="Edit Payment">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'add_payment' payment.order.id %}"
+                   class="btn btn-sm btn-outline-success"
+                   title="Add Payment to this Order">
+                  <i class="bi bi-plus-circle"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5"
+                style="color:#6B7280;">
+              <i class="bi bi-credit-card fs-1 d-block mb-3"
+                 style="color:#D1D5DB;"></i>
+              <div style="font-weight:600;">No payments recorded yet</div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  const rows = document.querySelectorAll('.payment-row');
+  const countEl = document.getElementById('paymentCount');
+
+  function filterPayments() {
+    const q = document.getElementById('paymentSearch').value.toLowerCase();
+    const method = document.getElementById('methodFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const date = document.getElementById('dateFilter').value;
+    let visible = 0;
+
+    rows.forEach(row => {
+      const matchQ = row.dataset.order.includes(q) ||
+                     row.dataset.customer.includes(q);
+      const matchMethod = method === 'all' || row.dataset.method === method;
+      const matchStatus = status === 'all' || row.dataset.status === status;
+      const matchDate = !date || row.dataset.date === date;
+      const show = matchQ && matchMethod && matchStatus && matchDate;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    countEl.textContent = visible;
+  }
+
+  document.getElementById('paymentSearch')
+    .addEventListener('input', filterPayments);
+  document.getElementById('methodFilter')
+    .addEventListener('change', filterPayments);
+  document.getElementById('statusFilter')
+    .addEventListener('change', filterPayments);
+  document.getElementById('dateFilter')
+    .addEventListener('change', filterPayments);
+
+  function clearFilters() {
+    document.getElementById('paymentSearch').value = '';
+    document.getElementById('methodFilter').value = 'all';
+    document.getElementById('statusFilter').value = 'all';
+    document.getElementById('dateFilter').value = '';
+    filterPayments();
+  }
+</script>
+{% endblock %}
+
