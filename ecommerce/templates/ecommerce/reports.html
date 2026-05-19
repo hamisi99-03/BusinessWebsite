@@ -33,19 +33,19 @@
 
 <!-- Summary Stat Cards -->
 <div class="row g-3 mb-4">
-  <div class="col-6 col-xl-3">
+  <div class="col-12 col-md-4">
     <div class="card rounded-3 shadow-sm p-4">
       <div class="text-muted mb-1" style="font-size:0.875rem;">Total Collected</div>
       <div class="fw-bold" style="font-size:1.75rem;">KSh {{ total_collected|floatformat:0 }}</div>
     </div>
   </div>
-  <div class="col-6 col-xl-3">
+  <div class="col-12 col-md-4">
     <div class="card rounded-3 shadow-sm p-4">
       <div class="text-muted mb-1" style="font-size:0.875rem;">Payments</div>
       <div class="fw-bold" style="font-size:1.75rem;">{{ payment_count }}</div>
     </div>
   </div>
-  <div class="col-6 col-xl-3">
+  <div class="col-12 col-md-4">
     <div class="card rounded-3 shadow-sm p-4">
       <div class="text-muted mb-1" style="font-size:0.875rem;">Avg Payment</div>
       <div class="fw-bold" style="font-size:1.75rem;">KSh {{ avg_payment|floatformat:0 }}</div>

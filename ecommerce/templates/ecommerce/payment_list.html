@@ -149,8 +149,8 @@
             <th>Customer</th>
             <th>Amount (KSh)</th>
             <th>Method</th>
-            <th>Date</th>
-            <th>Notes</th>
+            <th class="d-none d-md-table-cell">Date</th>
+            <th class="d-none d-md-table-cell">Notes</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -187,13 +187,13 @@
                 {{ payment.payment_method|title }}
               </span>
             </td>
-            <td style="color:#6B7280;font-size:0.82rem;">
+            <td class="d-none d-md-table-cell" style="color:#6B7280;font-size:0.82rem;">
               {{ payment.payment_date|date:"M d, Y" }}
               <div style="font-size:0.72rem;">
                 {{ payment.payment_date|date:"g:i A" }}
               </div>
             </td>
-            <td>
+            <td class="d-none d-md-table-cell">
               {{ payment.notes|default:"-" }}
             </td>
             <td>

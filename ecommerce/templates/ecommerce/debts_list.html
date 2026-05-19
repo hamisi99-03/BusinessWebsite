@@ -66,7 +66,7 @@
           <tr>
             {% if is_admin %}<th>Customer</th>{% endif %}
             <th>Order</th>
-            <th>Order Date</th>
+            <th class="d-none d-md-table-cell">Order Date</th>
             <th>Order Total</th>
             <th>Amount Paid</th>
             <th>Outstanding</th>
@@ -85,15 +85,15 @@
                 #{{ debt.order.id }}
               </span>
             </td>
-            <td style="color:#6B7280;">
-              {{ debt.order.order_date|date:"M d, Y" }}
+<td class="d-none d-md-table-cell" style="color:#6B7280;">
+               {{ debt.order.order_date|date:"M d, Y" }}
             </td>
-            <td style="font-weight:600;">
-              KSh {{ debt.order.get_total_amount|floatformat:0 }}
-            </td>
-            <td style="font-weight:600;color:#10B981;">
-              KSh {{ debt.order.get_total_amount|subtract:debt.outstanding_balance|floatformat:0 }}
-            </td>
+<td class="d-none d-md-table-cell" style="font-weight:600;">
+  KSh {{ debt.order.get_total_amount|floatformat:0 }}
+</td>
+<td class="d-none d-md-table-cell" style="font-weight:600;color:#10B981;">
+  KSh {{ debt.order.get_total_amount|subtract:debt.outstanding_balance|floatformat:0 }}
+</td>
             <td>
               {% if debt.outstanding_balance > 0 %}
                 <span style="color:#EF4444;font-weight:700;">
