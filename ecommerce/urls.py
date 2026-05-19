@@ -13,7 +13,7 @@ from .views import (
     dashboard_view, orders_list_view, order_detail_view, debts_list_view,
     profile_view, ProfileView, order_product_view,
     custom_login, admin_dashboard, payment_list_view, update_order_status, add_product, update_product, delete_product, product_list, admin_products_list, reports_view,
-    admin_update_order, admin_delete_order  # newly added
+    admin_update_order, admin_delete_order, adjust_stock  # newly added
 )
 
 router = DefaultRouter()
@@ -69,6 +69,7 @@ urlpatterns = [
     path("admin-dashboard/product/<int:pk>/edit/", update_product, name="update_product"),
     path("admin-dashboard/product/<int:pk>/delete/", delete_product, name="delete_product"),
     path("admin-dashboard/products/", admin_products_list, name="admin_products_list"),
+    path("admin-dashboard/product/<int:pk>/adjust-stock/", adjust_stock, name="adjust_stock"),
 
 
 

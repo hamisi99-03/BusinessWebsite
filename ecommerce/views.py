@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
-from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage
+from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment
 from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
@@ -555,6 +555,36 @@ def delete_product(request, pk):
         "object_name": product.name,
         "cancel_url": '/admin-dashboard/products/'
     })
+
+
+@staff_member_required
+@require_POST
+def adjust_stock(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    adjustment_type = request.POST.get('adjustment_type')
+    quantity = int(request.POST.get('quantity', 0))
+    reason = request.POST.get('reason', '')
+
+    if adjustment_type not in ('increase', 'decrease'):
+        messages.error(request, 'Invalid adjustment type.')
+        return redirect('admin_products_list')
+
+    if quantity <= 0:
+        messages.error(request, 'Quantity must be greater than zero.')
+        return redirect('admin_products_list')
+
+    if adjustment_type == 'increase':
+        product.stock += quantity
+    else:
+        product.stock = max(0, product.stock - quantity)
+
+    product.save()
+    StockAdjustment.objects.create(
+        product=product, adjusted_by=request.user,
+        adjustment_type=adjustment_type, quantity=quantity, reason=reason
+    )
+    messages.success(request, f"Stock for '{product.name}' {adjustment_type}d by {quantity}.")
+    return redirect('admin_products_list')
 
 
 @staff_member_required

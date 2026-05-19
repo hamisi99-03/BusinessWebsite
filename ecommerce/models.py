@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
 class Customer(models.Model):
@@ -195,5 +196,18 @@ class Debt(models.Model):
         self.save()
     def __str__(self):
         return f"Debt of {self.outstanding_balance} for {self.customer.user.username}"
+
+
+class StockAdjustment(models.Model):
+    ADJUSTMENT_TYPES = [('increase', 'Increase'), ('decrease', 'Decrease')]
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_adjustments')
+    adjusted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    adjustment_type = models.CharField(max_length=10, choices=ADJUSTMENT_TYPES)
+    quantity = models.PositiveIntegerField()
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.adjustment_type} {self.quantity} for {self.product.name}"
     
 
