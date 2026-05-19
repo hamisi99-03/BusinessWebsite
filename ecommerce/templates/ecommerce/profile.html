@@ -3,8 +3,90 @@
 {% block title %}Profile{% endblock %}
 
 {% block content %}
-<h2>My Profile</h2>
-<p><strong>Username:</strong> {{ user.username }}</p>
-<p><strong>Email:</strong> {{ user.email }}</p>
-<a href="javascript:history.back()" class="btn btn-secondary mt-3">Back</a>
+<div class="card shadow-sm rounded-3 mb-4 bg-light">
+  <div class="card-body p-4">
+    <div class="row align-items-center">
+      <div class="col-auto">
+        {% if user.customer.profile_picture %}
+          <img src="{{ user.customer.profile_picture.url }}" class="rounded-circle" style="width:100px;height:100px;object-fit:cover;">
+        {% else %}
+          <i class="bi bi-person-circle" style="font-size: 5rem; color: #6c757d;"></i>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" class="mt-2">
+          {% csrf_token %}
+          <label class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-camera"></i> Change Photo
+            <input type="file" name="profile_picture" accept="image/*" class="d-none" onchange="this.form.submit()">
+          </label>
+        </form>
+      </div>
+      <div class="col">
+        <h2 class="mb-1 fw-bold">{{ user.get_full_name|default:user.username }}</h2>
+        <p class="mb-1 text-muted">@{{ user.username }}</p>
+        {% if user.date_joined %}
+        <small class="text-muted">Member since {{ user.date_joined|date:"M Y" }}</small>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm rounded-3 mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 fw-bold">Account Details</h5>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-borderless mb-0">
+      <tbody>
+        <tr>
+          <td class="text-muted small text-uppercase fw-medium px-4" style="width: 30%;">Username</td>
+          <td class="px-4">{{ user.username }}</td>
+        </tr>
+        <tr>
+          <td class="text-muted small text-uppercase fw-medium px-4">Email</td>
+          <td class="px-4">{{ user.email|default:"—" }}</td>
+        </tr>
+        <tr>
+          <td class="text-muted small text-uppercase fw-medium px-4">Full Name</td>
+          <td class="px-4">{{ user.get_full_name|default:"—" }}</td>
+        </tr>
+        {% if user.customer %}
+        <tr>
+          <td class="text-muted small text-uppercase fw-medium px-4">Phone</td>
+          <td class="px-4">{{ user.customer.phone_number|default:"—" }}</td>
+        </tr>
+        <tr>
+          <td class="text-muted small text-uppercase fw-medium px-4">Address</td>
+          <td class="px-4">{{ user.customer.address|default:"—" }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm rounded-3">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 fw-bold">Security</h5>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-borderless mb-0">
+      <tbody>
+        <tr>
+          <td class="text-muted small text-uppercase fw-medium px-4" style="width: 30%;">Password</td>
+          <td class="px-4">
+            <span class="text-muted">••••••••</span>
+            <a href="{% url 'change_password' %}" class="ms-2">Change Password</a>
+          </td>
+        </tr>
+        <tr>
+          <td class="text-muted small text-uppercase fw-medium px-4">Account Status</td>
+          <td class="px-4">
+            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill">Active</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}

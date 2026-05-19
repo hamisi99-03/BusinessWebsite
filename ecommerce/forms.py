@@ -89,7 +89,7 @@ class OrderItemForm(forms.ModelForm):
 class PaymentForm(forms.ModelForm):
     class Meta:
         model = Payment
-        fields = ['order', 'amount', 'payment_method']
+        fields = ['order', 'amount', 'payment_method', 'notes']
 
 
 class ProductForm(forms.ModelForm):

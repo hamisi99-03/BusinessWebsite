@@ -1,3 +1,7 @@
+import json
+from django.db.models import Sum, Count
+from datetime import date
+from dateutil.relativedelta import relativedelta
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -5,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 
-from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage
+from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment
 from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
@@ -124,29 +128,38 @@ def dashboard_view(request):
 
 @login_required
 def orders_list_view(request):
-    try:
-        customer = Customer.objects.get(user=request.user)
-        orders = Order.objects.filter(customer=customer).order_by('-order_date')
-
+    if request.user.is_staff:
+        orders = Order.objects.select_related('customer__user').order_by('-order_date')
+        customers = Customer.objects.select_related('user').all()
         total_orders = orders.count()
         pending_orders = orders.filter(status='pending').count()
         delivered_orders = orders.filter(status='delivered').count()
         outstanding_total = sum(o.get_outstanding_balance() for o in orders)
+        is_admin = True
+    else:
+        try:
+            customer = Customer.objects.get(user=request.user)
+            orders = Order.objects.filter(customer=customer).order_by('-order_date')
+        except Customer.DoesNotExist:
+            orders = []
+        total_orders = orders.count()
+        pending_orders = orders.filter(status='pending').count()
+        delivered_orders = orders.filter(status='delivered').count()
+        outstanding_total = sum(o.get_outstanding_balance() for o in orders)
+        is_admin = False
 
-    except Customer.DoesNotExist:
-        orders = []
-        total_orders = 0
-        pending_orders = 0
-        delivered_orders = 0
-        outstanding_total = 0
-
-    return render(request, 'ecommerce/orders_list.html', {
+    context = {
         'orders': orders,
         'total_orders': total_orders,
         'pending_orders': pending_orders,
         'delivered_orders': delivered_orders,
-'outstanding_total': outstanding_total,
-    })
+        'outstanding_total': outstanding_total,
+        'is_admin': is_admin,
+    }
+    if request.user.is_staff:
+        context['customers'] = customers
+
+    return render(request, 'ecommerce/orders_list.html', context)
 
 
 @login_required
@@ -157,26 +170,64 @@ def order_detail_view(request, pk):
 
 @login_required
 def debts_list_view(request):
-    try:
-        customer = Customer.objects.get(user=request.user)
-        debts = Debt.objects.filter(customer=customer).select_related('order')
-        total_outstanding = sum(d.outstanding_balance for d in debts if not d.is_paid)
-        paid_count = debts.filter(is_paid=True).count()
-    except Customer.DoesNotExist:
-        debts = []
-        total_outstanding = 0
-        paid_count = 0
+    if request.user.is_staff:
+        debts = Debt.objects.select_related('customer__user', 'order').order_by('-outstanding_balance')
+        is_admin = True
+    else:
+        try:
+            customer = Customer.objects.get(user=request.user)
+            debts = Debt.objects.filter(customer=customer).select_related('order')
+        except Customer.DoesNotExist:
+            debts = []
+        is_admin = False
+
+    total_outstanding = sum(d.outstanding_balance for d in debts if not d.is_paid)
+    paid_count = debts.filter(is_paid=True).count()
+
+    for debt in debts:
+        debt.amount_paid = debt.order.get_total_amount() - debt.outstanding_balance
 
     return render(request, 'ecommerce/debts_list.html', {
         'debts': debts,
         'total_outstanding': total_outstanding,
         'paid_count': paid_count,
+        'is_admin': is_admin,
     })
 
 
 @login_required
 def profile_view(request):
+    if request.method == 'POST':
+        try:
+            customer = request.user.customer
+            if 'profile_picture' in request.FILES:
+                customer.profile_picture = request.FILES['profile_picture']
+                customer.save()
+                messages.success(request, 'Profile picture updated.')
+        except Customer.DoesNotExist:
+            messages.error(request, 'Customer profile not found.')
+        return redirect('profile_page')
     return render(request, 'ecommerce/profile.html', {'user': request.user})
+
+@login_required
+def change_password_view(request):
+    from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.forms import PasswordChangeForm
+    from django.contrib import messages
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Password changed successfully.')
+            return redirect('profile_page')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PasswordChangeForm(request.user)
+    for field in form.fields.values():
+        field.widget.attrs.update({'class': 'form-control'})
+    return render(request, 'ecommerce/change_password.html', {'form': form})
 
 @login_required
 def order_product_view(request):
@@ -234,16 +285,31 @@ class ProfileView(APIView):
 
 @staff_member_required
 def admin_dashboard(request):
-    orders = Order.objects.all().order_by('-order_date')
-    debts = Debt.objects.filter(is_paid=False).select_related('customer', 'order')
-    payments = Payment.objects.all().order_by('-payment_date').select_related('order', 'order__customer')
-    products = Product.objects.all().prefetch_related('images')
+    total_revenue = Payment.objects.aggregate(total=Sum('amount'))['total'] or 0
+    total_orders = Order.objects.count()
+    pending_orders = Order.objects.filter(status='pending').count()
+    outstanding_debt = Debt.objects.filter(is_paid=False).aggregate(total=Sum('outstanding_balance'))['total'] or 0
+    unpaid_debt_count = Debt.objects.filter(is_paid=False).count()
+    total_products = Product.objects.count()
+    low_stock_products = Product.objects.filter(stock__lte=5).order_by('stock')[:10]
 
-    total_revenue = sum(o.get_total_paid() for o in orders)
-    total_outstanding = sum(o.get_outstanding_balance() for o in orders)
+    today = date.today()
+    revenue_trend = []
+    for i in range(5, -1, -1):
+        month_date = today - relativedelta(months=i)
+        result = Payment.objects.filter(
+            payment_date__year=month_date.year,
+            payment_date__month=month_date.month
+        ).aggregate(total=Sum('amount'), count=Count('id'))
+        revenue_trend.append({
+            'month': month_date.strftime('%b %Y'),
+            'total': result['total'] or 0,
+            'count': result['count'] or 0,
+        })
 
-    pending_count = Order.objects.filter(status='pending').count()
-    low_stock_count = Product.objects.filter(stock__lte=3).count()
+    recent_payments = Payment.objects.select_related('order__customer__user').order_by('-payment_date')[:8]
+    top_debtors = Debt.objects.filter(is_paid=False).select_related('customer__user').order_by('-outstanding_balance')[:5]
+    order_status_breakdown = list(Order.objects.values('status').annotate(count=Count('status')))
 
     status_choices = [
         ('pending', 'Pending'),
@@ -252,16 +318,89 @@ def admin_dashboard(request):
         ('cancelled', 'Cancelled'),
     ]
 
+    revenue_trend_json = json.dumps([{'month': d['month'], 'total': float(d['total']), 'count': d['count']} for d in revenue_trend])
+
     return render(request, 'ecommerce/admin_dashboard.html', {
-        'orders': orders,
-        'debts': debts,
-        'payments': payments,
-        'products': products,
         'total_revenue': total_revenue,
-        'total_outstanding': total_outstanding,
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
+        'outstanding_debt': outstanding_debt,
+        'unpaid_debt_count': unpaid_debt_count,
+        'total_products': total_products,
+        'low_stock_products': low_stock_products,
+        'revenue_trend': revenue_trend,
+        'revenue_trend_json': revenue_trend_json,
+        'recent_payments': recent_payments,
+        'top_debtors': top_debtors,
+        'order_status_breakdown': order_status_breakdown,
         'status_choices': status_choices,
-        'pending_count': pending_count,
-        'low_stock_count': low_stock_count,
+    })
+
+
+@staff_member_required
+def reports_view(request):
+    from datetime import datetime
+    today = date.today()
+    first_of_month = today.replace(day=1)
+    
+    date_from_str = request.GET.get('date_from')
+    date_to_str = request.GET.get('date_to')
+    
+    try:
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else first_of_month
+    except (ValueError, TypeError):
+        date_from = first_of_month
+    
+    try:
+        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else today
+    except (ValueError, TypeError):
+        date_to = today
+
+    payments_in_range = Payment.objects.filter(
+        payment_date__date__gte=date_from,
+        payment_date__date__lte=date_to
+    )
+    total_collected = payments_in_range.aggregate(total=Sum('amount'))['total'] or 0
+    payment_count = payments_in_range.count()
+    avg_payment = (total_collected / payment_count) if payment_count > 0 else 0
+    
+    orders_in_range = Order.objects.filter(
+        order_date__date__gte=date_from,
+        order_date__date__lte=date_to
+    )
+    total_orders_period = orders_in_range.count()
+    
+    orders_by_status = list(orders_in_range.values('status').annotate(count=Count('status')))
+    
+    monthly_orders = []
+    current_date = date_from.replace(day=1)
+    end_date = date_to.replace(day=1)
+    while current_date <= end_date:
+        count = Order.objects.filter(
+            order_date__year=current_date.year,
+            order_date__month=current_date.month
+        ).count()
+        monthly_orders.append({
+            'month': current_date.strftime('%b %Y'),
+            'count': count,
+        })
+        month = current_date.month + 1
+        year = current_date.year + (month - 1) // 12
+        month = ((month - 1) % 12) + 1
+        current_date = current_date.replace(year=year, month=month)
+    
+    monthly_orders_json = json.dumps([{'month': d['month'], 'count': d['count']} for d in monthly_orders])
+    
+    return render(request, 'ecommerce/reports.html', {
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_collected': total_collected,
+        'payment_count': payment_count,
+        'avg_payment': avg_payment,
+        'total_orders_period': total_orders_period,
+        'orders_by_status': orders_by_status,
+        'monthly_orders': monthly_orders,
+        'monthly_orders_json': monthly_orders_json,
     })
 
 
@@ -271,13 +410,25 @@ def payment_list_view(request):
         'order', 'order__customer', 'order__customer__user'
     )
 
-    total_collected = sum(p.amount for p in payments)
+    total_collected = Payment.objects.aggregate(total=Sum('amount'))['total'] or 0
+    today = date.today()
+    payments_this_month = Payment.objects.filter(
+        payment_date__year=today.year,
+        payment_date__month=today.month,
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    method_counts_raw = Payment.objects.values('payment_method').annotate(count=Count('id'))
+    method_counts = {item['payment_method']: item['count'] for item in method_counts_raw}
+    most_used_method = max(method_counts, key=method_counts.get) if method_counts else 'N/A'
+
     mpesa_count = payments.filter(payment_method='mpesa').count()
     cash_count = payments.filter(payment_method='cash').count()
 
     return render(request, 'ecommerce/payment_list.html', {
         'payments': payments,
         'total_collected': total_collected,
+        'payments_this_month': payments_this_month,
+        'method_counts': method_counts,
+        'most_used_method': most_used_method,
         'mpesa_count': mpesa_count,
         'cash_count': cash_count,
     })
@@ -315,37 +466,64 @@ def update_payment(request, pk):
     order = payment.order
 
     if request.method == "POST":
-        try:
-            payment.amount = Decimal(request.POST.get("amount"))
-            payment.status = request.POST.get("status")
+        form = PaymentForm(request.POST, instance=payment)
+        if form.is_valid():
+            payment = form.save(commit=False)
+            # Note: we don't change created_by on update
             payment.save()
             messages.success(request, f"Payment #{payment.id} updated successfully.")
             return redirect("admin_dashboard")
-        except Exception as e:
-            messages.error(request, f"Error updating payment: {e}")
-            return render(request, "ecommerce/payment_form.html", {
-                "form": PaymentForm(instance=payment),
-                "payment": payment,
-                "order": order,
-            })
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = PaymentForm(instance=payment)
+
+    # Get all orders for the dropdown
+    orders = Order.objects.all().select_related('customer__user').order_by('-order_date')
+    
+    return render(request, "ecommerce/payment_form.html", {
+        "form": form,
+        "payment": payment,
+        "order": order,
+        "orders": orders,
+    })
 
 
 @staff_member_required
-def add_payment(request, order_id):
-    order = get_object_or_404(Order, pk=order_id)
+def delete_payment(request, pk):
+    payment = get_object_or_404(Payment, pk=pk)
+    
+    if request.method == "POST":
+        payment_id = payment.id
+        payment.delete()
+        messages.success(request, f"Payment #{payment_id} deleted successfully.")
+        return redirect("payment_list")
+    
+    return render(request, "ecommerce/confirm_delete.html", {
+        "payment": payment,
+        "order": payment.order,
+    })
+
+
+@staff_member_required
+def add_payment(request, order_id=None):
+    if order_id:
+        order = get_object_or_404(Order, pk=order_id)
+    else:
+        order = None
 
     if request.method == "POST":
         form = PaymentForm(request.POST)
         if form.is_valid():
             payment = form.save(commit=False)
-            payment.order = order
+            payment.created_by = request.user
             payment.save()
 
             debt, _ = Debt.objects.get_or_create(
-                order=order,
-                customer=order.customer,
+                order=payment.order,
+                customer=payment.order.customer,
                 defaults={
-                    "outstanding_balance": order.get_total_amount(),
+                    "outstanding_balance": payment.order.get_total_amount(),
                     "is_paid": False,
                     "paid_at": None,
                 },
@@ -357,19 +535,15 @@ def add_payment(request, order_id):
 
     else:
         form = PaymentForm()
+        if order_id:
+            # If we have an order_id from URL, we set the order in the form as initial and disable it
+            form.fields['order'].initial = order
+            form.fields['order'].widget.attrs['disabled'] = True
 
-    return render(request, "ecommerce/payment_form.html", {"form": form, "order": order})
-
-
-@login_required
-def payments_list_view(request):
-    payments = Payment.objects.filter(order__customer=request.user.customer)
-
-    payment_status = request.GET.get('payment_status')
-    if payment_status:
-        payments = payments.filter(status=payment_status)
-
-    return render(request, 'ecommerce/payments_list.html', {'payments': payments})
+    # Get all orders for the dropdown
+    orders = Order.objects.all().select_related('customer__user').order_by('-order_date')
+    
+    return render(request, "ecommerce/payment_form.html", {"form": form, "order": order, "orders": orders})
 
 
 @staff_member_required
@@ -419,8 +593,85 @@ def delete_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == "POST":
         product.delete()
+        messages.success(request, f"Product '{product.name}' deleted successfully.")
         return redirect("admin_dashboard")
-    return render(request, "ecommerce/confirm_delete.html", {"product": product})
+    return render(request, "ecommerce/confirm_delete.html", {
+        "product": product,
+        "object_name": product.name,
+        "cancel_url": '/admin-dashboard/products/'
+    })
+
+
+@staff_member_required
+@require_POST
+def adjust_stock(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    adjustment_type = request.POST.get('adjustment_type')
+    quantity = int(request.POST.get('quantity', 0))
+    reason = request.POST.get('reason', '')
+
+    if adjustment_type not in ('increase', 'decrease'):
+        messages.error(request, 'Invalid adjustment type.')
+        return redirect('admin_products_list')
+
+    if quantity <= 0:
+        messages.error(request, 'Quantity must be greater than zero.')
+        return redirect('admin_products_list')
+
+    if adjustment_type == 'increase':
+        product.stock += quantity
+    else:
+        product.stock = max(0, product.stock - quantity)
+
+    product.save()
+    StockAdjustment.objects.create(
+        product=product, adjusted_by=request.user,
+        adjustment_type=adjustment_type, quantity=quantity, reason=reason
+    )
+    messages.success(request, f"Stock for '{product.name}' {adjustment_type}d by {quantity}.")
+    return redirect('admin_products_list')
+
+
+@staff_member_required
+def admin_update_order(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    
+    if request.method == "POST":
+        status = request.POST.get("status")
+        # Validate that status is one of the allowed choices
+        valid_statuses = [choice[0] for choice in order.status.field.choices]
+        if status in valid_statuses:
+            order.status = status
+            order.save()
+            messages.success(request, f"Order #{order.pk} status updated to {status}.")
+            return redirect('orders_list')
+        else:
+            messages.error(request, "Invalid status selected.")
+            return redirect('admin_update_order', pk=pk)
+    
+    # GET request
+    status_choices = order.status.field.choices
+    return render(request, 'ecommerce/admin_order_edit.html', {
+        'order': order,
+        'status_choices': status_choices
+    })
+
+
+@staff_member_required
+def admin_delete_order(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    
+    if request.method == "POST":
+        order.delete()
+        messages.success(request, f"Order #{order.pk} deleted.")
+        return redirect('orders_list')
+    
+    # GET request
+    return render(request, 'ecommerce/confirm_delete.html', {
+        'object': order,
+        'object_name': f'Order #{order.pk}',
+        'cancel_url': '/orders/list'
+    })
 
 
 def product_list(request):

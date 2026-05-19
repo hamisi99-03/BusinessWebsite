@@ -1,11 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     phone_number= models.CharField(max_length=20,blank =True)
     address = models.TextField(blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
 
     def __str__(self):
         return self.user.username
@@ -121,7 +123,7 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(
         max_length=50,
-        choices=[('cash','Cash'), ('mpesa', 'M-pesa')],
+        choices=[('cash','Cash'), ('mpesa', 'M-pesa'), ('bank', 'Bank Transfer')],
         default='cash'
     )
     status = models.CharField(
@@ -129,6 +131,8 @@ class Payment(models.Model):
         choices=[('pending', 'Pending'), ('completed', 'Completed')],
         default='pending'
     )
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_created')
 
     def clean(self):
         # Exclude current payment when editing
@@ -193,5 +197,18 @@ class Debt(models.Model):
         self.save()
     def __str__(self):
         return f"Debt of {self.outstanding_balance} for {self.customer.user.username}"
+
+
+class StockAdjustment(models.Model):
+    ADJUSTMENT_TYPES = [('increase', 'Increase'), ('decrease', 'Decrease')]
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_adjustments')
+    adjusted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    adjustment_type = models.CharField(max_length=10, choices=ADJUSTMENT_TYPES)
+    quantity = models.PositiveIntegerField()
+    reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.adjustment_type} {self.quantity} for {self.product.name}"
     
 

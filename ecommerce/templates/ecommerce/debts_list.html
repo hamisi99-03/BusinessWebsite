@@ -3,8 +3,8 @@
 
 {% block content %}
 <div class="page-header">
-  <h1>My Debts</h1>
-  <p>Outstanding balances and payment history</p>
+  <h1>{% if is_admin %}All Debts{% else %}My Debts{% endif %}</h1>
+  <p>{% if is_admin %}Outstanding balances and payment history for all customers{% else %}Outstanding balances and payment history{% endif %}</p>
 </div>
 
 <!-- SUMMARY CARDS -->
@@ -64,33 +64,40 @@
       <table class="table mb-0">
         <thead>
           <tr>
+            {% if is_admin %}<th>Customer</th>{% endif %}
             <th>Order</th>
-            <th>Order Date</th>
+            <th class="d-none d-md-table-cell">Order Date</th>
             <th>Order Total</th>
+            <th>Amount Paid</th>
             <th>Outstanding</th>
             <th>Status</th>
-            <th>Paid On</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {% for debt in debts %}
           <tr>
+            {% if is_admin %}<td>
+              {{ debt.customer.user.get_full_name|default:debt.customer.user.username }}
+            </td>{% endif %}
             <td>
               <span style="font-weight:700;color:#4F46E5;">
                 #{{ debt.order.id }}
               </span>
             </td>
-            <td style="color:#6B7280;">
-              {{ debt.order.order_date|date:"M d, Y" }}
+<td class="d-none d-md-table-cell" style="color:#6B7280;">
+               {{ debt.order.order_date|date:"M d, Y" }}
             </td>
-            <td style="font-weight:600;">
-              KSh {{ debt.order.get_total_amount }}
-            </td>
+<td class="d-none d-md-table-cell" style="font-weight:600;">
+  KSh {{ debt.order.get_total_amount|floatformat:0 }}
+</td>
+<td class="d-none d-md-table-cell" style="font-weight:600;color:#10B981;">
+  KSh {{ debt.amount_paid|floatformat:0 }}
+</td>
             <td>
               {% if debt.outstanding_balance > 0 %}
                 <span style="color:#EF4444;font-weight:700;">
-                  KSh {{ debt.outstanding_balance }}
+                  KSh {{ debt.outstanding_balance|floatformat:0 }}
                 </span>
               {% else %}
                 <span style="color:#10B981;font-weight:600;">
@@ -125,7 +132,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="text-center py-5" style="color:#6B7280;">
+            <td colspan="8" class="text-center py-5" style="color:#6B7280;">
               <i class="bi bi-check-circle fs-1 d-block mb-3" 
                  style="color:#D1FAE5;"></i>
               <div style="font-weight:600;">No debts found</div>

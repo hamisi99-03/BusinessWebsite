@@ -1,0 +1,139 @@
+{% extends "ecommerce/base.html" %}
+{% load static %}
+{% block title %}Reports — BizStore{% endblock %}
+
+{% block content %}
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="page-header">
+  <h1>Reports</h1>
+  <p>Filter by date range</p>
+</div>
+
+<!-- Date Filter Form -->
+<div class="card shadow-sm rounded-3 mb-4">
+  <div class="card-body">
+    <form method="GET" class="row g-3 align-items-end">
+      <div class="col-auto">
+        <label class="form-label">From</label>
+        <input type="date" name="date_from" class="form-control" value="{{ date_from|date:'Y-m-d' }}">
+      </div>
+      <div class="col-auto">
+        <label class="form-label">To</label>
+        <input type="date" name="date_to" class="form-control" value="{{ date_to|date:'Y-m-d' }}">
+      </div>
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Generate Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="card rounded-3 shadow-sm p-4">
+      <div class="text-muted mb-1" style="font-size:0.875rem;">Total Collected</div>
+      <div class="fw-bold" style="font-size:1.75rem;">KSh {{ total_collected|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card rounded-3 shadow-sm p-4">
+      <div class="text-muted mb-1" style="font-size:0.875rem;">Payments</div>
+      <div class="fw-bold" style="font-size:1.75rem;">{{ payment_count }}</div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="card rounded-3 shadow-sm p-4">
+      <div class="text-muted mb-1" style="font-size:0.875rem;">Avg Payment</div>
+      <div class="fw-bold" style="font-size:1.75rem;">KSh {{ avg_payment|floatformat:0 }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Orders Summary Table -->
+<div class="card shadow-sm rounded-3 mb-4">
+  <div class="card-header">
+    <h5 class="mb-0 fw-bold">Orders by Status</h5>
+  </div>
+  <div class="card-body p-0">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in orders_by_status %}
+        <tr>
+          <td>{{ item.status|title }}</td>
+          <td>{{ item.count }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="fw-bold">
+          <td>Total</td>
+          <td>{{ total_orders_period }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Monthly Orders Bar Chart -->
+<div class="card shadow-sm rounded-3">
+  <div class="card-header">
+    <h5 class="mb-0 fw-bold">Orders Per Month</h5>
+  </div>
+  <div class="card-body">
+    <canvas id="ordersChart" height="80"></canvas>
+  </div>
+</div>
+
+<script id="ordersChartData" type="application/json">{{ monthly_orders_json }}</script>
+<script>
+  const rawData = JSON.parse(document.getElementById('ordersChartData').textContent);
+  const labels = rawData.map(d => d.month);
+  const counts = rawData.map(d => d.count);
+
+  new Chart(document.getElementById('ordersChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Orders',
+        data: counts,
+        backgroundColor: '#0d6efd',
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          },
+          grid: {
+            color: 'rgba(0,0,0,0.05)'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+</script>
+
+{% endblock %}

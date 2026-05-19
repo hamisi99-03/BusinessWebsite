@@ -4,12 +4,17 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center">
   <div>
-    <h1>Payment Management</h1>
+    <h1>Payments</h1>
     <p>Track and manage all customer payments</p>
   </div>
-  <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary">
-    <i class="bi bi-speedometer2 me-1"></i> Dashboard
-  </a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary">
+      <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
+    <a href="{% url 'add_payment' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Add Payment
+    </a>
+  </div>
 </div>
 
 <!-- STAT CARDS -->
@@ -74,6 +79,29 @@
   </div>
 </div>
 
+
+<!-- SUMMARY STAT CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm rounded-3 p-4">
+      <div class="stat-label mb-1">Total Collected</div>
+      <div class="stat-value">KSh {{ total_collected|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm rounded-3 p-4">
+      <div class="stat-label mb-1">This Month</div>
+      <div class="stat-value">KSh {{ payments_this_month|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm rounded-3 p-4">
+      <div class="stat-label mb-1">Most Used Method</div>
+      <div class="stat-value">{{ most_used_method|capfirst }}</div>
+    </div>
+  </div>
+</div>
+
 <!-- FILTER BAR -->
 <div class="card mb-4 p-3">
   <div class="d-flex flex-wrap gap-2 align-items-center">
@@ -91,6 +119,7 @@
       <option value="all">All Methods</option>
       <option value="cash">Cash</option>
       <option value="mpesa">M-Pesa</option>
+      <option value="bank">Bank Transfer</option>
     </select>
     <select id="statusFilter" class="form-select" style="max-width:150px;">
       <option value="all">All Status</option>
@@ -116,13 +145,12 @@
       <table class="table mb-0">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Order</th>
+            <th>Order #</th>
             <th>Customer</th>
-            <th>Amount</th>
+            <th>Amount (KSh)</th>
             <th>Method</th>
-            <th>Status</th>
-            <th>Date</th>
+            <th class="d-none d-md-table-cell">Date</th>
+            <th class="d-none d-md-table-cell">Notes</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -134,9 +162,6 @@
               data-method="{{ payment.payment_method|lower }}"
               data-status="{{ payment.status|lower }}"
               data-date="{{ payment.payment_date|date:'Y-m-d' }}">
-            <td style="color:#6B7280;font-size:0.82rem;">
-              #{{ payment.id }}
-            </td>
             <td>
               <a href="{% url 'order_detail' payment.order.id %}"
                  style="font-weight:700;color:#4F46E5;
@@ -154,22 +179,22 @@
               <span class="badge-status badge-{{ payment.payment_method|lower }}">
                 {% if payment.payment_method == 'mpesa' %}
                   <i class="bi bi-phone me-1"></i>
+                {% elif payment.payment_method == 'bank' %}
+                  <i class="bi bi-building me-1"></i>
                 {% else %}
                   <i class="bi bi-cash-coin me-1"></i>
                 {% endif %}
                 {{ payment.payment_method|title }}
               </span>
             </td>
-            <td>
-              <span class="badge-status badge-{{ payment.status|lower }}">
-                {{ payment.status|title }}
-              </span>
-            </td>
-            <td style="color:#6B7280;font-size:0.82rem;">
+            <td class="d-none d-md-table-cell" style="color:#6B7280;font-size:0.82rem;">
               {{ payment.payment_date|date:"M d, Y" }}
               <div style="font-size:0.72rem;">
                 {{ payment.payment_date|date:"g:i A" }}
               </div>
+            </td>
+            <td class="d-none d-md-table-cell">
+              {{ payment.notes|default:"-" }}
             </td>
             <td>
               <div class="d-flex gap-1">
@@ -178,17 +203,18 @@
                    title="Edit Payment">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="{% url 'add_payment' payment.order.id %}"
-                   class="btn btn-sm btn-outline-success"
-                   title="Add Payment to this Order">
-                  <i class="bi bi-plus-circle"></i>
+                <a href="{% url 'delete_payment' payment.id %}"
+                   class="btn btn-sm btn-outline-danger"
+                   title="Delete Payment"
+                   onclick="return confirm('Are you sure you want to delete this payment? This action cannot be undone.');">
+                  <i class="bi bi-trash"></i>
                 </a>
               </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="8" class="text-center py-5"
+            <td colspan="7" class="text-center py-5"
                 style="color:#6B7280;">
               <i class="bi bi-credit-card fs-1 d-block mb-3"
                  style="color:#D1D5DB;"></i>
@@ -244,4 +270,3 @@
   }
 </script>
 {% endblock %}
-
