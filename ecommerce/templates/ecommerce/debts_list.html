@@ -92,7 +92,7 @@
   KSh {{ debt.order.get_total_amount|floatformat:0 }}
 </td>
 <td class="d-none d-md-table-cell" style="font-weight:600;color:#10B981;">
-  KSh {{ debt.order.get_total_amount|subtract:debt.outstanding_balance|floatformat:0 }}
+  KSh {{ debt.amount_paid|floatformat:0 }}
 </td>
             <td>
               {% if debt.outstanding_balance > 0 %}

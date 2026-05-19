@@ -11,7 +11,7 @@ from .views import (
     PaymentViewSet, DebtViewSet, add_payment, update_payment, delete_payment,
     register_view, login_view, logout_view,
     dashboard_view, orders_list_view, order_detail_view, debts_list_view,
-    profile_view, ProfileView, order_product_view,
+    profile_view, ProfileView, order_product_view, change_password_view,
     custom_login, admin_dashboard, payment_list_view, update_order_status, add_product, update_product, delete_product, product_list, admin_products_list, reports_view,
     admin_update_order, admin_delete_order, adjust_stock  # newly added
 )
@@ -45,6 +45,7 @@ urlpatterns = [
     path('orders/detail/<int:pk>/', order_detail_view, name='order_detail'),
     path('my-debts/', debts_list_view, name='debts_list'),
     path('profile-page/', profile_view, name='profile_page'),        # template profile
+     path('auth/change-password/', change_password_view, name='change_password'),
     path('order-product/', order_product_view, name='order_product'),
     path('store/products/', product_list, name='product_list'),
 

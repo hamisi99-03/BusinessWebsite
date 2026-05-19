@@ -184,6 +184,9 @@ def debts_list_view(request):
     total_outstanding = sum(d.outstanding_balance for d in debts if not d.is_paid)
     paid_count = debts.filter(is_paid=True).count()
 
+    for debt in debts:
+        debt.amount_paid = debt.order.get_total_amount() - debt.outstanding_balance
+
     return render(request, 'ecommerce/debts_list.html', {
         'debts': debts,
         'total_outstanding': total_outstanding,
@@ -194,7 +197,37 @@ def debts_list_view(request):
 
 @login_required
 def profile_view(request):
+    if request.method == 'POST':
+        try:
+            customer = request.user.customer
+            if 'profile_picture' in request.FILES:
+                customer.profile_picture = request.FILES['profile_picture']
+                customer.save()
+                messages.success(request, 'Profile picture updated.')
+        except Customer.DoesNotExist:
+            messages.error(request, 'Customer profile not found.')
+        return redirect('profile_page')
     return render(request, 'ecommerce/profile.html', {'user': request.user})
+
+@login_required
+def change_password_view(request):
+    from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.forms import PasswordChangeForm
+    from django.contrib import messages
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, 'Password changed successfully.')
+            return redirect('profile_page')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = PasswordChangeForm(request.user)
+    for field in form.fields.values():
+        field.widget.attrs.update({'class': 'form-control'})
+    return render(request, 'ecommerce/change_password.html', {'form': form})
 
 @login_required
 def order_product_view(request):
