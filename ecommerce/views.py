@@ -1,3 +1,7 @@
+import json
+from django.db.models import Sum, Count
+from datetime import date
+from dateutil.relativedelta import relativedelta
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -234,16 +238,31 @@ class ProfileView(APIView):
 
 @staff_member_required
 def admin_dashboard(request):
-    orders = Order.objects.all().order_by('-order_date')
-    debts = Debt.objects.filter(is_paid=False).select_related('customer', 'order')
-    payments = Payment.objects.all().order_by('-payment_date').select_related('order', 'order__customer')
-    products = Product.objects.all().prefetch_related('images')
+    total_revenue = Payment.objects.aggregate(total=Sum('amount'))['total'] or 0
+    total_orders = Order.objects.count()
+    pending_orders = Order.objects.filter(status='pending').count()
+    outstanding_debt = Debt.objects.filter(is_paid=False).aggregate(total=Sum('outstanding_balance'))['total'] or 0
+    unpaid_debt_count = Debt.objects.filter(is_paid=False).count()
+    total_products = Product.objects.count()
+    low_stock_products = Product.objects.filter(stock__lte=5).order_by('stock')[:10]
 
-    total_revenue = sum(o.get_total_paid() for o in orders)
-    total_outstanding = sum(o.get_outstanding_balance() for o in orders)
+    today = date.today()
+    revenue_trend = []
+    for i in range(5, -1, -1):
+        month_date = today - relativedelta(months=i)
+        result = Payment.objects.filter(
+            payment_date__year=month_date.year,
+            payment_date__month=month_date.month
+        ).aggregate(total=Sum('amount'), count=Count('id'))
+        revenue_trend.append({
+            'month': month_date.strftime('%b %Y'),
+            'total': result['total'] or 0,
+            'count': result['count'] or 0,
+        })
 
-    pending_count = Order.objects.filter(status='pending').count()
-    low_stock_count = Product.objects.filter(stock__lte=3).count()
+    recent_payments = Payment.objects.select_related('order__customer__user').order_by('-payment_date')[:8]
+    top_debtors = Debt.objects.filter(is_paid=False).select_related('customer__user').order_by('-outstanding_balance')[:5]
+    order_status_breakdown = list(Order.objects.values('status').annotate(count=Count('status')))
 
     status_choices = [
         ('pending', 'Pending'),
@@ -252,16 +271,89 @@ def admin_dashboard(request):
         ('cancelled', 'Cancelled'),
     ]
 
+    revenue_trend_json = json.dumps([{'month': d['month'], 'total': float(d['total']), 'count': d['count']} for d in revenue_trend])
+
     return render(request, 'ecommerce/admin_dashboard.html', {
-        'orders': orders,
-        'debts': debts,
-        'payments': payments,
-        'products': products,
         'total_revenue': total_revenue,
-        'total_outstanding': total_outstanding,
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
+        'outstanding_debt': outstanding_debt,
+        'unpaid_debt_count': unpaid_debt_count,
+        'total_products': total_products,
+        'low_stock_products': low_stock_products,
+        'revenue_trend': revenue_trend,
+        'revenue_trend_json': revenue_trend_json,
+        'recent_payments': recent_payments,
+        'top_debtors': top_debtors,
+        'order_status_breakdown': order_status_breakdown,
         'status_choices': status_choices,
-        'pending_count': pending_count,
-        'low_stock_count': low_stock_count,
+    })
+
+
+@staff_member_required
+def reports_view(request):
+    from datetime import datetime
+    today = date.today()
+    first_of_month = today.replace(day=1)
+    
+    date_from_str = request.GET.get('date_from')
+    date_to_str = request.GET.get('date_to')
+    
+    try:
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else first_of_month
+    except (ValueError, TypeError):
+        date_from = first_of_month
+    
+    try:
+        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else today
+    except (ValueError, TypeError):
+        date_to = today
+
+    payments_in_range = Payment.objects.filter(
+        payment_date__date__gte=date_from,
+        payment_date__date__lte=date_to
+    )
+    total_collected = payments_in_range.aggregate(total=Sum('amount'))['total'] or 0
+    payment_count = payments_in_range.count()
+    avg_payment = (total_collected / payment_count) if payment_count > 0 else 0
+    
+    orders_in_range = Order.objects.filter(
+        order_date__date__gte=date_from,
+        order_date__date__lte=date_to
+    )
+    total_orders_period = orders_in_range.count()
+    
+    orders_by_status = list(orders_in_range.values('status').annotate(count=Count('status')))
+    
+    monthly_orders = []
+    current_date = date_from.replace(day=1)
+    end_date = date_to.replace(day=1)
+    while current_date <= end_date:
+        count = Order.objects.filter(
+            order_date__year=current_date.year,
+            order_date__month=current_date.month
+        ).count()
+        monthly_orders.append({
+            'month': current_date.strftime('%b %Y'),
+            'count': count,
+        })
+        month = current_date.month + 1
+        year = current_date.year + (month - 1) // 12
+        month = ((month - 1) % 12) + 1
+        current_date = current_date.replace(year=year, month=month)
+    
+    monthly_orders_json = json.dumps([{'month': d['month'], 'count': d['count']} for d in monthly_orders])
+    
+    return render(request, 'ecommerce/reports.html', {
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_collected': total_collected,
+        'payment_count': payment_count,
+        'avg_payment': avg_payment,
+        'total_orders_period': total_orders_period,
+        'orders_by_status': orders_by_status,
+        'monthly_orders': monthly_orders,
+        'monthly_orders_json': monthly_orders_json,
     })
 
 

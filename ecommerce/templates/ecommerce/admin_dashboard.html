@@ -1,7 +1,11 @@
 {% extends "ecommerce/base.html" %}
+{% load static %}
 {% block title %}Admin Dashboard — BizStore{% endblock %}
 
 {% block content %}
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="page-header d-flex justify-content-between align-items-center">
   <div>
@@ -18,371 +22,309 @@
   </div>
 </div>
 
-<!-- KPI CARDS -->
+<!-- SECTION 1 — Stat Cards -->
 <div class="row g-3 mb-4">
+  <!-- Card 1: Total Revenue -->
   <div class="col-6 col-xl-3">
-    <div class="stat-card">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#revenueModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="stat-label mb-1">Total Revenue</div>
-          <div class="stat-value">KSh {{ total_revenue }}</div>
-          <div style="font-size:0.75rem;color:#10B981;margin-top:4px;">
-            <i class="bi bi-arrow-up-short"></i> All time collected
-          </div>
+          <div class="text-muted mb-1" style="font-size:0.875rem;">Total Revenue</div>
+          <div class="fw-bold mb-1" style="font-size:1.75rem;">KSh {{ total_revenue|floatformat:0 }}</div>
+          <div class="text-muted" style="font-size:0.8125rem;">All time collected</div>
         </div>
-        <div class="stat-icon" style="background:#D1FAE5;">
-          <i class="bi bi-cash-stack" style="color:#10B981;"></i>
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#D1FAE5;">
+          <i class="bi bi-currency-dollar text-success"></i>
         </div>
       </div>
     </div>
   </div>
+  <!-- Card 2: Total Orders -->
   <div class="col-6 col-xl-3">
-    <div class="stat-card">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#ordersModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="stat-label mb-1">Total Orders</div>
-          <div class="stat-value">{{ orders|length }}</div>
-          <div style="font-size:0.75rem;color:#4F46E5;margin-top:4px;">
-            <i class="bi bi-receipt me-1"></i>
-            {{ pending_count }} pending
-          </div>
+          <div class="text-muted mb-1" style="font-size:0.875rem;">Total Orders</div>
+          <div class="fw-bold mb-1" style="font-size:1.75rem;">{{ total_orders }}</div>
+          <div class="text-muted" style="font-size:0.8125rem;">{{ pending_orders }} pending</div>
         </div>
-        <div class="stat-icon" style="background:#EEF2FF;">
-          <i class="bi bi-bag-check" style="color:#4F46E5;"></i>
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#DBEAFE;">
+          <i class="bi bi-bag-check text-primary"></i>
         </div>
       </div>
     </div>
   </div>
+  <!-- Card 3: Outstanding -->
   <div class="col-6 col-xl-3">
-    <div class="stat-card">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#debtModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="stat-label mb-1">Outstanding</div>
-          <div class="stat-value" style="color:#EF4444;">
-            KSh {{ total_outstanding }}
-          </div>
-          <div style="font-size:0.75rem;color:#EF4444;margin-top:4px;">
-            <i class="bi bi-exclamation-circle me-1"></i>
-            {{ debts|length }} unpaid debt{{ debts|length|pluralize }}
-          </div>
+          <div class="text-muted mb-1" style="font-size:0.875rem;">Outstanding</div>
+          <div class="fw-bold mb-1" style="font-size:1.75rem;color:#EF4444;">KSh {{ outstanding_debt|floatformat:0 }}</div>
+          <div class="text-muted" style="font-size:0.8125rem;">{{ unpaid_debt_count }} unpaid debts</div>
         </div>
-        <div class="stat-icon" style="background:#FEE2E2;">
-          <i class="bi bi-exclamation-circle" style="color:#EF4444;"></i>
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#FEE2E2;">
+          <i class="bi bi-exclamation-triangle text-danger"></i>
         </div>
       </div>
     </div>
   </div>
+  <!-- Card 4: Products -->
   <div class="col-6 col-xl-3">
-    <div class="stat-card">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#productsModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="stat-label mb-1">Products</div>
-          <div class="stat-value">{{ products|length }}</div>
-          <div style="font-size:0.75rem;color:#F59E0B;margin-top:4px;">
-            <i class="bi bi-box-seam me-1"></i>
-            {{ low_stock_count }} low stock
-          </div>
+          <div class="text-muted mb-1" style="font-size:0.875rem;">Products</div>
+          <div class="fw-bold mb-1" style="font-size:1.75rem;">{{ total_products }}</div>
+          <div class="text-muted" style="font-size:0.8125rem;">In catalogue</div>
         </div>
-        <div class="stat-icon" style="background:#FEF3C7;">
-          <i class="bi bi-box-seam" style="color:#F59E0B;"></i>
+        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#FEF3C7;">
+          <i class="bi bi-box-seam text-warning"></i>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ORDERS + UNPAID DEBTS -->
-<div class="row g-4 mb-4">
-  <div class="col-lg-8">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-receipt me-2"></i>Recent Orders</span>
-        <select id="orderStatusFilter" class="form-select form-select-sm"
-                style="max-width:140px;">
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Date</th>
-                <th>Total</th>
-                <th>Balance</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="ordersBody">
-              {% for order in orders %}
-              <tr data-status="{{ order.status|lower }}">
-                <td>
-                  <span style="font-weight:700;color:#4F46E5;">
-                    #{{ order.id }}
-                  </span>
-                </td>
-                <td style="font-weight:500;">
-                  {{ order.customer.user.username }}
-                </td>
-                <td style="color:#6B7280;font-size:0.82rem;">
-                  {{ order.order_date|date:"M d, Y" }}
-                </td>
-                <td style="font-weight:700;">
-                  KSh {{ order.get_total_amount }}
-                </td>
-                <td>
-                  {% if order.get_outstanding_balance > 0 %}
-                    <span style="color:#EF4444;font-weight:700;">
-                      KSh {{ order.get_outstanding_balance }}
-                    </span>
-                  {% else %}
-                    <span style="color:#10B981;font-weight:600;">
-                      <i class="bi bi-check-circle-fill me-1"></i>Paid
-                    </span>
-                  {% endif %}
-                </td>
-                <td>
-                  <form method="POST"
-                        action="{% url 'update_order_status' order.id %}"
-                        style="display:inline;">
-                    {% csrf_token %}
-                    <select name="status"
-                            onchange="this.form.submit()"
-                            class="form-select form-select-sm"
-                            style="min-width:120px;border-radius:20px;
-                                   font-size:0.75rem;font-weight:600;">
-                      {% for val, label in status_choices %}
-                        <option value="{{ val }}"
-                          {% if order.status == val %}selected{% endif %}>
-                          {{ label }}
-                        </option>
-                      {% endfor %}
-                    </select>
-                  </form>
-                </td>
-                <td>
-                  <div class="d-flex gap-1">
-                    <a href="{% url 'order_detail' order.id %}"
-                       class="btn btn-sm btn-outline-primary"
-                       title="View Order">
-                      <i class="bi bi-eye"></i>
-                    </a>
-                    <a href="{% url 'add_payment' order.id %}"
-                       class="btn btn-sm btn-outline-success"
-                       title="Add Payment">
-                      <i class="bi bi-plus-circle"></i>
-                    </a>
-                  </div>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="7" class="text-center py-4"
-                    style="color:#6B7280;">
-                  <i class="bi bi-inbox d-block fs-3 mb-2"
-                     style="color:#D1D5DB;"></i>
-                  No orders yet
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+<!-- SECTION 2 — Revenue Trend Chart -->
+<div class="card shadow-sm rounded-3 mb-4">
+  <div class="card-header">
+    <h5 class="mb-0 fw-bold">Revenue Trend — Last 6 Months</h5>
   </div>
-
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-wallet2 me-2"></i>Unpaid Debts</span>
-        <span class="badge-status badge-pending">
-          {{ debts|length }} unpaid
-        </span>
-      </div>
-      <div class="card-body p-0">
-        {% for debt in debts %}
-        <div style="padding:1rem 1.25rem;
-                    border-bottom:1px solid #F3F4F6;">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <div style="font-weight:600;font-size:0.875rem;">
-                {{ debt.customer.user.username }}
-              </div>
-              <div style="font-size:0.78rem;color:#6B7280;">
-                Order #{{ debt.order.id }} •
-                {{ debt.order.order_date|date:"M d, Y" }}
-              </div>
-            </div>
-            <div style="font-weight:800;color:#EF4444;font-size:0.95rem;">
-              KSh {{ debt.outstanding_balance }}
-            </div>
-          </div>
-        </div>
-        {% empty %}
-        <div class="text-center py-4" style="color:#6B7280;">
-          <i class="bi bi-check-circle fs-3 d-block mb-2"
-             style="color:#10B981;"></i>
-          <div style="font-size:0.875rem;">All debts cleared!</div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
+  <div class="card-body">
+    <canvas id="revenueChart" height="80"></canvas>
   </div>
 </div>
 
-<!-- PAYMENTS + STOCK -->
-<div class="row g-4 mb-4">
-  <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-credit-card me-2"></i>Recent Payments</span>
-        <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-arrow-right me-1"></i> Manage All
-        </a>
-      </div>
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Customer</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Date</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for payment in payments %}
-              <tr>
-                <td>
-                  <span style="font-weight:700;color:#4F46E5;">
-                    #{{ payment.order.id }}
-                  </span>
-                </td>
-                <td style="font-weight:500;">
-                  {{ payment.order.customer.user.username }}
-                </td>
-                <td style="font-weight:700;">KSh {{ payment.amount }}</td>
-                <td>
-                  <span class="badge-status badge-{{ payment.payment_method|lower }}">
-                    {% if payment.payment_method == 'mpesa' %}
-                      <i class="bi bi-phone me-1"></i>
-                    {% else %}
-                      <i class="bi bi-cash-coin me-1"></i>
-                    {% endif %}
-                    {{ payment.payment_method|title }}
-                  </span>
-                </td>
-                <td style="color:#6B7280;font-size:0.82rem;">
-                  {{ payment.payment_date|date:"M d, Y" }}
-                </td>
-                <td>
-                  <a href="{% url 'edit_payment' payment.id %}"
-                     class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-pencil"></i>
-                  </a>
-                </td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="6" class="text-center py-4"
-                    style="color:#6B7280;">
-                  No payments recorded
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-box-seam me-2"></i>Stock Overview</span>
-        <a href="{% url 'admin_products_list' %}"
-           class="btn btn-sm btn-outline-primary">
-          View All
-        </a>
-      </div>
-      <div class="card-body p-0">
-        {% for product in products %}
-        <div style="padding:0.85rem 1.25rem;
-                    border-bottom:1px solid #F3F4F6;
-                    display:flex;align-items:center;gap:12px;">
-          {% if product.images.first %}
-            <img src="{{ product.images.first.image.url }}"
-                 style="width:44px;height:44px;border-radius:8px;
-                        object-fit:cover;flex-shrink:0;">
-          {% else %}
-            <div style="width:44px;height:44px;border-radius:8px;
-                        background:#F3F4F6;display:flex;
-                        align-items:center;justify-content:center;
-                        flex-shrink:0;">
-              <i class="bi bi-image" style="color:#D1D5DB;"></i>
-            </div>
-          {% endif %}
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;font-size:0.875rem;
-                        white-space:nowrap;overflow:hidden;
-                        text-overflow:ellipsis;">
-              {{ product.name }}
-            </div>
-            <div style="font-size:0.78rem;color:#6B7280;">
-              KSh {{ product.price }}
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;">
-            {% if product.stock == 0 %}
-              <span class="badge-status badge-cancelled">Out</span>
-            {% elif product.stock <= 3 %}
-              <span class="badge-status badge-pending">
-                {{ product.stock }} left
-              </span>
-            {% else %}
-              <span class="badge-status badge-delivered">
-                {{ product.stock }} left
-              </span>
-            {% endif %}
-          </div>
-          <div style="flex-shrink:0;">
-            <a href="{% url 'update_product' product.id %}"
-               class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-pencil"></i>
-            </a>
-          </div>
-        </div>
-        {% empty %}
-        <div class="text-center py-4" style="color:#6B7280;">
-          No products yet
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-</div>
-
+<script id="revenueTrendData" type="application/json">{{ revenue_trend_json }}</script>
 <script>
-  document.getElementById('orderStatusFilter')
-    .addEventListener('change', function() {
-      const val = this.value;
-      document.querySelectorAll('#ordersBody tr').forEach(row => {
-        row.style.display =
-          val === 'all' || row.dataset.status === val ? '' : 'none';
-      });
-    });
-</script>
-{% endblock %}
+  const raw = JSON.parse(document.getElementById('revenueTrendData').textContent);
+  const labels = raw.map(d => d.month);
+  const totals = raw.map(d => d.total);
 
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 120);
+  gradient.addColorStop(0, 'rgba(13, 110, 253, 0.25)');
+  gradient.addColorStop(1, 'rgba(13, 110, 253, 0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Revenue',
+        data: totals,
+        borderColor: '#0d6efd',
+        backgroundColor: gradient,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return 'KSh ' + value.toLocaleString();
+            }
+          },
+          grid: {
+            color: 'rgba(0,0,0,0.05)'
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+</script>
+
+<!-- SECTION 3 — Recent Payments Table -->
+<div class="card shadow-sm rounded-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-bold">Recent Payments</span>
+    <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">View all</a>
+  </div>
+  <div class="card-body p-0">
+    {% if recent_payments %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in recent_payments %}
+          <tr>
+            <td><a href="{% url 'order_detail' payment.order.pk %}" class="fw-bold text-primary">#{{ payment.order.pk }}</a></td>
+            <td>{{ payment.order.customer.user.get_full_name|default:payment.order.customer.user.username }}</td>
+            <td class="fw-bold">KSh {{ payment.amount|floatformat:0 }}</td>
+            <td>
+              {% if payment.payment_method == 'mpesa' %}
+                <span class="badge bg-success">Mpesa</span>
+              {% elif payment.payment_method == 'bank' %}
+                <span class="badge bg-primary">Bank</span>
+              {% else %}
+                <span class="badge bg-secondary">Cash</span>
+              {% endif %}
+            </td>
+            <td>{{ payment.payment_date|date:"d M Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted">No payments recorded yet.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- SECTION 4 — Modals -->
+<!-- Revenue Modal -->
+<div class="modal fade" id="revenueModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Revenue Breakdown</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Customer</th><th>Amount</th><th>Method</th><th>Date</th></tr></thead>
+          <tbody>
+            {% for payment in recent_payments %}
+            <tr>
+              <td>{{ payment.order.customer.user.get_full_name|default:payment.order.customer.user.username }}</td>
+              <td>KSh {{ payment.amount|floatformat:0 }}</td>
+              <td>{{ payment.payment_method|title }}</td>
+              <td>{{ payment.payment_date|date:"d M Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center text-muted">No payments</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Orders Modal -->
+<div class="modal fade" id="ordersModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Order Summary</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2"><strong>Total Orders:</strong> {{ total_orders }}</p>
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Status</th><th>Count</th></tr></thead>
+          <tbody>
+            {% for item in order_status_breakdown %}
+            <tr><td>{{ item.status|title }}</td><td>{{ item.count }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <a href="{% url 'orders_list' %}" class="btn btn-primary">Manage Orders</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Debt Modal -->
+<div class="modal fade" id="debtModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Outstanding Debts</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2"><strong>Total Outstanding:</strong> KSh {{ outstanding_debt|floatformat:0 }}</p>
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Customer</th><th>Balance</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for debt in top_debtors %}
+            <tr>
+              <td>{{ debt.customer.user.username }}</td>
+              <td>KSh {{ debt.outstanding_balance|floatformat:0 }}</td>
+              <td><span class="badge bg-danger">Unpaid</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted">No outstanding debts</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Products Modal -->
+<div class="modal fade" id="productsModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Stock Alert</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Product</th><th>Stock</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for product in low_stock_products %}
+            <tr>
+              <td>{{ product.name }}</td>
+              <td>{{ product.stock }}</td>
+              <td>
+                {% if product.stock == 0 %}
+                  <span class="badge bg-danger">Out of Stock</span>
+                {% else %}
+                  <span class="badge bg-warning">Low Stock</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted">No low stock products</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <a href="{% url 'admin_products_list' %}" class="btn btn-primary">Manage Products</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
