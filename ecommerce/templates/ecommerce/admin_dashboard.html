@@ -29,12 +29,12 @@
     <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#revenueModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="text-muted mb-1" style="font-size:0.875rem;">Total Revenue</div>
-          <div class="fw-bold mb-1" style="font-size:1.75rem;">KSh {{ total_revenue|floatformat:0 }}</div>
-          <div class="text-muted" style="font-size:0.8125rem;">All time collected</div>
+          <div class="text-muted mb-1">Total Revenue</div>
+          <div class="fw-bold mb-1">KSh {{ total_revenue|floatformat:0 }}</div>
+          <div class="text-muted">All time collected</div>
         </div>
-        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#D1FAE5;">
-          <i class="bi bi-currency-dollar text-success"></i>
+        <div class="icon-shape">
+          <i class="bi bi-currency-dollar"></i>
         </div>
       </div>
     </div>
@@ -44,12 +44,12 @@
     <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#ordersModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="text-muted mb-1" style="font-size:0.875rem;">Total Orders</div>
-          <div class="fw-bold mb-1" style="font-size:1.75rem;">{{ total_orders }}</div>
-          <div class="text-muted" style="font-size:0.8125rem;">{{ pending_orders }} pending</div>
+          <div class="text-muted mb-1">Total Orders</div>
+          <div class="fw-bold mb-1">{{ total_orders }}</div>
+          <div class="text-muted">{{ pending_orders }} pending</div>
         </div>
-        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#DBEAFE;">
-          <i class="bi bi-bag-check text-primary"></i>
+        <div class="icon-shape">
+          <i class="bi bi-bag-check"></i>
         </div>
       </div>
     </div>
@@ -59,12 +59,12 @@
     <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#debtModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="text-muted mb-1" style="font-size:0.875rem;">Outstanding</div>
-          <div class="fw-bold mb-1" style="font-size:1.75rem;color:#EF4444;">KSh {{ outstanding_debt|floatformat:0 }}</div>
-          <div class="text-muted" style="font-size:0.8125rem;">{{ unpaid_debt_count }} unpaid debts</div>
+          <div class="text-muted mb-1">Outstanding</div>
+          <div class="fw-bold mb-1 text-danger">KSh {{ outstanding_debt|floatformat:0 }}</div>
+          <div class="text-muted">{{ unpaid_debt_count }} unpaid debts</div>
         </div>
-        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#FEE2E2;">
-          <i class="bi bi-exclamation-triangle text-danger"></i>
+        <div class="icon-shape">
+          <i class="bi bi-exclamation-triangle"></i>
         </div>
       </div>
     </div>
@@ -74,12 +74,12 @@
     <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#productsModal">
       <div class="d-flex justify-content-between align-items-start">
         <div>
-          <div class="text-muted mb-1" style="font-size:0.875rem;">Products</div>
-          <div class="fw-bold mb-1" style="font-size:1.75rem;">{{ total_products }}</div>
-          <div class="text-muted" style="font-size:0.8125rem;">In catalogue</div>
+          <div class="text-muted mb-1">Products</div>
+          <div class="fw-bold mb-1">{{ total_products }}</div>
+          <div class="text-muted">In catalogue</div>
         </div>
-        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;background:#FEF3C7;">
-          <i class="bi bi-box-seam text-warning"></i>
+        <div class="icon-shape">
+          <i class="bi bi-box-seam"></i>
         </div>
       </div>
     </div>
@@ -103,9 +103,6 @@
   const totals = raw.map(d => d.total);
 
   const ctx = document.getElementById('revenueChart').getContext('2d');
-  const gradient = ctx.createLinearGradient(0, 0, 0, 120);
-  gradient.addColorStop(0, 'rgba(13, 110, 253, 0.25)');
-  gradient.addColorStop(1, 'rgba(13, 110, 253, 0)');
 
   new Chart(ctx, {
     type: 'line',
@@ -114,8 +111,8 @@
       datasets: [{
         label: 'Revenue',
         data: totals,
-        borderColor: '#0d6efd',
-        backgroundColor: gradient,
+        borderColor: '#E07A5F',
+        backgroundColor: 'rgba(224, 122, 95, 0.1)',
         fill: true,
         tension: 0.4,
         pointRadius: 0,
@@ -153,49 +150,49 @@
 
 <!-- SECTION 3 — Recent Payments Table -->
 <div class="card shadow-sm rounded-3">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <span class="fw-bold">Recent Payments</span>
-    <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">View all</a>
-  </div>
-  <div class="card-body p-0">
-    {% if recent_payments %}
-    <div class="table-responsive">
-      <table class="table mb-0">
-        <thead>
-          <tr>
-            <th>Order #</th>
-            <th>Customer</th>
-            <th>Amount</th>
-            <th>Method</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for payment in recent_payments %}
-          <tr>
-            <td><a href="{% url 'order_detail' payment.order.pk %}" class="fw-bold text-primary">#{{ payment.order.pk }}</a></td>
-            <td>{{ payment.order.customer.user.get_full_name|default:payment.order.customer.user.username }}</td>
-            <td class="fw-bold">KSh {{ payment.amount|floatformat:0 }}</td>
-            <td>
-              {% if payment.payment_method == 'mpesa' %}
-                <span class="badge bg-success">Mpesa</span>
-              {% elif payment.payment_method == 'bank' %}
-                <span class="badge bg-primary">Bank</span>
-              {% else %}
-                <span class="badge bg-secondary">Cash</span>
-              {% endif %}
-            </td>
-            <td>{{ payment.payment_date|date:"d M Y" }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="text-center py-4 text-muted">No payments recorded yet.</div>
-    {% endif %}
-  </div>
-</div>
+   <div class="card-header d-flex justify-content-between align-items-center">
+     <span class="fw-bold">Recent Payments</span>
+     <a href="{% url 'payment_list' %}" class="btn btn-sm btn-outline-primary">View all</a>
+   </div>
+   <div class="card-body p-0">
+     {% if recent_payments %}
+     <div class="table-responsive">
+       <table class="table table-borderless mb-0">
+         <thead>
+           <tr>
+             <th>Order #</th>
+             <th>Customer</th>
+             <th>Amount</th>
+             <th>Method</th>
+             <th>Date</th>
+           </tr>
+         </thead>
+         <tbody>
+           {% for payment in recent_payments %}
+           <tr class="py-3">
+             <td><a href="{% url 'order_detail' payment.order.pk %}" class="fw-bold text-primary">#{{ payment.order.pk }}</a></td>
+             <td>{{ payment.order.customer.user.get_full_name|default:payment.order.customer.user.username }}</td>
+             <td class="fw-bold">KSh {{ payment.amount|floatformat:0 }}</td>
+             <td>
+               {% if payment.payment_method == 'mpesa' %}
+                 <span class="badge bg-success">Mpesa</span>
+               {% elif payment.payment_method == 'bank' %}
+                 <span class="badge bg-primary">Bank</span>
+               {% else %}
+                 <span class="badge bg-secondary">Cash</span>
+               {% endif %}
+             </td>
+             <td>{{ payment.payment_date|date:"d M Y" }}</td>
+           </tr>
+           {% endfor %}
+         </tbody>
+       </table>
+     </div>
+     {% else %}
+     <div class="text-center py-4 text-muted">No payments recorded yet.</div>
+     {% endif %}
+   </div>
+ </div>
 
 <!-- SECTION 4 — Modals -->
 <!-- Revenue Modal -->
