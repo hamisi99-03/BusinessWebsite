@@ -334,36 +334,6 @@
          border-bottom: 1px solid var(--border);
        }
      }
-     
-     /* FLOATING BUBBLE DROPDOWN */
-     .navbar-nav .dropdown-menu {
-       display: block; 
-       opacity: 0; 
-       visibility: hidden;
-       transform: translateY(15px);
-       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-       border: none; 
-       border-radius: 20px;
-       box-shadow: 0 15px 35px rgba(224, 122, 95, 0.15);
-       margin-top: 12px; 
-       padding: 10px;
-     }
-     .navbar-nav .dropdown-menu.show {
-       opacity: 1; 
-       visibility: visible; 
-       transform: translateY(0);
-     }
-     .dropdown-item {
-       border-radius: 12px; 
-       padding: 10px 18px;
-       font-family: 'Quicksand', sans-serif; 
-       transition: 0.2s;
-     }
-     .dropdown-item:hover {
-       background-color: #FFF8F0; 
-       color: var(--primary);
-       transform: translateX(4px);
-     }
     </style>
 </head>
 <body>
@@ -401,14 +371,12 @@
          class="nav-link {% if request.resolver_match.url_name == 'debts_list' %}active{% endif %}">
         <i class="bi bi-wallet2 me-1"></i> Debts
       </a>
-       <a href="{% url 'profile_page' %}" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+       <a href="{% url 'profile_page' %}" class="nav-link">
          <i class="bi bi-person-circle me-1"></i> {{ user.username }}
        </a>
-       <ul class="dropdown-menu dropdown-menu-end">
-         <a href="{% url 'logout' %}" class="dropdown-item">
-           <i class="bi bi-box-arrow-right me-1"></i> Logout
-         </a>
-       </ul>
+       <a href="{% url 'logout' %}" class="btn btn-outline-primary btn-sm">
+         <i class="bi bi-box-arrow-right me-1"></i> Logout
+       </a>
       </div>
     </div>
   </nav>
