@@ -367,6 +367,7 @@
       <a href="{% url 'orders_list' %}" class="nav-link {% if request.resolver_match.url_name == 'orders_list' %}active{% endif %}">
         <i class="bi bi-receipt me-1"></i> Orders
       </a>
+      {% if not user.is_staff %}
       <a href="{% url 'debts_list' %}" 
          class="nav-link {% if request.resolver_match.url_name == 'debts_list' %}active{% endif %}">
         <i class="bi bi-wallet2 me-1"></i> Debts
@@ -390,6 +391,8 @@
           {% endwith %}
         {% endif %}
       </a>
+      {% endif %}
+
 
 
       <a href="{% url 'profile_page' %}" class="nav-link">
