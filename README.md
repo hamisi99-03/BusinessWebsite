@@ -63,7 +63,7 @@ BusinessWebsite/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/BusinessWebsite.git
+   git clone https://github.com/hamisi99-03/BusinessWebsite.git
    cd BusinessWebsite
    ```
 
