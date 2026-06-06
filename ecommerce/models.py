@@ -248,5 +248,82 @@ class StockAdjustment(models.Model):
 
     def __str__(self):
         return f"{self.adjustment_type} {self.quantity} for {self.product.name}"
+
+
+class Supplier(models.Model):
+    name = models.CharField(max_length=100)
+    contact_person = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    address = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Consignment(models.Model):
+    reference_number = models.CharField(max_length=100, unique=True)
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True)
+    date_received = models.DateField()
+    freight_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    customs_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    other_expenses = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ['-date_received']
+
+    def __str__(self):
+        return f"Consignment {self.reference_number}"
+
+    def get_total_cost(self):
+        return sum(item.total_cost for item in self.items.all())
+
+    def get_total_quantity(self):
+        return sum(item.quantity for item in self.items.all())
+
+
+class ConsignmentItem(models.Model):
+    consignment = models.ForeignKey(Consignment, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    units_per_box = models.PositiveIntegerField(default=1)
+    cost_per_box = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    cost_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name}"
+
+    @property
+    def total_cost(self):
+        if self.units_per_box > 0:
+            boxes = self.quantity // self.units_per_box
+            remaining_units = self.quantity % self.units_per_box
+            return boxes * self.cost_per_box + remaining_units * self.cost_per_unit
+        return self.quantity * self.cost_per_unit
+
+
+EXPENSE_CATEGORIES = [
+    ('transport', 'Transport'),
+    ('salaries', 'Salaries'),
+    ('rent', 'Rent'),
+    ('utilities', 'Utilities'),
+    ('marketing', 'Marketing'),
+    ('supplies', 'Supplies'),
+    ('other', 'Other'),
+]
+
+
+class Expense(models.Model):
+    category = models.CharField(max_length=50, choices=EXPENSE_CATEGORIES)
+    description = models.CharField(max_length=200, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    date = models.DateField()
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.get_category_display()}: KSh {self.amount}"
     
 
