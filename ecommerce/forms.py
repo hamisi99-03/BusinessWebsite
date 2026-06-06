@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
-from .models import Product, OrderItem, Payment, Customer
+from .models import Product, OrderItem, Payment, Customer, Consignment, ConsignmentItem, Expense, Supplier
 
 User = get_user_model()
 
@@ -101,4 +101,56 @@ class ProductForm(forms.ModelForm):
             "stock": forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'min': '0'}),
             "category": forms.Select(attrs={'class': 'form-select'}),
             "brand": forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class ConsignmentForm(forms.ModelForm):
+    class Meta:
+        model = Consignment
+        fields = ['reference_number', 'supplier', 'date_received', 'freight_cost', 'customs_tax', 'other_expenses']
+        widgets = {
+            'reference_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g CON-2024-001'}),
+            'supplier': forms.Select(attrs={'class': 'form-select'}),
+            'date_received': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'freight_cost': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'customs_tax': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'other_expenses': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+        }
+
+
+class ConsignmentItemForm(forms.ModelForm):
+    class Meta:
+        model = ConsignmentItem
+        fields = ['product', 'quantity', 'units_per_box', 'cost_per_box', 'cost_per_unit']
+        widgets = {
+            'product': forms.Select(attrs={'class': 'form-select'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'units_per_box': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'cost_per_box': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'cost_per_unit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+        }
+
+
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ['category', 'description', 'amount', 'date']
+        widgets = {
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional description'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+
+class SupplierForm(forms.ModelForm):
+    class Meta:
+        model = Supplier
+        fields = ['name', 'contact_person', 'phone', 'email', 'address']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Supplier name'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Contact person'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+254 700 000 000'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'email@example.com'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Address'}),
         }
