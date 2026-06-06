@@ -13,140 +13,100 @@
 </div>
 
 <div class="row g-4">
-   <div class="col-lg-8">
-     <form method="POST" enctype="multipart/form-data">
-       {% csrf_token %}
+  <div class="col-lg-8">
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
 
-       <!-- BASIC INFO -->
-       <div class="card mb-4">
-         <div class="card-header">
-           <i class="bi bi-info-circle me-2"></i>Product Information
-         </div>
-         <div class="card-body p-4">
-           {% if form.non_field_errors %}
-             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-           {% endif %}
-           <div class="mb-3">
-             <label class="form-label">
-               Product Name <span style="color:#EF4444;">*</span>
-             </label>
-             {{ form.name }}
-             {% if form.name.errors %}
-               <div class="text-danger small">{{ form.name.errors }}</div>
-             {% endif %}
-           </div>
-           <div class="mb-3">
-             <label class="form-label">Description</label>
-             {{ form.description }}
-             {% if form.description.errors %}
-               <div class="text-danger small">{{ form.description.errors }}</div>
-             {% endif %}
-           </div>
-           <div class="row g-3">
-             <div class="col-md-6">
-               <label class="form-label">
-                 Price (KSh) <span style="color:#EF4444;">*</span>
-               </label>
-               <div class="input-group">
-                 <span class="input-group-text"
-                       style="background:#F9FAFB;border:1px solid #E5E7EB;
-                              border-right:none;border-radius:8px 0 0 8px;
-                              font-weight:600;color:#6B7280;">
-                   KSh
-                 </span>
-                 {{ form.price }}
-               </div>
-               {% if form.price.errors %}
-                 <div class="text-danger small">{{ form.price.errors }}</div>
-               {% endif %}
-             </div>
-             <div class="col-12 col-md-6">
-               <label class="form-label">
-                 Stock Quantity <span style="color:#EF4444;">*</span>
-               </label>
-               <div class="input-group">
-                 <span class="input-group-text"
-                       style="background:#F9FAFB;border:1px solid #E5E7EB;
-                              border-right:none;border-radius:8px 0 0 8px;
-                              font-weight:600;color:#6B7280;">
-                   <i class="bi bi-box-seam"></i>
-                 </span>
-                 {{ form.stock }}
-               </div>
-               {% if form.stock.errors %}
-                 <div class="text-danger small">{{ form.stock.errors }}</div>
-               {% endif %}
-             </div>
-           </div>
-</div>
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="bi bi-info-circle me-2"></i>Product Information
         </div>
-
-        <!-- IMAGES -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <i class="bi bi-images me-2"></i>Product Images
+        <div class="card-body p-4">
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <div class="mb-3">
+            <label class="form-label">Product Name <span style="color:#EF4444;">*</span></label>
+            {{ form.name }}
+            {% if form.name.errors %}<div class="text-danger small">{{ form.name.errors }}</div>{% endif %}
           </div>
-          <div class="card-body p-4">
-            {{ formset.management_form }}
-            {% if product and product.images.all %}
-            <div class="mb-4">
-              <label class="form-label">Current Images</label>
-              <div class="row g-2">
-                {% for image in product.images.all %}
-                <div class="col-4 col-md-3 position-relative">
-                  <div style="border-radius:10px;overflow:hidden;border:1px solid #E5E7EB;">
-                    <img src="{{ image.image.url }}" style="width:100%;aspect-ratio:1;object-fit:cover;">
-                  </div>
-                  <input type="checkbox" name="delete_images" value="{{ image.id }}" id="del_{{ image.id }}" style="display:none;">
-                  <label for="del_{{ image.id }}" class="btn btn-sm btn-danger position-absolute" style="top:6px;right:6px;padding:4px 8px;border-radius:6px;font-size:0.7rem;cursor:pointer;" title="Mark for deletion">
-                    <i class="bi bi-trash"></i>
-                  </label>
-                </div>
-                {% endfor %}
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            {{ form.description }}
+            {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Price (KSh) <span style="color:#EF4444;">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text" style="background:#F9FAFB;border:1px solid #E5E7EB;border-right:none;border-radius:8px 0 0 8px;font-weight:600;color:#6B7280;">KSh</span>
+                {{ form.price }}
               </div>
-              <div style="font-size:0.78rem;color:#6B7280;margin-top:8px;">
-                <i class="bi bi-info-circle me-1"></i>Click the trash icon on an image to mark it for deletion.
-              </div>
+              {% if form.price.errors %}<div class="text-danger small">{{ form.price.errors }}</div>{% endif %}
             </div>
-            {% endif %}
+            <div class="col-12 col-md-6">
+              <label class="form-label">Stock Quantity <span style="color:#EF4444;">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text" style="background:#F9FAFB;border:1px solid #E5E7EB;border-right:none;border-radius:8px 0 0 8px;font-weight:600;color:#6B7280;"><i class="bi bi-box-seam"></i></span>
+                {{ form.stock }}
+              </div>
+              {% if form.stock.errors %}<div class="text-danger small">{{ form.stock.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <label class="form-label">{% if product %}Add More Images{% else %}Upload Images{% endif %}</label>
-            <div id="imageInputs">
-              {% for image_form in formset %}
-                <div class="mb-2">
-                  {{ image_form.image }}
-                  {% if image_form.image.errors %}
-                    <div class="text-danger small">{{ image_form.image.errors }}</div>
-                  {% endif %}
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="bi bi-images me-2"></i>Product Images
+        </div>
+        <div class="card-body p-4">
+          {% if product and product.images.all %}
+          <div class="mb-4">
+            <label class="form-label">Current Images</label>
+            <div class="row g-2">
+              {% for image in product.images.all %}
+              <div class="col-4 col-md-3 position-relative">
+                <div style="border-radius:10px;overflow:hidden;border:1px solid #E5E7EB;">
+                  <img src="{{ image.image.url }}" style="width:100%;aspect-ratio:1;object-fit:cover;">
                 </div>
+                <input type="checkbox" name="delete_images" value="{{ image.id }}" id="del_{{ image.id }}" style="display:none;">
+                <label for="del_{{ image.id }}" class="btn btn-sm btn-danger position-absolute" style="top:6px;right:6px;padding:4px 8px;border-radius:6px;font-size:0.7rem;cursor:pointer;" title="Mark for deletion">
+                  <i class="bi bi-trash"></i>
+                </label>
+              </div>
               {% endfor %}
             </div>
+            <div style="font-size:0.78rem;color:#6B7280;margin-top:8px;"><i class="bi bi-info-circle me-1"></i>Click the trash icon to mark images for deletion.</div>
           </div>
-        </div>
+          {% endif %}
 
-      <!-- SUBMIT -->
+          <label class="form-label">{% if product %}Add More Images{% else %}Upload Images{% endif %}</label>
+          <div id="dropZone" style="border:2px dashed #E5E7EB;border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all 0.2s ease;background:#FAFAFA;">
+            <i class="bi bi-cloud-upload fs-3" style="color:#D1D5DB;display:block;margin-bottom:8px;"></i>
+            <div style="font-weight:600;color:#374151;margin-bottom:4px;">Click or drag to upload images</div>
+            <div style="font-size:0.8rem;color:#9CA3AF;">PNG, JPG, WEBP up to 5MB each</div>
+          </div>
+          <input type="file" name="images" id="imageInput" multiple accept="image/*" style="display:none;">
+          <div id="imagePreviews" class="row g-2 mt-3"></div>
+        </div>
+      </div>
+
       <div class="d-flex gap-3">
         <button type="submit" class="btn btn-primary px-4">
           <i class="bi bi-{% if product %}check-lg{% else %}plus-lg{% endif %} me-1"></i>
           {% if product %}Save Changes{% else %}Add Product{% endif %}
         </button>
-        <a href="{% url 'admin_products_list' %}"
-           class="btn btn-outline-secondary px-4">
-          Cancel
-        </a>
+        <a href="{% url 'admin_products_list' %}" class="btn btn-outline-secondary px-4">Cancel</a>
       </div>
     </form>
   </div>
 
-  <!-- TIPS COLUMN -->
   <div class="col-lg-4">
     <div class="card mb-3">
-      <div class="card-header">
-        <i class="bi bi-lightbulb me-2"></i>Tips
-      </div>
+      <div class="card-header"><i class="bi bi-lightbulb me-2"></i>Tips</div>
       <div class="card-body p-4">
-        <ul style="font-size:0.875rem;color:#6B7280;
-                   padding-left:1.2rem;margin:0;line-height:2;">
+        <ul style="font-size:0.875rem;color:#6B7280;padding-left:1.2rem;margin:0;line-height:2;">
           <li>Use a clear descriptive product name</li>
           <li>Add detailed specs in the description</li>
           <li>Upload at least one high quality image</li>
@@ -155,30 +115,13 @@
         </ul>
       </div>
     </div>
-
     {% if product %}
     <div class="card">
-      <div class="card-header">
-        <i class="bi bi-bar-chart me-2"></i>Product Stats
-      </div>
+      <div class="card-header"><i class="bi bi-bar-chart me-2"></i>Product Stats</div>
       <div class="card-body p-4">
-        <div class="d-flex justify-content-between mb-2"
-             style="font-size:0.875rem;">
-          <span style="color:#6B7280;">Current Stock</span>
-          <span style="font-weight:700;">{{ product.stock }} units</span>
-        </div>
-        <div class="d-flex justify-content-between mb-2"
-             style="font-size:0.875rem;">
-          <span style="color:#6B7280;">Price</span>
-          <span style="font-weight:700;">KSh {{ product.price }}</span>
-        </div>
-        <div class="d-flex justify-content-between"
-             style="font-size:0.875rem;">
-          <span style="color:#6B7280;">Images</span>
-          <span style="font-weight:700;">
-            {{ product.images.count }} uploaded
-          </span>
-        </div>
+        <div class="d-flex justify-content-between mb-2" style="font-size:0.875rem;"><span style="color:#6B7280;">Current Stock</span><span style="font-weight:700;">{{ product.stock }} units</span></div>
+        <div class="d-flex justify-content-between mb-2" style="font-size:0.875rem;"><span style="color:#6B7280;">Price</span><span style="font-weight:700;">KSh {{ product.price }}</span></div>
+        <div class="d-flex justify-content-between" style="font-size:0.875rem;"><span style="color:#6B7280;">Images</span><span style="font-weight:700;">{{ product.images.count }} uploaded</span></div>
       </div>
     </div>
     {% endif %}
@@ -186,21 +129,60 @@
 </div>
 
 <script>
-   document.querySelectorAll('[for^="del_"]').forEach(label => {
-     label.addEventListener('click', function() {
-       const checkbox = document.getElementById(this.getAttribute('for'));
-       const imgWrapper = this.closest('div[style]').parentElement;
-       if (checkbox.checked) {
-         checkbox.checked = false;
-         imgWrapper.style.opacity = '1';
-         this.innerHTML = '<i class="bi bi-trash"></i>';
-       } else {
-         checkbox.checked = true;
-         imgWrapper.style.opacity = '0.4';
-         this.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
-       }
-     });
-   });
- </script>
- {% endblock %}
+  const dropZone = document.getElementById('dropZone');
+  const imageInput = document.getElementById('imageInput');
+  const previews = document.getElementById('imagePreviews');
 
+  dropZone.addEventListener('click', () => imageInput.click());
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = '#4F46E5';
+    dropZone.style.background = '#EEF2FF';
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.style.borderColor = '#E5E7EB';
+    dropZone.style.background = '#FAFAFA';
+  });
+
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = '#E5E7EB';
+    dropZone.style.background = '#FAFAFA';
+    handleFiles(e.dataTransfer.files);
+  });
+
+  imageInput.addEventListener('change', () => handleFiles(imageInput.files));
+
+  function handleFiles(files) {
+    const fileArray = Array.from(files);
+    fileArray.forEach((file, i) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const col = document.createElement('div');
+        col.className = 'col-4 col-md-3';
+        col.innerHTML = '<div style="border-radius:10px;overflow:hidden;border:1px solid #4F46E5;"><img src="'+e.target.result+'" style="width:100%;aspect-ratio:1;object-fit:cover;"></div>';
+        previews.appendChild(col);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  document.querySelectorAll('[for^="del_"]').forEach(label => {
+    label.addEventListener('click', function() {
+      const checkbox = document.getElementById(this.getAttribute('for'));
+      const imgWrapper = this.closest('.position-relative');
+      if (checkbox.checked) {
+        checkbox.checked = false;
+        imgWrapper.style.opacity = '1';
+        this.innerHTML = '<i class="bi bi-trash"></i>';
+      } else {
+        checkbox.checked = true;
+        imgWrapper.style.opacity = '0.4';
+        this.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+      }
+    });
+  });
+</script>
+{% endblock %}
