@@ -1,0 +1,53 @@
+{% extends "ecommerce/base.html" %}
+{% block title %}Consignments — BizStore{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Consignments</h1>
+    <p>Manage product suppliers and purchases</p>
+  </div>
+  <a href="{% url 'add_consignment' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i> Add Consignment
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <i class="bi bi-truck me-2"></i>Consignment Records
+  </div>
+  <div class="card-body p-0">
+    {% if consignments %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Supplier</th>
+            <th>Date</th>
+            <th>Items</th>
+            <th>Total Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for consignment in consignments %}
+          <tr>
+            <td><strong>{{ consignment.reference_number }}</strong></td>
+            <td>{{ consignment.supplier.name|default:"—" }}</td>
+            <td>{{ consignment.date_received|date:"M d, Y" }}</td>
+            <td>{{ consignment.get_total_quantity }}</td>
+            <td>KSh {{ consignment.get_total_cost|floatformat:0 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-truck fs-1 d-block mb-3"></i>
+      <div style="font-weight:600;">No consignments recorded</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
