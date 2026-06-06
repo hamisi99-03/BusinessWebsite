@@ -13,7 +13,8 @@ from .views import (
     dashboard_view, orders_list_view, order_detail_view, debts_list_view,
     profile_view, ProfileView, order_product_view, change_password_view,
     custom_login, admin_dashboard, payment_list_view, update_order_status, add_product, update_product, delete_product, product_list, admin_products_list, reports_view,
-    admin_update_order, admin_delete_order, adjust_stock  # newly added
+    admin_update_order, admin_delete_order, adjust_stock, product_detail, mark_payment_paid,
+    consignment_list, add_consignment, add_supplier, add_expense, expense_list, financial_report  # newly added
 )
 
 
@@ -49,12 +50,15 @@ urlpatterns = [
      path('auth/change-password/', change_password_view, name='change_password'),
     path('order-product/', order_product_view, name='order_product'),
     path('store/products/', product_list, name='product_list'),
+     path('webcat/', product_list, name='webcat'),
+     path('store/products/<int:pk>/', product_detail, name='product_detail'),
 
 
     # Admin dashboard (protected by @staff_member_required)
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
     path('admin-dashboard/reports/', reports_view, name='reports'),
     path('admin-dashboard/update-order/<int:pk>/', update_order_status, name='update_order_status'),
+    path('admin-dashboard/orders/<int:pk>/mark-paid/', mark_payment_paid, name='mark_payment_paid'),
     path('admin-dashboard/orders/<int:pk>/update/', admin_update_order, name='admin_update_order'),
     path('admin-dashboard/orders/<int:pk>/delete/', admin_delete_order, name='admin_delete_order'),
 
@@ -75,6 +79,14 @@ urlpatterns = [
     path("admin-dashboard/product/<int:pk>/delete/", delete_product, name="delete_product"),
     path("admin-dashboard/products/", admin_products_list, name="admin_products_list"),
     path("admin-dashboard/product/<int:pk>/adjust-stock/", adjust_stock, name="adjust_stock"),
+
+    # Consignments & Expenses
+    path("admin-dashboard/consignments/", consignment_list, name="consignment_list"),
+    path("admin-dashboard/consignment/add/", add_consignment, name="add_consignment"),
+    path("admin-dashboard/supplier/add/", add_supplier, name="add_supplier"),
+    path("admin-dashboard/expenses/", expense_list, name="expense_list"),
+    path("admin-dashboard/expense/add/", add_expense, name="add_expense"),
+    path("admin-dashboard/financial-report/", financial_report, name="financial_report"),
 
 
 

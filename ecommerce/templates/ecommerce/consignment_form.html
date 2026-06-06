@@ -1,0 +1,54 @@
+{% extends "ecommerce/base.html" %}
+{% block title %}Add Consignment — BizStore{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Add Consignment</h1>
+    <p>Record product receipt from supplier</p>
+  </div>
+  <a href="{% url 'consignment_list' %}" class="btn btn-outline-secondary">Back</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Reference Number</label>
+          {{ form.reference_number }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Supplier</label>
+          {{ form.supplier }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Date Received</label>
+          {{ form.date_received }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Freight Cost (KSh)</label>
+          {{ form.freight_cost }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Customs/Tax (KSh)</label>
+          {{ form.customs_tax }}
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Other Expenses (KSh)</label>
+          {{ form.other_expenses }}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary mt-4">Save Consignment</button>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date().toISOString().split('T')[0];
+  document.querySelector('input[type="date"]').value = today;
+});
+</script>
+{% endblock %}

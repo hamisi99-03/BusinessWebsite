@@ -1,0 +1,177 @@
+{% extends "ecommerce/base.html" %}
+{% block title %}{{ product.name }} — BizStore{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- Left column — Product Images -->
+  <div class="col-12 col-lg-6">
+    <div class="product-gallery">
+      <div class="gallery-container">
+        {% for image in product.images.all %}
+        <img src="{{ image.image.url }}" alt="{{ product.name }}" class="gallery-image {% if not forloop.first %}hidden{% endif %}">
+        {% endfor %}
+        {% if not product.images.all %}
+        <div class="placeholder-image" style="aspect-ratio:1;background:#F3F4F6;display:flex;align-items:center;justify-content:center;">
+          <i class="bi bi-image fs-1" style="color:var(--muted);"></i>
+        </div>
+        {% endif %}
+      </div>
+      {% if product.images.all|length > 1 %}
+      <div class="gallery-controls mt-2">
+        <button class="gallery-nav prev-btn" onclick="prevDetailImage(this)"><i class="bi bi-chevron-left"></i></button>
+        <div class="gallery-dots">
+          {% for image in product.images.all %}
+          <span class="dot {% if forloop.first %}active{% endif %}" onclick="goToDetailImage(this, {{ forloop.counter0 }})"></span>
+          {% endfor %}
+        </div>
+        <button class="gallery-nav next-btn" onclick="nextDetailImage(this)"><i class="bi bi-chevron-right"></i></button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right column — Product Info -->
+  <div class="col-12 col-lg-6">
+    <div class="product-info">
+      <h2 class="mb-2">{{ product.name }}</h2>
+      
+      {% if product.category or product.brand %}
+      <div class="d-flex gap-2 mb-3">
+        {% if product.category %}
+          <span class="badge" style="background:#EEF2FF;color:#4F46E5;">{{ product.category.name }}</span>
+        {% endif %}
+        {% if product.brand %}
+          <span class="badge" style="background:#FEF3C7;color:#92400E;">{{ product.brand.name }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
+      
+      <div class="product-price fs-3 fw-bold mb-3">KSh {{ product.price }}</div>
+      
+      {% if product.stock > 0 %}
+        <span class="stock-badge mb-3 d-inline-block" style="background:#D1FAE5;color:#065F46;">
+          {{ product.stock }} in stock
+        </span>
+      {% else %}
+        <span class="stock-badge mb-3 d-inline-block" style="background:#FEE2E2;color:#991B1B;">
+          Out of Stock
+        </span>
+      {% endif %}
+      
+      {% if product.description %}
+      <p class="mb-4">{{ product.description }}</p>
+      {% endif %}
+      
+      <div class="d-flex gap-2">
+        {% if product.stock > 0 %}
+          <a href="{% url 'order_product' %}?product_id={{ product.id }}" class="btn btn-primary flex-grow-1">
+            <i class="bi bi-cart-plus me-1"></i> Place Order
+          </a>
+        {% else %}
+          <button class="btn btn-secondary flex-grow-1" disabled>Unavailable</button>
+        {% endif %}
+        <a href="{% url 'webcat' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .product-gallery {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border-radius: 12px;
+    background:#F9FAFB;
+  }
+  .gallery-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+  }
+  .gallery-image, .placeholder-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .hidden {
+    display: none;
+  }
+  .gallery-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 8px;
+  }
+  .gallery-nav {
+    background: rgba(255,255,255,0.8);
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .gallery-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.3);
+    cursor: pointer;
+  }
+  .dot.active {
+    background: #4F46E5;
+    transform: scale(1.2);
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const gallery = document.querySelector('.product-gallery');
+  if (!gallery) return;
+  
+  const images = gallery.querySelectorAll('.gallery-image');
+  const dots = gallery.querySelectorAll('.dot');
+  
+  function showImage(index) {
+    images.forEach((img, i) => img.classList.toggle('hidden', i !== index));
+    dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+    gallery.dataset.current = index;
+  }
+  
+  window.nextDetailImage = function(btn) {
+    let idx = parseInt(gallery.dataset.current || 0);
+    idx = (idx + 1) % images.length;
+    showImage(idx);
+  };
+  
+  window.prevDetailImage = function(btn) {
+    let idx = parseInt(gallery.dataset.current || 0);
+    idx = (idx - 1 + images.length) % images.length;
+    showImage(idx);
+  };
+  
+  window.goToDetailImage = function(dot, idx) {
+    showImage(idx);
+  };
+  
+  // Touch swipe support
+  let startX = 0;
+  gallery.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+  gallery.addEventListener('touchend', e => {
+    const endX = e.changedTouches[0].clientX;
+    const diff = startX - endX;
+    if (Math.abs(diff) > 50) diff > 0 ? nextDetailImage() : prevDetailImage();
+  });
+});
+</script>
+{% endblock %}

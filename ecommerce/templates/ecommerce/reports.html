@@ -92,7 +92,7 @@
   </div>
 </div>
 
-<script id="ordersChartData" type="application/json">{{ monthly_orders_json }}</script>
+{{ monthly_orders|json_script:"ordersChartData" }}
 <script>
   const rawData = JSON.parse(document.getElementById('ordersChartData').textContent);
   const labels = rawData.map(d => d.month);
