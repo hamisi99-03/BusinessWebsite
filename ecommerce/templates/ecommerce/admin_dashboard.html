@@ -13,6 +13,15 @@
     <p>Welcome back, {{ user.username }}. Here's your store overview.</p>
   </div>
   <div class="d-flex gap-2">
+    <a href="{% url 'consignment_list' %}" class="btn btn-outline-info">
+      <i class="bi bi-truck me-1"></i> Consignments
+    </a>
+    <a href="{% url 'expense_list' %}" class="btn btn-outline-warning">
+      <i class="bi bi-wallet2 me-1"></i> Expenses
+    </a>
+    <a href="{% url 'financial_report' %}" class="btn btn-outline-success">
+      <i class="bi bi-graph-up me-1"></i> Financial Report
+    </a>
     <a href="{% url 'admin_products_list' %}" class="btn btn-outline-primary">
       <i class="bi bi-box-seam me-1"></i> Products
     </a>
