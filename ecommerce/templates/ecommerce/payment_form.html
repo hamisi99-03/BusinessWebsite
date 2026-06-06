@@ -23,37 +23,75 @@
           <i class="bi bi-receipt me-2"></i>Order Information
         </div>
         <div class="card-body p-4">
-     <div class="mb-3">
-             <label class="form-label">Order <span style="color:#EF4444;">*</span><small id="outstandingBalance" class="text-muted ms-2"></small></label>
-             <div class="input-group">
+          <div class="mb-3">
+            <label class="form-label">
+              Order <span style="color:#EF4444;">*</span>
+            </label>
+            <div class="input-group">
               <span class="input-group-text"
                     style="background:#F9FAFB;border:1px solid #E5E7EB;
                            border-right:none;border-radius:8px 0 0 8px;
                            font-weight:600;color:#6B7280;">
                 #
               </span>
-              <select name="order" class="form-select"
+              <select name="order" id="orderSelect" class="form-select"
                       style="border-radius:0 8px 8px 0;" required>
-                <option value="">Select an order...</option>
-                {% for order in orders %}
-                <option value="{{ order.id }}" 
-                        {% if payment and payment.order.id == order.id %}selected{% endif %}>
-                  #{{ order.id }} - {{ order.customer.user.username }}
+                <option value="">Select an order with balance...</option>
+                {% for o in orders %}
+                <option value="{{ o.id }}"
+                        data-balance="{{ o.get_outstanding_balance }}"
+                        data-total="{{ o.get_total_amount }}"
+                        data-paid="{{ o.get_total_paid }}"
+                        {% if order and order.id == o.id %}selected{% endif %}>
+                  #{{ o.id }} — {{ o.customer.user.username }}
+                  (KSh {{ o.get_outstanding_balance }} outstanding)
                 </option>
                 {% endfor %}
               </select>
             </div>
-            {% if order %}
-            <div class="mt-2 p-3" style="background:#F8F9FA;border-radius:6px;">
-              <strong>Outstanding Balance:</strong> 
-              <span style="font-size:1.1rem; color:#EF4444;">
-                KSh {{ order.get_outstanding_balance }}
-              </span>
+          </div>
+
+          <!-- BALANCE DISPLAY BOX -->
+          <div id="balanceBox"
+               style="display:{% if order %}block{% else %}none{% endif %};
+                      background:#FEF3C7;border:1px solid #FDE68A;
+                      border-radius:10px;padding:1rem;margin-top:0.5rem;">
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div style="font-size:0.72rem;color:#92400E;font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.05em;">
+                  Order Total
+                </div>
+                <div style="font-weight:800;color:#111827;"
+                     id="displayTotal">
+                  {% if order %}KSh {{ order.get_total_amount }}{% endif %}
+                </div>
+              </div>
+              <div class="col-4">
+                <div style="font-size:0.72rem;color:#92400E;font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.05em;">
+                  Already Paid
+                </div>
+                <div style="font-weight:800;color:#10B981;"
+                     id="displayPaid">
+                  {% if order %}KSh {{ order.get_total_paid }}{% endif %}
+                </div>
+              </div>
+              <div class="col-4">
+                <div style="font-size:0.72rem;color:#92400E;font-weight:600;
+                            text-transform:uppercase;letter-spacing:0.05em;">
+                  Outstanding
+                </div>
+                <div style="font-weight:800;color:#EF4444;"
+                     id="displayBalance">
+                  {% if order %}KSh {{ order.get_outstanding_balance }}{% endif %}
+                </div>
+              </div>
             </div>
-            {% endif %}
           </div>
         </div>
       </div>
+
 
       <!-- PAYMENT DETAILS -->
       <div class="card mb-4">
@@ -173,43 +211,56 @@
  </div>
 
  <script>
-   const orderSelect = document.querySelector('select[name="order"]');
-   const amountInput = document.querySelector('input[name="amount"]');
-   const outstandingEl = document.getElementById('outstandingBalance');
+  const orderSelect = document.getElementById('orderSelect');
+  const balanceBox = document.getElementById('balanceBox');
+  const displayTotal = document.getElementById('displayTotal');
+  const displayPaid = document.getElementById('displayPaid');
+  const displayBalance = document.getElementById('displayBalance');
+  const amountInput = document.querySelector('input[name="amount"]');
+  const amountWarning = document.getElementById('amountWarning');
 
-   if (orderSelect && amountInput) {
-     orderSelect.addEventListener('change', function() {
-       const orderId = this.value;
-       if (!orderId) {
-         outstandingEl.textContent = '';
-         outstandingEl.dataset.value = '0';
-         return;
-       }
-       fetch('/api/orders/' + orderId + '/')
-         .then(function(r) { return r.json(); })
-         .then(function(data) {
-           const bal = parseFloat(data.outstanding_balance || 0);
-           outstandingEl.textContent = 'Outstanding: KSh ' + bal.toLocaleString();
-           outstandingEl.dataset.value = bal;
-         })
-         .catch(function() {
-           outstandingEl.textContent = '';
-           outstandingEl.dataset.value = '0';
-         });
-     });
-   }
+  function updateBalanceBox() {
+    const selected = orderSelect.options[orderSelect.selectedIndex];
+    if (!selected || !selected.value) {
+      balanceBox.style.display = 'none';
+      return;
+    }
+    const balance = parseFloat(selected.dataset.balance) || 0;
+    const total = parseFloat(selected.dataset.total) || 0;
+    const paid = parseFloat(selected.dataset.paid) || 0;
 
-   if (amountInput && outstandingEl) {
-     amountInput.addEventListener('input', function() {
-       const amount = parseFloat(this.value) || 0;
-       const outstanding = parseFloat(outstandingEl.dataset.value || 0);
-       var warning = document.getElementById('amountWarning');
-       if (amount > outstanding && outstanding > 0) {
-         warning.classList.remove('d-none');
-       } else {
-         warning.classList.add('d-none');
-       }
-     });
-   }
- </script>
+    displayTotal.textContent = 'KSh ' + total.toLocaleString();
+    displayPaid.textContent = 'KSh ' + paid.toLocaleString();
+    displayBalance.textContent = 'KSh ' + balance.toLocaleString();
+    balanceBox.style.display = 'block';
+
+    // Pre-fill amount with outstanding balance
+    if (amountInput && !amountInput.value) {
+      amountInput.value = balance;
+    }
+  }
+
+  if (orderSelect) {
+    orderSelect.addEventListener('change', function() {
+      if (amountInput) amountInput.value = '';
+      updateBalanceBox();
+    });
+    // Run on page load if order is pre-selected
+    if (orderSelect.value) updateBalanceBox();
+  }
+
+  if (amountInput) {
+    amountInput.addEventListener('input', function() {
+      const selected = orderSelect.options[orderSelect.selectedIndex];
+      if (!selected || !selected.value) return;
+      const balance = parseFloat(selected.dataset.balance) || 0;
+      const amount = parseFloat(this.value) || 0;
+      if (amount > balance && balance > 0) {
+        amountWarning.classList.remove('d-none');
+      } else {
+        amountWarning.classList.add('d-none');
+      }
+    });
+  }
+</script>
 {% endblock %}

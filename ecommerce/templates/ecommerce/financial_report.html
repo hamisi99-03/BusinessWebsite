@@ -1,0 +1,86 @@
+{% extends "ecommerce/base.html" %}
+{% block title %}Financial Report — BizStore{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Financial Report</h1>
+    <p>Inventory and sales performance</p>
+  </div>
+  <form method="get" class="d-flex gap-2">
+    <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" class="form-control">
+    <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" class="form-control">
+    <button type="submit" class="btn btn-primary">Go</button>
+  </form>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-label mb-1">Stock Received</div>
+      <div class="stat-value">{{ stock_received }}</div>
+      <div class="stat-label">units</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-label mb-1">Stock Sold</div>
+      <div class="stat-value">{{ stock_sold }}</div>
+      <div class="stat-label">units</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-label mb-1">Total Sales</div>
+      <div class="stat-value">KSh {{ total_sales|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-label mb-1">Net Profit</div>
+      <div class="stat-value {% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+        KSh {{ net_profit|floatformat:0 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FINANCIAL BREAKDOWN -->
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Revenue & Cost</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><td>Total Sales</td><td class="fw-bold text-end">KSh {{ total_sales|floatformat:0 }}</td></tr>
+          <tr><td>Cost of Goods Sold</td><td class="fw-bold text-end">KSh {{ cogs|floatformat:0 }}</td></tr>
+          <tr class="border-top"><td><strong>Gross Profit</strong></td><td class="fw-bold text-end">KSh {{ gross_profit|floatformat:0 }}</td></tr>
+          <tr><td>Operating Expenses</td><td class="fw-bold text-end text-danger">KSh {{ total_expenses|floatformat:0 }}</td></tr>
+          <tr class="border-top"><td><strong>Net Profit</strong></td><td class="fw-bold text-end">KSh {{ net_profit|floatformat:0 }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">Stock Status</div>
+      <div class="card-body">
+        <p class="mb-2"><strong>Current Stock Value:</strong> KSh {{ current_stock_value|floatformat:0 }}</p>
+        {% if low_stock_products %}
+        <p class="mb-2 text-warning"><strong>Low Stock Alerts:</strong></p>
+        <ul class="mb-0">
+          {% for p in low_stock_products %}
+          <li>{{ p.name }} ({{ p.stock }} left)</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted mb-0">No low stock alerts</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -105,31 +105,24 @@
                 </span>
               {% endif %}
             </td>
-            <td>
-              {% if debt.is_paid %}
-                <span class="badge-status badge-delivered">
-                  <i class="bi bi-check-circle-fill me-1"></i>Paid
-                </span>
-              {% else %}
-                <span class="badge-status badge-pending">
-                  <i class="bi bi-clock me-1"></i>Unpaid
-                </span>
-              {% endif %}
-            </td>
-            <td style="color:#6B7280;">
-              {% if debt.paid_at %}
-                {{ debt.paid_at|date:"M d, Y" }}
-              {% else %}
-                <span style="color:#D1D5DB;">—</span>
-              {% endif %}
-            </td>
-            <td>
-              <a href="{% url 'order_detail' debt.order.id %}"
-                 class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-eye me-1"></i> View Order
-              </a>
-            </td>
-          </tr>
+<td>
+               {% if debt.is_paid %}
+                 <span class="badge-status badge-delivered">
+                   <i class="bi bi-check-circle-fill me-1"></i>Paid
+                 </span>
+               {% else %}
+                 <span class="badge-status badge-pending">
+                   <i class="bi bi-clock me-1"></i>Unpaid
+                 </span>
+               {% endif %}
+             </td>
+             <td>
+               <a href="{% url 'order_detail' debt.order.id %}"
+                  class="btn btn-sm btn-outline-primary">
+                 <i class="bi bi-eye me-1"></i> View Order
+               </a>
+             </td>
+           </tr>
           {% empty %}
           <tr>
             <td colspan="8" class="text-center py-5" style="color:#6B7280;">

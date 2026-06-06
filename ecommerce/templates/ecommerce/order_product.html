@@ -11,7 +11,24 @@
       <h4 class="mb-4">Place New Order</h4>
       <form method="post" action="" id="order-form">
         {% csrf_token %}
-
+        {% if preselected_product %}
+        <input type="hidden" name="product" value="{{ preselected_product.id }}" id="productInput">
+        <div class="mb-3 p-3 bg-light rounded-3 border">
+          <div class="d-flex align-items-center">
+            {% if preselected_product.images.first %}
+              <img src="{{ preselected_product.images.first.image.url }}" alt="{{ preselected_product.name }}" style="height:60px;width:60px;object-fit:cover;border-radius:8px;margin-right:12px;">
+            {% else %}
+              <div style="height:60px;width:60px;background:#E5E7EB;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:12px;">
+                <i class="bi bi-image text-muted"></i>
+              </div>
+            {% endif %}
+            <div>
+              <div class="fw-bold">{{ preselected_product.name }}</div>
+              <div class="text-muted" style="font-size:0.875rem;">KSh {{ preselected_product.price|floatformat:0 }} • {{ preselected_product.stock }} in stock</div>
+            </div>
+          </div>
+        </div>
+        {% else %}
         <!-- Product -->
         <div class="mb-3">
           <label for="productSelect" class="form-label">Product</label>
@@ -29,6 +46,7 @@
             {% endfor %}
           </select>
         </div>
+        {% endif %}
 
         <!-- Quantity -->
         <div class="mb-3">
@@ -56,11 +74,11 @@
         <tbody>
           <tr>
             <td class="text-muted">Product</td>
-            <td class="text-end" id="summary-product">Select a product</td>
+            <td class="text-end" id="summary-product">{% if preselected_product %}{{ preselected_product.name }}{% else %}Select a product{% endif %}</td>
           </tr>
           <tr>
             <td class="text-muted">Unit price</td>
-            <td class="text-end" id="summary-price">—</td>
+            <td class="text-end" id="summary-price">{% if preselected_product %}KSh {{ preselected_product.price|floatformat:0 }}{% else %}—{% endif %}</td>
           </tr>
           <tr>
             <td class="text-muted">Quantity</td>
@@ -68,7 +86,7 @@
           </tr>
           <tr class="border-top">
             <td class="fw-bold">Total</td>
-            <td class="text-end fw-bold fs-5" id="summary-total">KSh —</td>
+            <td class="text-end fw-bold fs-5" id="summary-total">{% if preselected_product %}KSh {{ preselected_product.price|floatformat:0 }}{% else %}—{% endif %}</td>
           </tr>
         </tbody>
       </table>
@@ -90,6 +108,18 @@ document.addEventListener('DOMContentLoaded', function () {
   const summaryQuantity = document.getElementById('summary-quantity');
   const summaryTotal    = document.getElementById('summary-total');
 
+  {% if preselected_product %}
+  const fixedPrice = {{ preselected_product.price }};
+  const fixedStock = {{ preselected_product.stock }};
+
+  function updateSummary () {
+    var quantity = Math.max(1, Math.min(parseInt(quantityInput.value) || 1, fixedStock));
+    summaryProduct.textContent  = '{{ preselected_product.name }}';
+    summaryPrice.textContent    = 'KSh ' + fixedPrice.toLocaleString();
+    summaryTotal.textContent    = 'KSh ' + (fixedPrice * quantity).toLocaleString();
+    summaryQuantity.textContent = quantity;
+  }
+  {% else %}
   function updateSummary () {
     var selectedOption = productSelect.options[productSelect.selectedIndex];
     var productName    = selectedOption.textContent.trim();
@@ -117,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
     quantityInput.value = quantityInput.min;
     updateSummary();
   });
+  {% endif %}
 
   quantityInput.addEventListener('input', updateSummary);
 

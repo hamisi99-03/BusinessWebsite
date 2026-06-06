@@ -8,10 +8,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
+from django.utils import timezone
+from decimal import Decimal
 
-from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment, Cart, CartItem
-
-from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm
+from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense, Cart, CartItem
+from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm, ConsignmentForm, ConsignmentItemForm, ExpenseForm, SupplierForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
     OrderItemSerializer, PaymentSerializer, DebtSerializer
@@ -26,9 +27,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from decimal import Decimal
-from django.shortcuts import render,redirect
-from .forms import inlineformset_factory
+from django.shortcuts import render, redirect, get_object_or_404
 
 # -------------------
 # DRF ViewSets
@@ -244,6 +243,14 @@ def change_password_view(request):
 
 @login_required
 def order_product_view(request):
+    product_id = request.GET.get('product_id')
+    initial_product = None
+    if product_id:
+        initial_product = get_object_or_404(Product, pk=product_id)
+        if initial_product.stock <= 0:
+            messages.error(request, f"{initial_product.name} is out of stock.")
+            return redirect('product_list')
+    
     if request.method == 'POST':
         form = OrderForm(request.POST)
         if form.is_valid():
@@ -271,9 +278,9 @@ def order_product_view(request):
             messages.success(request, f"Order #{order.id} placed successfully for {product.name}!")
             return redirect('orders_list')
     else:
-        form = OrderForm()
+        form = OrderForm(initial={'product': initial_product} if initial_product else None)
 
-    return render(request, 'ecommerce/order_product.html', {'form': form})
+    return render(request, 'ecommerce/order_product.html', {'form': form, 'preselected_product': initial_product})
 
 # -------------------
 # API Profile Endpoint
@@ -342,7 +349,6 @@ def admin_dashboard(request):
         'total_products': total_products,
         'low_stock_products': low_stock_products,
         'revenue_trend': revenue_trend,
-        'revenue_trend_json': revenue_trend_json,
         'recent_payments': recent_payments,
         'top_debtors': top_debtors,
         'order_status_breakdown': order_status_breakdown,
@@ -468,37 +474,79 @@ def custom_login(request):
 @require_POST
 def update_order_status(request, pk):
     order = get_object_or_404(Order, pk=pk)
-    order.status = request.POST.get("status")
-    order.save()
+    if request.method == 'POST':
+        new_status = request.POST.get("status")
+        order.status = new_status
+        if new_status == 'delivered':
+            order.shipped_date = timezone.now()
+        order.save()
+        
+        # Update debt when order is delivered
+        if new_status == 'delivered':
+            try:
+                debt = Debt.objects.get(order=order)
+                debt.calculate_outstanding_balance()
+            except Debt.DoesNotExist:
+                pass
+        
+        messages.success(request, f"Order #{order.id} status updated to {new_status}.")
     return redirect("admin_dashboard")
 
 
 @staff_member_required
+def mark_payment_paid(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == 'POST':
+        # Create a payment record marking the order as fully paid
+        amount = order.get_outstanding_balance()
+        Payment.objects.create(
+            order=order,
+            amount=amount,
+            payment_method='cash',
+            status='completed'
+        )
+        
+        # Update debt
+        try:
+            debt = Debt.objects.get(order=order)
+            debt.calculate_outstanding_balance()
+        except Debt.DoesNotExist:
+            pass
+        
+        messages.success(request, f"Order #{order.id} marked as paid.")
+    return redirect("admin_dashboard")
+
+
+@staff_member_required  
 def update_payment(request, pk):
-    payment = get_object_or_404(Payment, pk=pk)
-    order = payment.order
+    payment = get_object_or_404(Payment, id=pk)
+    orders = Order.objects.all().order_by('-order_date')
+    unpaid_orders = [o for o in orders if o.get_outstanding_balance() > 0]
 
-    if request.method == "POST":
-        form = PaymentForm(request.POST, instance=payment)
-        if form.is_valid():
-            payment = form.save(commit=False)
-            # Note: we don't change created_by on update
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        payment_method = request.POST.get('payment_method')
+        payment_date = request.POST.get('payment_date')
+
+        if amount and payment_method:
+            payment.amount = amount
+            payment.payment_method = payment_method
+            if payment_date:
+                payment.payment_date = payment_date
             payment.save()
-            messages.success(request, f"Payment #{payment.id} updated successfully.")
-            return redirect("admin_dashboard")
-        else:
-            messages.error(request, "Please correct the errors below.")
-    else:
-        form = PaymentForm(instance=payment)
+            # Update debt
+            try:
+                debt = Debt.objects.get(order=payment.order)
+                debt.calculate_outstanding_balance()
+            except Debt.DoesNotExist:
+                pass
+            messages.success(request, "Payment updated successfully.")
+            return redirect('payment_list')
 
-    # Get all orders for the dropdown
-    orders = Order.objects.all().select_related('customer__user').order_by('-order_date')
-    
-    return render(request, "ecommerce/payment_form.html", {
-        "form": form,
-        "payment": payment,
-        "order": order,
-        "orders": orders,
+    return render(request, 'ecommerce/payment_form.html', {
+        'order': payment.order,
+        'orders': unpaid_orders,
+        'payment': payment,
     })
 
 
@@ -519,86 +567,114 @@ def delete_payment(request, pk):
 
 
 @staff_member_required
-def add_payment(request, order_id=None):
-    if order_id:
-        order = get_object_or_404(Order, pk=order_id)
-    else:
-        order = None
+def add_payment_standalone(request):
+    orders = Order.objects.all().order_by('-order_date')
+    unpaid_orders = [o for o in orders if o.get_outstanding_balance() > 0]
 
-    if request.method == "POST":
-        form = PaymentForm(request.POST)
-        if form.is_valid():
-            payment = form.save(commit=False)
-            payment.created_by = request.user
-            payment.save()
+    if request.method == 'POST':
+        order_id = request.POST.get('order')
+        amount = request.POST.get('amount')
+        payment_method = request.POST.get('payment_method')
+        payment_date = request.POST.get('payment_date')
 
-            debt, _ = Debt.objects.get_or_create(
-                order=payment.order,
-                customer=payment.order.customer,
-                defaults={
-                    "outstanding_balance": payment.order.get_total_amount(),
-                    "is_paid": False,
-                    "paid_at": None,
-                },
+        if order_id and amount and payment_method:
+            order = get_object_or_404(Order, id=order_id)
+            Payment.objects.create(
+                order=order,
+                amount=Decimal(amount),
+                payment_method=payment_method,
+                payment_date=payment_date or timezone.now(),
+                status='completed'
             )
-            debt.calculate_outstanding_balance()
+            try:
+                debt = Debt.objects.get(order=order)
+                debt.calculate_outstanding_balance()
+            except Debt.DoesNotExist:
+                pass
+            messages.success(
+                request,
+                f"Payment of KSh {amount} recorded successfully."
+            )
+            return redirect('payment_list')
+        else:
+            messages.error(request, "Please fill all required fields.")
 
-            messages.success(request, "Payment added successfully.")
-            return redirect("admin_dashboard")
+    return render(request, 'ecommerce/payment_form.html', {
+        'order': None,
+        'orders': unpaid_orders,
+        'payment': None,
+    })
 
-    else:
-        form = PaymentForm()
-        if order_id:
-            # If we have an order_id from URL, we set the order in the form as initial and disable it
-            form.fields['order'].initial = order
-            form.fields['order'].widget.attrs['disabled'] = True
 
-    # Get all orders for the dropdown
-    orders = Order.objects.all().select_related('customer__user').order_by('-order_date')
-    
-    return render(request, "ecommerce/payment_form.html", {"form": form, "order": order, "orders": orders})
+@staff_member_required
+def add_payment(request, order_id=None):
+    order = get_object_or_404(Order, id=order_id)
+    orders = Order.objects.all().order_by('-order_date')
+    # Only show orders with outstanding balance
+    unpaid_orders = [o for o in orders if o.get_outstanding_balance() > 0]
+
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        payment_method = request.POST.get('payment_method')
+        payment_date = request.POST.get('payment_date')
+
+        if amount and payment_method:
+            Payment.objects.create(
+                order=order,
+                amount=amount,
+                payment_method=payment_method,
+                payment_date=payment_date or timezone.now(),
+                status='completed'
+            )
+            # Update debt
+            try:
+                debt = Debt.objects.get(order=order)
+                debt.calculate_outstanding_balance()
+            except Debt.DoesNotExist:
+                pass
+            messages.success(request, f"Payment of KSh {amount} recorded successfully.")
+            return redirect('admin_dashboard')
+
+    return render(request, 'ecommerce/payment_form.html', {
+        'order': order,
+        'orders': unpaid_orders,
+        'payment': None,
+    })
 
 
 @staff_member_required
 def add_product(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
-        formset = ProductImageFormSet(
-            request.POST, request.FILES, queryset=ProductImage.objects.none()
-        )
-        if form.is_valid() and formset.is_valid():
+        if form.is_valid():
             product = form.save()
-            for f in formset.cleaned_data:
-                if f and 'image' in f:
-                    ProductImage.objects.create(product=product, image=f['image'])
-            return redirect("admin_dashboard")
+            for image in request.FILES.getlist('images'):
+                ProductImage.objects.create(product=product, image=image)
+            messages.success(request, f"Product '{product.name}' added successfully.")
+            return redirect("admin_products_list")
     else:
         form = ProductForm()
-        formset = ProductImageFormSet(queryset=ProductImage.objects.none())
 
-    return render(request, "ecommerce/product_form.html", {"form": form, "formset": formset})
-
-
-ProductImageFormSet = inlineformset_factory(
-    Product,
-    ProductImage,
-    fields=('image',),
-    extra=1,
-    can_delete=True
-)
+    return render(request, "ecommerce/product_form.html", {"form": form})
 
 
 def update_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    form = ProductForm(request.POST or None, instance=product)
-    formset = ProductImageFormSet(request.POST or None, request.FILES or None, instance=product)
+    if request.method == "POST":
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            form.save()
+            for image in request.FILES.getlist('images'):
+                ProductImage.objects.create(product=product, image=image)
+            delete_ids = request.POST.getlist('delete_images')
+            if delete_ids:
+                ProductImage.objects.filter(id__in=delete_ids).delete()
+            messages.success(request, f"Product '{product.name}' updated successfully.")
+            return redirect("admin_products_list")
+    else:
+        form = ProductForm(instance=product)
 
-    if form.is_valid() and formset.is_valid():
-        form.save()
-        formset.save()
-        return redirect("admin_dashboard")
-
-    return render(request, "ecommerce/product_form.html", {"form": form, "formset": formset})
+    return render(request, "ecommerce/product_form.html", {"form": form, "product": product})
 
 
 @staff_member_required
@@ -607,7 +683,7 @@ def delete_product(request, pk):
     if request.method == "POST":
         product.delete()
         messages.success(request, f"Product '{product.name}' deleted successfully.")
-        return redirect("admin_dashboard")
+        return redirect("admin_products_list")
     return render(request, "ecommerce/confirm_delete.html", {
         "product": product,
         "object_name": product.name,
@@ -688,8 +764,32 @@ def admin_delete_order(request, pk):
 
 
 def product_list(request):
+    category_slug = request.GET.get('category')
+    brand_slug = request.GET.get('brand')
+    
     products = Product.objects.all().prefetch_related('images')
-    return render(request, "ecommerce/product_list.html", {"products": products})
+    
+    if category_slug:
+        products = products.filter(category__slug=category_slug)
+    
+    if brand_slug:
+        products = products.filter(brand__slug=brand_slug)
+    
+    categories = Category.objects.all()
+    brands = Brand.objects.all()
+    
+    return render(request, "ecommerce/product_list.html", {
+        "products": products,
+        "categories": categories,
+        "brands": brands,
+        "selected_category": category_slug,
+        "selected_brand": brand_slug,
+    })
+
+
+def product_detail(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    return render(request, 'ecommerce/product_detail.html', {'product': product})
 
 
 @staff_member_required
@@ -839,3 +939,126 @@ def checkout_from_cart(request):
             messages.error(request, "Cart not found.")
     return redirect('cart_view')
 
+
+# -------------------
+# Consignment Views
+# -------------------
+@staff_member_required
+def consignment_list(request):
+    consignments = Consignment.objects.all().prefetch_related('items__product')
+    suppliers = Supplier.objects.all()
+    return render(request, 'ecommerce/consignments.html', {'consignments': consignments, 'suppliers': suppliers})
+
+
+@staff_member_required
+def add_consignment(request):
+    if request.method == 'POST':
+        form = ConsignmentForm(request.POST)
+        if form.is_valid():
+            consignment = form.save()
+            messages.success(request, f"Consignment {consignment.reference_number} created.")
+            return redirect('consignment_list')
+    else:
+        form = ConsignmentForm()
+    
+    return render(request, 'ecommerce/consignment_form.html', {'form': form})
+
+
+@staff_member_required
+def add_supplier(request):
+    if request.method == 'POST':
+        form = SupplierForm(request.POST)
+        if form.is_valid():
+            supplier = form.save()
+            messages.success(request, f"Supplier {supplier.name} added.")
+            return redirect('consignment_list')
+    else:
+        form = SupplierForm()
+    
+    return render(request, 'ecommerce/supplier_form.html', {'form': form})
+
+
+@staff_member_required
+def add_expense(request):
+    if request.method == 'POST':
+        form = ExpenseForm(request.POST)
+        if form.is_valid():
+            expense = form.save(commit=False)
+            expense.recorded_by = request.user
+            expense.save()
+            messages.success(request, f"Expense recorded: {expense.get_category_display()}")
+            return redirect('expense_list')
+    else:
+        form = ExpenseForm()
+    
+    return render(request, 'ecommerce/expense_form.html', {'form': form})
+
+
+@staff_member_required
+def expense_list(request):
+    expenses = Expense.objects.all()
+    return render(request, 'ecommerce/expenses.html', {'expenses': expenses})
+
+
+# -------------------
+# Financial Reports
+# -------------------
+@staff_member_required
+def financial_report(request):
+    from datetime import datetime, timedelta
+    
+    # Get date range from request or default to today
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    today = date.today()
+    if start_date and end_date:
+        start = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end = datetime.strptime(end_date, '%Y-%m-%d').date()
+    else:
+        start = today
+        end = today
+    
+    # Calculate metrics
+    consignments = Consignment.objects.filter(date_received__range=[start, end])
+    stock_received = sum(c.get_total_quantity() for c in consignments)
+    
+    total_purchases = sum(c.get_total_cost() for c in consignments)
+    
+    orders = Order.objects.filter(order_date__date__range=[start, end])
+    total_sales = sum(o.get_total_amount() for o in orders)
+    stock_sold = sum(sum(i.quantity for i in o.items.all()) for o in orders)
+    
+    expenses = Expense.objects.filter(date__range=[start, end])
+    total_expenses = sum(e.amount for e in expenses)
+    
+    current_stock_value = sum(p.price * p.stock for p in Product.objects.all())
+    
+    total_units_received = sum(
+        sum(item.quantity for item in c.items.all())
+        for c in Consignment.objects.all()
+    )
+    total_cost_all = sum(c.get_total_cost() for c in Consignment.objects.all())
+    avg_unit_cost = (total_cost_all / total_units_received) if total_units_received > 0 else 0
+    cogs = stock_sold * avg_unit_cost
+    
+    gross_profit = total_sales - cogs
+    net_profit = gross_profit - total_expenses
+    
+    low_stock_products = Product.objects.filter(stock__lte=5, stock__gt=0)
+    
+    context = {
+        'start_date': start,
+        'end_date': end,
+        'stock_received': stock_received,
+        'stock_sold': stock_sold,
+        'total_purchases': total_purchases,
+        'total_sales': total_sales,
+        'cogs': cogs,
+        'gross_profit': gross_profit,
+        'total_expenses': total_expenses,
+        'net_profit': net_profit,
+        'low_stock_products': low_stock_products,
+    }
+    
+    return render(request, 'ecommerce/financial_report.html', context)
