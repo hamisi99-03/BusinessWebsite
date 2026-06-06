@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Customer, Product, ProductImage, Order, OrderItem, Payment, Debt, Category, Brand
+from .models import Customer, Product, ProductImage, Order, OrderItem, Payment, Debt, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense
 
 # --- Category & Brand ---
 @admin.register(Category)
@@ -12,6 +12,33 @@ class CategoryAdmin(admin.ModelAdmin):
 class BrandAdmin(admin.ModelAdmin):
     list_display = ('name',)
     prepopulated_fields = {'slug': ('name',)}
+
+# --- Supplier ---
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact_person', 'phone')
+    search_fields = ('name', 'contact_person')
+
+# --- Consignment ---
+class ConsignmentItemInline(admin.TabularInline):
+    model = ConsignmentItem
+    extra = 1
+    autocomplete_fields = ['product']
+
+@admin.register(Consignment)
+class ConsignmentAdmin(admin.ModelAdmin):
+    list_display = ('reference_number', 'supplier', 'date_received', 'get_total_quantity', 'get_total_cost')
+    list_filter = ('date_received', 'supplier')
+    search_fields = ('reference_number',)
+    inlines = [ConsignmentItemInline]
+    date_hierarchy = 'date_received'
+
+# --- Expense ---
+@admin.register(Expense)
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ('category', 'description', 'amount', 'date', 'recorded_by')
+    list_filter = ('category', 'date')
+    search_fields = ('description',)
 
 # --- Customer ---
 @admin.register(Customer)
