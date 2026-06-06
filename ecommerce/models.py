@@ -4,17 +4,18 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.text import slugify
 
+
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=110, unique=True, blank=True)
-    
+
     class Meta:
         verbose_name_plural = "Categories"
         ordering = ['name']
-    
+
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
@@ -24,13 +25,13 @@ class Category(models.Model):
 class Brand(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=110, unique=True, blank=True)
-    
+
     class Meta:
         ordering = ['name']
-    
+
     def __str__(self):
         return self.name
-    
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
@@ -39,7 +40,7 @@ class Brand(models.Model):
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone_number= models.CharField(max_length=20,blank =True)
+    phone_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
 
@@ -55,19 +56,19 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
 
-
     def __str__(self):
         return self.name
+
+
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name="images", on_delete=models.CASCADE)
     image = models.ImageField(upload_to="products/", blank=True, null=True)
 
-    
     def __str__(self):
         return f"Image for {self.product.name}"
-    
+
     def delete(self, *args, **kwargs):
-        self.image.delete(save=False)  # delete the file from disk
+        self.image.delete(save=False)
         super().delete(*args, **kwargs)
 
 
@@ -83,24 +84,20 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order {self.id} by {self.customer.user.username}"
-    
+
     def get_total_amount(self):
-        """Calculate total order amount from items"""
         return sum(item.price * item.quantity for item in self.items.all())
 
     def get_total_paid(self):
-        """Calculate total completed + pending payments"""
         return sum(
             payment.amount
             for payment in self.payments.filter(status__in=['completed', 'pending'])
         )
 
     def get_outstanding_balance(self):
-        """Calculate outstanding balance (total - paid)"""
         balance = self.get_total_amount() - self.get_total_paid()
         return max(balance, 0)
 
-from django.core.exceptions import ValidationError
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
@@ -112,9 +109,7 @@ class OrderItem(models.Model):
         return f"{self.quantity} x {self.product.name} in Order {self.order.id}"
 
     def clean(self):
-        #  Prevent ordering more than available stock
         if self.pk:
-            # If updating, include old quantity back before validation
             old_quantity = OrderItem.objects.get(pk=self.pk).quantity
             available_stock = self.product.stock + old_quantity
         else:
@@ -124,9 +119,7 @@ class OrderItem(models.Model):
             raise ValidationError(f"Only {available_stock} items left in stock.")
 
     def save(self, *args, **kwargs):
-        # Run validation first
         if self.pk:
-            # If updating, restore old quantity before checking
             old_quantity = OrderItem.objects.get(pk=self.pk).quantity
             available_stock = self.product.stock + old_quantity
         else:
@@ -137,19 +130,16 @@ class OrderItem(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Subtract new quantity safely
         if self.pk:
-            # If updating, restore old quantity before subtracting
             old_quantity = OrderItem.objects.get(pk=self.pk).quantity
             self.product.stock += old_quantity
 
         self.product.stock -= self.quantity
         if self.product.stock < 0:
-            self.product.stock = 0  # safeguard
+            self.product.stock = 0
         self.product.save()
 
     def delete(self, *args, **kwargs):
-        #  Restore stock when item is removed
         self.product.stock += self.quantity
         self.product.save()
         super().delete(*args, **kwargs)
@@ -161,7 +151,7 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(
         max_length=50,
-        choices=[('cash','Cash'), ('mpesa', 'M-pesa'), ('bank', 'Bank Transfer')],
+        choices=[('cash', 'Cash'), ('mpesa', 'M-pesa'), ('bank', 'Bank Transfer')],
         default='cash'
     )
     status = models.CharField(
@@ -173,7 +163,6 @@ class Payment(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_created')
 
     def clean(self):
-        # Exclude current payment when editing
         total_paid_excluding_current = sum(
             p.amount for p in self.order.payments.exclude(pk=self.pk)
         )
@@ -186,18 +175,17 @@ class Payment(models.Model):
             )
 
     def save(self, *args, **kwargs):
-        self.clean()  # run validation before saving
+        self.clean()
         super().save(*args, **kwargs)
         total_paid = sum(p.amount for p in self.order.payments.all())
         if total_paid >= self.order.get_total_amount():
-            # fully paid → mark all as completed
             self.order.payments.update(status='completed')
         else:
-            # still balance → mark all as pending
             self.order.payments.update(status='pending')
 
     def __str__(self):
         return f"{self.amount} via {self.payment_method} for Order {self.order.id}"
+
 
 class Debt(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='debts')
@@ -207,21 +195,15 @@ class Debt(models.Model):
     is_paid = models.BooleanField(default=False)
 
     def calculate_outstanding_balance(self):
-        # Sum of payments (only completed ones should reduce debt)
         total_paid = sum(
             payment.amount for payment in self.order.payments.filter(status='completed')
         )
-
-        # Total order amount = sum of items
         total_order_amount = sum(
             item.price * item.quantity for item in self.order.items.all()
         )
-
-        # Clamp balance at zero
         balance = total_order_amount - total_paid
         self.outstanding_balance = max(balance, 0)
 
-        # Mark debt as paid if balance is zero
         if self.outstanding_balance == 0:
             if not self.is_paid:
                 self.is_paid = True
@@ -233,6 +215,7 @@ class Debt(models.Model):
             self.paid_at = None
 
         self.save()
+
     def __str__(self):
         return f"Debt of {self.outstanding_balance} for {self.customer.user.username}"
 
@@ -325,7 +308,6 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.get_category_display()}: KSh {self.amount}"
-    
 
 
 class Cart(models.Model):
@@ -359,6 +341,3 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
-
-    
-
