@@ -5,7 +5,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 
-
 from .views import (
     CustomerViewSet, ProductViewSet, OrderViewSet, OrderItemViewSet,
     PaymentViewSet, DebtViewSet, add_payment, add_payment_standalone, update_payment, delete_payment,
@@ -18,7 +17,6 @@ from .views import (
     consignment_list, add_consignment, add_supplier, add_expense, expense_list, financial_report
 )
 
-
 router = DefaultRouter()
 router.register(r'customers', CustomerViewSet)
 router.register(r'products', ProductViewSet)
@@ -28,42 +26,32 @@ router.register(r'payments', PaymentViewSet)
 router.register(r'debts', DebtViewSet)
 
 urlpatterns = [
-    # Backwards-compat redirect: avoid DRF /api/debts/ intercepting template route
     path('debts/', lambda request: redirect('/api/my-debts/')),
-
-    # DRF router endpoints
     path('', include(router.urls)),
 
+    path('auth/login/', obtain_auth_token, name='api_token_auth'),
+    path('auth/register/', register_view, name='register'),
+    path('auth/login-page/', custom_login, name='login'),
+    path('auth/logout/', logout_view, name='logout'),
+    path('auth/profile/', ProfileView.as_view(), name='profile'),
 
-    # Authentication endpoints
-    path('auth/login/', obtain_auth_token, name='api_token_auth'),   # token login
-    path('auth/register/', register_view, name='register'),          # function view
-    path('auth/login-page/', custom_login, name='login'),            # custom login with redirect logic
-    path('auth/logout/', logout_view, name='logout'),                # logout
-    path('auth/profile/', ProfileView.as_view(), name='profile'),    # APIView class
-
-    # Customer pages
     path('dashboard/', dashboard_view, name='dashboard'),
     path('orders/list', orders_list_view, name='orders_list'),
     path('orders/detail/<int:pk>/', order_detail_view, name='order_detail'),
     path('my-debts/', debts_list_view, name='debts_list'),
-    path('profile-page/', profile_view, name='profile_page'),        # template profile
-     path('auth/change-password/', change_password_view, name='change_password'),
+    path('profile-page/', profile_view, name='profile_page'),
+    path('auth/change-password/', change_password_view, name='change_password'),
     path('order-product/', order_product_view, name='order_product'),
     path('store/products/', product_list, name='product_list'),
-     path('webcat/', product_list, name='webcat'),
-     path('store/products/<int:pk>/', product_detail, name='product_detail'),
+    path('webcat/', product_list, name='webcat'),
+    path('store/products/<int:pk>/', product_detail, name='product_detail'),
 
-    # Cart
     path('cart/', cart_view, name='cart_view'),
     path('cart/add/<int:product_id>/', add_to_cart, name='add_to_cart'),
     path('cart/remove/<int:item_id>/', remove_from_cart, name='remove_from_cart'),
     path('cart/update/<int:item_id>/', update_cart_item, name='update_cart_item'),
     path('cart/checkout/', checkout_from_cart, name='checkout_from_cart'),
 
-
-
-    # Admin dashboard (protected by @staff_member_required)
     path('admin-dashboard/', admin_dashboard, name='admin_dashboard'),
     path('admin-dashboard/reports/', reports_view, name='reports'),
     path('admin-dashboard/update-order/<int:pk>/', update_order_status, name='update_order_status'),
@@ -71,25 +59,18 @@ urlpatterns = [
     path('admin-dashboard/orders/<int:pk>/update/', admin_update_order, name='admin_update_order'),
     path('admin-dashboard/orders/<int:pk>/delete/', admin_delete_order, name='admin_delete_order'),
 
-    # Payments
-    path('admin-dashboard/payments/add/',
-         add_payment_standalone,
-         name='add_payment_standalone'),
+    path('admin-dashboard/payments/add/', add_payment_standalone, name='add_payment_standalone'),
     path("admin-dashboard/orders/<int:order_id>/payments/add/", add_payment, name="add_payment"),
     path("admin-dashboard/payments/", payment_list_view, name="payment_list"),
     path("admin-dashboard/payments/<int:pk>/edit/", update_payment, name="edit_payment"),
     path("admin-dashboard/payments/<int:pk>/delete/", delete_payment, name="delete_payment"),
 
-
-
-    # Products
     path("admin-dashboard/add-product/", add_product, name="add_product"),
     path("admin-dashboard/product/<int:pk>/edit/", update_product, name="update_product"),
     path("admin-dashboard/product/<int:pk>/delete/", delete_product, name="delete_product"),
     path("admin-dashboard/products/", admin_products_list, name="admin_products_list"),
     path("admin-dashboard/product/<int:pk>/adjust-stock/", adjust_stock, name="adjust_stock"),
 
-    # Consignments & Expenses
     path("admin-dashboard/consignments/", consignment_list, name="consignment_list"),
     path("admin-dashboard/consignment/add/", add_consignment, name="add_consignment"),
     path("admin-dashboard/supplier/add/", add_supplier, name="add_supplier"),
@@ -97,10 +78,6 @@ urlpatterns = [
     path("admin-dashboard/expense/add/", add_expense, name="add_expense"),
     path("admin-dashboard/financial-report/", financial_report, name="financial_report"),
 
-
-
-
-    # browsable API login/logout
     path('api-auth/', include('rest_framework.urls')),
 ]
 if settings.DEBUG:
