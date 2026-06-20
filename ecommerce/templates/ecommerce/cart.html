@@ -1,4 +1,4 @@
-﻿{% extends "ecommerce/base.html" %}
+{% extends "ecommerce/base.html" %}
 {% block title %}My Cart - BizStore{% endblock %}
 
 {% block content %}
@@ -53,7 +53,7 @@
               {{ item.product.name }}
             </div>
             <div style="font-size:0.8rem;color:#6B7280;margin-bottom:8px;">
-              KSh {{ item.product.price }} each ÔÇó
+              KSh {{ item.product.price }} each .
               {{ item.product.stock }} in stock
             </div>
             <!-- Quantity Controls -->
@@ -118,7 +118,7 @@
              style="font-size:0.875rem;">
           <span style="color:#6B7280;">
             {{ item.product.name }}
-            <span style="color:#9CA3AF;">├ù {{ item.quantity }}</span>
+            <span style="color:#9CA3AF;">x {{ item.quantity }}</span>
           </span>
           <span style="font-weight:600;">KSh {{ item.get_subtotal }}</span>
         </div>
