@@ -23,7 +23,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('ecommerce.urls')),
-    path('', lambda request: redirect('/api/auth/login-page/')),
+path('', lambda request: redirect('/api/store/products/')),
 ]
 
 if settings.DEBUG:

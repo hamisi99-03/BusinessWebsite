@@ -13,7 +13,8 @@
 <div class="card mb-4 p-3">
   <div class="d-flex flex-wrap gap-2 align-items-center">
     <div class="input-group" style="max-width:320px;">
-      <span class="input-group-text bg-white border-end-0" style="border:1px solid var(--border);border-radius:8px 0 0 8px;">
+      <span class="input-group-text bg-white border-end-0"
+            style="border:1px solid var(--border);border-radius:8px 0 0 8px;">
         <i class="bi bi-search" style="color:var(--muted);"></i>
       </span>
       <input type="text" id="productSearch" class="form-control border-start-0"
@@ -23,13 +24,19 @@
     <select id="categoryFilter" class="form-select" style="max-width:180px;">
       <option value="">All Categories</option>
       {% for category in categories %}
-        <option value="{{ category.slug }}" {% if selected_category == category.slug %}selected{% endif %}>{{ category.name }}</option>
+        <option value="{{ category.slug }}"
+          {% if selected_category == category.slug %}selected{% endif %}>
+          {{ category.name }}
+        </option>
       {% endfor %}
     </select>
     <select id="brandFilter" class="form-select" style="max-width:180px;">
       <option value="">All Brands</option>
       {% for brand in brands %}
-        <option value="{{ brand.slug }}" {% if selected_brand == brand.slug %}selected{% endif %}>{{ brand.name }}</option>
+        <option value="{{ brand.slug }}"
+          {% if selected_brand == brand.slug %}selected{% endif %}>
+          {{ brand.name }}
+        </option>
       {% endfor %}
     </select>
     <select id="stockFilter" class="form-select" style="max-width:160px;">
@@ -46,44 +53,60 @@
 <!-- PRODUCT GRID -->
 <div class="row g-3" id="productGrid">
   {% for product in products %}
-<div class="col-6 col-md-4 col-xl-3 product-item"
-        data-name="{{ product.name|lower }}"
-        data-stock="{{ product.stock }}"
-        data-category="{{ product.category.slug|default:'' }}"
-        data-brand="{{ product.brand.slug|default:'' }}">
-      <div class="product-card h-100">
-        <!-- Product Category/Brand Tags -->
-        {% if product.category or product.brand %}
-        <div class="p-2 pb-0 d-flex gap-1 flex-wrap">
-          {% if product.category %}
-            <span class="badge" style="background:#EEF2FF;color:#4F46E5;font-size:0.7rem;">{{ product.category.name }}</span>
-          {% endif %}
-          {% if product.brand %}
-            <span class="badge" style="background:#FEF3C7;color:#92400E;font-size:0.7rem;">{{ product.brand.name }}</span>
-          {% endif %}
-        </div>
+  <div class="col-6 col-md-4 col-xl-3 product-item"
+       data-name="{{ product.name|lower }}"
+       data-stock="{{ product.stock }}"
+       data-category="{{ product.category.slug|default:'' }}"
+       data-brand="{{ product.brand.slug|default:'' }}">
+    <div class="product-card h-100">
+
+      <!-- Product Category/Brand Tags -->
+      {% if product.category or product.brand %}
+      <div class="p-2 pb-0 d-flex gap-1 flex-wrap">
+        {% if product.category %}
+          <span class="badge"
+                style="background:#EEF2FF;color:#4F46E5;font-size:0.7rem;">
+            {{ product.category.name }}
+          </span>
         {% endif %}
+        {% if product.brand %}
+          <span class="badge"
+                style="background:#FEF3C7;color:#92400E;font-size:0.7rem;">
+            {{ product.brand.name }}
+          </span>
+        {% endif %}
+      </div>
+      {% endif %}
+
       <!-- Image Gallery -->
       <div class="product-gallery" data-product-id="{{ product.id }}">
         <div class="gallery-container">
           {% for image in product.images.all %}
-          <img src="{{ image.image.url }}" alt="{{ product.name }}" class="gallery-image {% if not forloop.first %}hidden{% endif %}">
+          <img src="{{ image.image.url }}" alt="{{ product.name }}"
+               class="gallery-image {% if not forloop.first %}hidden{% endif %}">
           {% endfor %}
           {% if not product.images.all %}
-          <div class="placeholder-image" style="aspect-ratio:1;background:#F3F4F6;display:flex;align-items:center;justify-content:center;">
+          <div class="placeholder-image"
+               style="aspect-ratio:1;background:#F3F4F6;display:flex;
+                      align-items:center;justify-content:center;">
             <i class="bi bi-image fs-1" style="color:var(--muted);"></i>
           </div>
           {% endif %}
         </div>
         {% if product.images.all|length > 1 %}
         <div class="gallery-controls">
-          <button class="gallery-nav prev-btn" onclick="prevImage(this)"><i class="bi bi-chevron-left"></i></button>
+          <button class="gallery-nav prev-btn" onclick="prevImage(this)">
+            <i class="bi bi-chevron-left"></i>
+          </button>
           <div class="gallery-dots">
             {% for image in product.images.all %}
-            <span class="dot {% if forloop.first %}active{% endif %}" onclick="goToImage(this, {{ forloop.counter0 }})"></span>
+            <span class="dot {% if forloop.first %}active{% endif %}"
+                  onclick="goToImage(this, {{ forloop.counter0 }})"></span>
             {% endfor %}
           </div>
-          <button class="gallery-nav next-btn" onclick="nextImage(this)"><i class="bi bi-chevron-right"></i></button>
+          <button class="gallery-nav next-btn" onclick="nextImage(this)">
+            <i class="bi bi-chevron-right"></i>
+          </button>
         </div>
         {% endif %}
       </div>
@@ -91,7 +114,10 @@
       <!-- Info -->
       <div class="product-info">
         <div class="d-flex justify-content-between align-items-start mb-1">
-          <a href="{% url 'product_detail' product.id %}" class="product-name text-decoration-none">{{ product.name }}</a>
+          <a href="{% url 'product_detail' product.id %}"
+             class="product-name text-decoration-none">
+            {{ product.name }}
+          </a>
           {% if product.stock > 0 %}
             <span class="stock-badge" style="background:#D1FAE5;color:#065F46;">
               {{ product.stock }} left
@@ -102,27 +128,37 @@
             </span>
           {% endif %}
         </div>
+
         {% if product.description %}
           <p style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;
-                      display:-webkit-box;-webkit-line-clamp:2;
-                      -webkit-box-orient:vertical;overflow:hidden;">
+                    display:-webkit-box;-webkit-line-clamp:2;
+                    -webkit-box-orient:vertical;overflow:hidden;">
             {{ product.description }}
           </p>
         {% endif %}
+
         <div class="d-flex justify-content-between align-items-center mt-2">
           <div class="product-price">KSh {{ product.price }}</div>
+
           {% if product.stock > 0 %}
-            <form method="POST"
-                  action="{% url 'add_to_cart' product.id %}">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-primary btn-sm">
+            {% if user.is_authenticated %}
+              <form method="POST" action="{% url 'add_to_cart' product.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i class="bi bi-cart-plus me-1"></i> Add to Cart
+                </button>
+              </form>
+            {% else %}
+              <a href="{% url 'login' %}?next={{ request.path }}"
+                 class="btn btn-primary btn-sm">
                 <i class="bi bi-cart-plus me-1"></i> Add to Cart
-              </button>
-            </form>
+              </a>
+            {% endif %}
           {% else %}
             <button class="btn btn-sm" disabled
-                    style="background:#F3F4F6;color:var(--muted);border-radius:8px;
-                           font-weight:600;font-size:0.8rem;padding:0.4rem 0.9rem;">
+                    style="background:#F3F4F6;color:var(--muted);
+                           border-radius:8px;font-weight:600;
+                           font-size:0.8rem;padding:0.4rem 0.9rem;">
               Unavailable
             </button>
           {% endif %}
@@ -139,6 +175,30 @@
   </div>
   {% endfor %}
 </div>
+
+<!-- GUEST BANNER -->
+{% if not user.is_authenticated %}
+<div class="mt-4 p-4 text-center"
+     style="background:#EEF2FF;border-radius:var(--radius);">
+  <i class="bi bi-person-circle fs-3 d-block mb-2"
+     style="color:#4F46E5;"></i>
+  <div style="font-weight:700;font-size:1rem;color:#3D405B;margin-bottom:6px;">
+    Want to place an order?
+  </div>
+  <div style="font-size:0.875rem;color:#6B7280;margin-bottom:1rem;">
+    Create an account or sign in to add items to your cart and place orders.
+  </div>
+  <div class="d-flex gap-2 justify-content-center">
+    <a href="{% url 'register' %}" class="btn btn-primary btn-sm">
+      <i class="bi bi-person-plus me-1"></i> Create Account
+    </a>
+    <a href="{% url 'login' %}?next={{ request.path }}"
+       class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+    </a>
+  </div>
+</div>
+{% endif %}
 
 <style>
   .product-gallery {
@@ -157,9 +217,7 @@
     object-fit: cover;
     flex-shrink: 0;
   }
-  .hidden {
-    display: none;
-  }
+  .hidden { display: none; }
   .gallery-controls {
     position: absolute;
     bottom: 8px;
@@ -172,9 +230,7 @@
     opacity: 0;
     transition: opacity 0.2s;
   }
-  .product-gallery:hover .gallery-controls {
-    opacity: 1;
-  }
+  .product-gallery:hover .gallery-controls { opacity: 1; }
   .gallery-nav {
     background: rgba(255,255,255,0.8);
     border: none;
@@ -186,10 +242,7 @@
     justify-content: center;
     cursor: pointer;
   }
-  .gallery-dots {
-    display: flex;
-    gap: 4px;
-  }
+  .gallery-dots { display: flex; gap: 4px; }
   .dot {
     width: 8px;
     height: 8px;
@@ -204,97 +257,101 @@
 </style>
 
 <script>
-  // Swipeable gallery functionality
   document.querySelectorAll('.product-gallery').forEach(gallery => {
     let currentIndex = 0;
     const images = gallery.querySelectorAll('.gallery-image');
     const dots = gallery.querySelectorAll('.dot');
-    
+
     function showImage(index) {
       images.forEach((img, i) => img.classList.toggle('hidden', i !== index));
       dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
       currentIndex = index;
     }
-    
+
     window.nextImage = function(btn) {
-      const gallery = btn.closest('.product-gallery');
-      const imgs = gallery.querySelectorAll('.gallery-image');
-      let idx = parseInt(gallery.dataset.current || 0);
+      const g = btn.closest('.product-gallery');
+      const imgs = g.querySelectorAll('.gallery-image');
+      let idx = parseInt(g.dataset.current || 0);
       idx = (idx + 1) % imgs.length;
-      gallery.dataset.current = idx;
-      showImage.call(gallery, idx);
+      g.dataset.current = idx;
+      const imgList = g.querySelectorAll('.gallery-image');
+      const dotList = g.querySelectorAll('.dot');
+      imgList.forEach((img, i) => img.classList.toggle('hidden', i !== idx));
+      dotList.forEach((dot, i) => dot.classList.toggle('active', i === idx));
     };
-    
+
     window.prevImage = function(btn) {
-      const gallery = btn.closest('.product-gallery');
-      const imgs = gallery.querySelectorAll('.gallery-image');
-      let idx = parseInt(gallery.dataset.current || 0);
+      const g = btn.closest('.product-gallery');
+      const imgs = g.querySelectorAll('.gallery-image');
+      let idx = parseInt(g.dataset.current || 0);
       idx = (idx - 1 + imgs.length) % imgs.length;
-      gallery.dataset.current = idx;
-      showImage.call(gallery, idx);
+      g.dataset.current = idx;
+      const imgList = g.querySelectorAll('.gallery-image');
+      const dotList = g.querySelectorAll('.dot');
+      imgList.forEach((img, i) => img.classList.toggle('hidden', i !== idx));
+      dotList.forEach((dot, i) => dot.classList.toggle('active', i === idx));
     };
-    
+
     window.goToImage = function(dot, idx) {
-      const gallery = dot.closest('.product-gallery');
-      gallery.dataset.current = idx;
-      showImage.call(gallery, idx);
+      const g = dot.closest('.product-gallery');
+      g.dataset.current = idx;
+      const imgList = g.querySelectorAll('.gallery-image');
+      const dotList = g.querySelectorAll('.dot');
+      imgList.forEach((img, i) => img.classList.toggle('hidden', i !== idx));
+      dotList.forEach((d, i) => d.classList.toggle('active', i === idx));
     };
-    
-    // Touch swipe support
+
     let startX = 0;
-    let endX = 0;
     gallery.addEventListener('touchstart', e => startX = e.touches[0].clientX);
     gallery.addEventListener('touchend', e => {
-      endX = e.changedTouches[0].clientX;
-      const diff = startX - endX;
-      if (Math.abs(diff) > 50) diff > 0 ? nextImage(gallery.querySelector('.next-btn')) : prevImage(gallery.querySelector('.prev-btn'));
+      const diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) {
+        diff > 0
+          ? nextImage(gallery.querySelector('.next-btn'))
+          : prevImage(gallery.querySelector('.prev-btn'));
+      }
     });
   });
-  
-// Existing filter functions...
-   const searchInput = document.getElementById('productSearch');
-   const categoryFilter = document.getElementById('categoryFilter');
-   const brandFilter = document.getElementById('brandFilter');
-   const stockFilter = document.getElementById('stockFilter');
-   const items = document.querySelectorAll('.product-item');
-   const countEl = document.getElementById('productCount');
 
-   function filterProducts() {
-     const q = searchInput.value.toLowerCase();
-     const cat = categoryFilter.value;
-     const brand = brandFilter.value;
-     const stock = stockFilter.value;
-     let visible = 0;
-     
-     items.forEach(item => {
-       const nameMatch = item.dataset.name.includes(q);
-       const stockVal = parseInt(item.dataset.stock);
-       const stockMatch = stock === 'all'
-         || (stock === 'instock' && stockVal > 0)
-         || (stock === 'outofstock' && stockVal === 0);
-       
-       const catMatch = !cat || item.dataset.category === cat;
-       const brandMatch = !brand || item.dataset.brand === brand;
-       
-       const show = nameMatch && stockMatch && catMatch && brandMatch;
-       item.style.display = show ? '' : 'none';
-       if (show) visible++;
-     });
-     countEl.textContent = visible;
-   }
-   
-   function applyUrlFilters() {
-     const params = new URLSearchParams();
-     if (categoryFilter.value) params.set('category', categoryFilter.value);
-     if (brandFilter.value) params.set('brand', brandFilter.value);
-     const url = params.toString() ? `?${params.toString()}` : '?';
-     window.history.replaceState({}, '', url);
-   }
+  const searchInput = document.getElementById('productSearch');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const brandFilter = document.getElementById('brandFilter');
+  const stockFilter = document.getElementById('stockFilter');
+  const items = document.querySelectorAll('.product-item');
+  const countEl = document.getElementById('productCount');
 
-   searchInput.addEventListener('input', filterProducts);
-   categoryFilter.addEventListener('change', () => { filterProducts(); applyUrlFilters(); });
-   brandFilter.addEventListener('change', () => { filterProducts(); applyUrlFilters(); });
-   stockFilter.addEventListener('change', filterProducts);
+  function filterProducts() {
+    const q = searchInput.value.toLowerCase();
+    const cat = categoryFilter.value;
+    const brand = brandFilter.value;
+    const stock = stockFilter.value;
+    let visible = 0;
+    items.forEach(item => {
+      const nameMatch = item.dataset.name.includes(q);
+      const stockVal = parseInt(item.dataset.stock);
+      const stockMatch = stock === 'all'
+        || (stock === 'instock' && stockVal > 0)
+        || (stock === 'outofstock' && stockVal === 0);
+      const catMatch = !cat || item.dataset.category === cat;
+      const brandMatch = !brand || item.dataset.brand === brand;
+      const show = nameMatch && stockMatch && catMatch && brandMatch;
+      item.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    countEl.textContent = visible;
+  }
+
+  function applyUrlFilters() {
+    const params = new URLSearchParams();
+    if (categoryFilter.value) params.set('category', categoryFilter.value);
+    if (brandFilter.value) params.set('brand', brandFilter.value);
+    const url = params.toString() ? `?${params.toString()}` : '?';
+    window.history.replaceState({}, '', url);
+  }
+
+  searchInput.addEventListener('input', filterProducts);
+  categoryFilter.addEventListener('change', () => { filterProducts(); applyUrlFilters(); });
+  brandFilter.addEventListener('change', () => { filterProducts(); applyUrlFilters(); });
+  stockFilter.addEventListener('change', filterProducts);
 </script>
 {% endblock %}
-

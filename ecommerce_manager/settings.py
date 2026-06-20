@@ -35,6 +35,8 @@ SESSION_COOKIE_SECURE = False
 
 # Application definition
 
+LOGIN_URL = '/api/auth/login-page/'
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
