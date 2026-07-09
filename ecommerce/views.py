@@ -21,7 +21,7 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
-from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense, Cart, CartItem
+from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense, Cart, CartItem, Notification
 from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm, ConsignmentForm, SupplierForm, ExpenseForm
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
@@ -273,6 +273,13 @@ def order_product_view(request):
                 price=product.price
             )
             order_item.save()
+
+            # Notify admin
+            Notification.objects.create(
+                notification_type='new_order',
+                order=order,
+                message=f"New order #{order.id} placed by {request.user.username} for KSh {order.get_total_amount()}"
+            )
 
             messages.success(request, f"Order #{order.id} placed successfully for {product.name}!")
             return redirect('orders_list')
@@ -926,6 +933,13 @@ def checkout_from_cart(request):
             # Clear the cart
             cart.items.all().delete()
 
+            # Notify admin
+            Notification.objects.create(
+                notification_type='new_order',
+                order=order,
+                message=f"New order #{order.id} placed by {customer.user.username} for KSh {order.get_total_amount()}"
+            )
+
             messages.success(
                 request,
                 f"Order #{order.id} placed successfully!"
@@ -937,6 +951,17 @@ def checkout_from_cart(request):
         except Cart.DoesNotExist:
             messages.error(request, "Cart not found.")
     return redirect('cart_view')
+
+
+
+@staff_member_required
+def notifications_view(request):
+    notifications = Notification.objects.all()
+    # Mark all as read when viewed
+    Notification.objects.filter(is_read=False).update(is_read=True)
+    return render(request, 'ecommerce/notifications.html', {
+        'notifications': notifications,
+    })
 
 
 # -------------------

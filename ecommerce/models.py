@@ -341,3 +341,27 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
+
+
+class Notification(models.Model):
+    TYPES = [
+        ('new_order', 'New Order'),
+        ('payment', 'New Payment'),
+        ('low_stock', 'Low Stock'),
+    ]
+    notification_type = models.CharField(
+        max_length=20, choices=TYPES, default='new_order'
+    )
+    message = models.TextField()
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='notifications'
+    )
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.notification_type} - {self.created_at}"

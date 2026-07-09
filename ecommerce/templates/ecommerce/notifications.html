@@ -1,0 +1,62 @@
+{% extends "ecommerce/base.html" %}
+{% block title %}Notifications — BizStore{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Notifications</h1>
+    <p>Order alerts and system updates</p>
+  </div>
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary">
+    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-bell me-2"></i>All Notifications</span>
+    <span style="font-size:0.8rem;color:#6B7280;">
+      {{ notifications|length }} total
+    </span>
+  </div>
+  <div class="card-body p-0">
+    {% for notification in notifications %}
+    <div style="padding:1.25rem;border-bottom:1px solid #F3F4F6;
+                display:flex;align-items:flex-start;gap:16px;
+                background:{% if not notification.is_read %}#FFFBF5{% else %}white{% endif %};">
+      <div style="width:44px;height:44px;border-radius:12px;
+                  background:{% if notification.notification_type == 'new_order' %}#EEF2FF{% elif notification.notification_type == 'payment' %}#D1FAE5{% else %}#FEF3C7{% endif %};
+                  display:flex;align-items:center;justify-content:center;
+                  flex-shrink:0;">
+<i class="bi bi-bell" style="color:#4F46E5;font-size:1.1rem;"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:0.9rem;margin-bottom:2px;">
+          {{ notification.message }}
+        </div>
+        <div style="font-size:0.78rem;color:#6B7280;">
+          {{ notification.created_at|date:"M d, Y" }} at
+          {{ notification.created_at|time:"g:i A" }}
+        </div>
+      </div>
+      {% if notification.order %}
+      <a href="{% url 'order_detail' notification.order.id %}"
+         class="btn btn-sm btn-outline-primary flex-shrink-0">
+        <i class="bi bi-eye me-1"></i> View Order
+      </a>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="text-center py-5" style="color:#6B7280;">
+      <i class="bi bi-bell-slash fs-1 d-block mb-3"
+         style="color:#D1D5DB;"></i>
+      <div style="font-weight:600;">No notifications yet</div>
+      <div style="font-size:0.875rem;">
+        Notifications will appear here when orders are placed.
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+

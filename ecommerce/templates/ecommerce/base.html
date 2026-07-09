@@ -341,6 +341,22 @@
 
       {% if user.is_authenticated %}
         {% if user.is_staff %}
+        <!-- Notification Bell -->
+        <a href="{% url 'notifications' %}"
+           class="nav-link position-relative"
+           style="padding:0.4rem 0.6rem !important;">
+          <i class="bi bi-bell" style="font-size:1.1rem;"></i>
+          {% if unread_count and unread_count > 0 %}
+          <span style="position:absolute;top:0;right:0;
+                     background:#EF4444;color:white;
+                     font-size:0.6rem;font-weight:700;
+                     width:16px;height:16px;border-radius:50%;
+                     display:flex;align-items:center;
+                     justify-content:center;line-height:1;">
+            {{ unread_count }}
+          </span>
+          {% endif %}
+        </a>
         <a href="{% url 'admin_dashboard' %}"
            class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
           <i class="bi bi-speedometer2 me-1"></i> Admin
