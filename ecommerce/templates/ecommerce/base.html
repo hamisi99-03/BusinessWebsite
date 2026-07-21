@@ -484,3 +484,240 @@
                margin-top:4rem;padding:3rem 0 1.5rem;">
   <div class="container">
     <div class="row g-4 mb-4">
+
+      <!-- Brand Column -->
+      <div class="col-lg-4 col-md-6">
+        <div style="font-family:'Quicksand',sans-serif;font-weight:800;
+                    font-size:1.4rem;color:white;margin-bottom:0.75rem;">
+          <i class="bi bi-bag-fill me-2" style="color:#E07A5F;"></i>
+          BizStore
+        </div>
+        <p style="font-size:0.875rem;color:rgba(255,255,255,0.6);
+                  line-height:1.8;margin-bottom:1.25rem;max-width:280px;">
+          Your trusted local store for quality products. 
+          Fast ordering, flexible payment — Cash or M-Pesa.
+        </p>
+        <div style="display:flex;gap:10px;">
+          <a href="#" style="width:38px;height:38px;border-radius:10px;
+                             background:rgba(255,255,255,0.1);
+                             display:flex;align-items:center;
+                             justify-content:center;color:white;
+                             text-decoration:none;transition:all 0.2s ease;"
+             onmouseover="this.style.background='#E07A5F';"
+             onmouseout="this.style.background='rgba(255,255,255,0.1)';">
+            <i class="bi bi-facebook"></i>
+          </a>
+          <a href="#" style="width:38px;height:38px;border-radius:10px;
+                             background:rgba(255,255,255,0.1);
+                             display:flex;align-items:center;
+                             justify-content:center;color:white;
+                             text-decoration:none;transition:all 0.2s ease;"
+             onmouseover="this.style.background='#E07A5F';"
+             onmouseout="this.style.background='rgba(255,255,255,0.1)';">
+            <i class="bi bi-instagram"></i>
+          </a>
+          <a href="#" style="width:38px;height:38px;border-radius:10px;
+                             background:rgba(255,255,255,0.1);
+                             display:flex;align-items:center;
+                             justify-content:center;color:white;
+                             text-decoration:none;transition:all 0.2s ease;"
+             onmouseover="this.style.background='#E07A5F';"
+             onmouseout="this.style.background='rgba(255,255,255,0.1)';">
+            <i class="bi bi-twitter-x"></i>
+          </a>
+          <a href="#" style="width:38px;height:38px;border-radius:10px;
+                             background:rgba(255,255,255,0.1);
+                             display:flex;align-items:center;
+                             justify-content:center;color:white;
+                             text-decoration:none;transition:all 0.2s ease;"
+             onmouseover="this.style.background='#25D366';"
+             onmouseout="this.style.background='rgba(255,255,255,0.1)';">
+            <i class="bi bi-whatsapp"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="col-lg-2 col-md-6">
+        <div style="font-weight:700;font-size:0.85rem;
+                    text-transform:uppercase;letter-spacing:0.08em;
+                    color:white;margin-bottom:1rem;">
+          Quick Links
+        </div>
+        <ul style="list-style:none;padding:0;margin:0;">
+          <li style="margin-bottom:0.6rem;">
+            <a href="{% url 'product_list' %}"
+               style="color:rgba(255,255,255,0.6);text-decoration:none;
+                      font-size:0.875rem;transition:color 0.15s ease;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              <i class="bi bi-grid me-1"></i> Products
+            </a>
+          </li>
+          {% if user.is_authenticated %}
+          <li style="margin-bottom:0.6rem;">
+            <a href="{% url 'dashboard' %}"
+               style="color:rgba(255,255,255,0.6);text-decoration:none;
+                      font-size:0.875rem;transition:color 0.15s ease;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              <i class="bi bi-house me-1"></i> Dashboard
+            </a>
+          </li>
+          <li style="margin-bottom:0.6rem;">
+            <a href="{% url 'orders_list' %}"
+               style="color:rgba(255,255,255,0.6);text-decoration:none;
+                      font-size:0.875rem;transition:color 0.15s ease;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              <i class="bi bi-receipt me-1"></i> My Orders
+            </a>
+          </li>
+          <li style="margin-bottom:0.6rem;">
+            <a href="{% url 'cart_view' %}"
+               style="color:rgba(255,255,255,0.6);text-decoration:none;
+                      font-size:0.875rem;transition:color 0.15s ease;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              <i class="bi bi-cart3 me-1"></i> My Cart
+            </a>
+          </li>
+          {% else %}
+          <li style="margin-bottom:0.6rem;">
+            <a href="{% url 'login' %}"
+               style="color:rgba(255,255,255,0.6);text-decoration:none;
+                      font-size:0.875rem;transition:color 0.15s ease;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+            </a>
+          </li>
+          <li style="margin-bottom:0.6rem;">
+            <a href="{% url 'register' %}"
+               style="color:rgba(255,255,255,0.6);text-decoration:none;
+                      font-size:0.875rem;transition:color 0.15s ease;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              <i class="bi bi-person-plus me-1"></i> Register
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <!-- Payment Methods -->
+      <div class="col-lg-3 col-md-6">
+        <div style="font-weight:700;font-size:0.85rem;
+                    text-transform:uppercase;letter-spacing:0.08em;
+                    color:white;margin-bottom:1rem;">
+          Payment Methods
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;
+                      background:rgba(255,255,255,0.07);
+                      border-radius:10px;padding:0.75rem 1rem;">
+            <i class="bi bi-phone"
+               style="color:#25D366;font-size:1.2rem;"></i>
+            <div>
+              <div style="font-weight:600;font-size:0.875rem;color:white;">
+                M-Pesa
+              </div>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">
+                Mobile money payment
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;
+                      background:rgba(255,255,255,0.07);
+                      border-radius:10px;padding:0.75rem 1rem;">
+            <i class="bi bi-cash-coin"
+               style="color:#F2CC8F;font-size:1.2rem;"></i>
+            <div>
+              <div style="font-weight:600;font-size:0.875rem;color:white;">
+                Cash
+              </div>
+              <div style="font-size:0.75rem;color:rgba(255,255,255,0.5);">
+                Pay on delivery
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      <div class="col-lg-3 col-md-6">
+        <div style="font-weight:700;font-size:0.85rem;
+                    text-transform:uppercase;letter-spacing:0.08em;
+                    color:white;margin-bottom:1rem;">
+          Contact Us
+        </div>
+        <ul style="list-style:none;padding:0;margin:0;">
+          <li style="margin-bottom:0.85rem;display:flex;
+                     align-items:flex-start;gap:10px;">
+            <i class="bi bi-geo-alt"
+               style="color:#E07A5F;margin-top:2px;flex-shrink:0;"></i>
+            <span style="font-size:0.875rem;color:rgba(255,255,255,0.6);">
+              Mombasa, Kenya
+            </span>
+          </li>
+          <li style="margin-bottom:0.85rem;display:flex;
+                     align-items:center;gap:10px;">
+            <i class="bi bi-telephone"
+               style="color:#E07A5F;flex-shrink:0;"></i>
+            <a href="tel:+254700000000"
+               style="font-size:0.875rem;color:rgba(255,255,255,0.6);
+                      text-decoration:none;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              +254 700 000 000
+            </a>
+          </li>
+          <li style="margin-bottom:0.85rem;display:flex;
+                     align-items:center;gap:10px;">
+            <i class="bi bi-envelope"
+               style="color:#E07A5F;flex-shrink:0;"></i>
+            <a href="mailto:info@bizstore.co.ke"
+               style="font-size:0.875rem;color:rgba(255,255,255,0.6);
+                      text-decoration:none;"
+               onmouseover="this.style.color='#E07A5F';"
+               onmouseout="this.style.color='rgba(255,255,255,0.6)';">
+              info@bizstore.co.ke
+            </a>
+          </li>
+          <li style="display:flex;align-items:center;gap:10px;">
+            <i class="bi bi-clock"
+               style="color:#E07A5F;flex-shrink:0;"></i>
+            <span style="font-size:0.875rem;color:rgba(255,255,255,0.6);">
+              Mon–Sat, 8am – 6pm
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div style="border-top:1px solid rgba(255,255,255,0.1);
+                padding-top:1.25rem;
+                display:flex;flex-wrap:wrap;
+                justify-content:space-between;align-items:center;
+                gap:1rem;">
+      <div style="font-size:0.8rem;color:rgba(255,255,255,0.4);">
+        © 2026 BizStore. All rights reserved.
+      </div>
+      <div style="display:flex;gap:1.5rem;">
+        <a href="#" style="font-size:0.8rem;color:rgba(255,255,255,0.4);
+                           text-decoration:none;"
+           onmouseover="this.style.color='white';"
+           onmouseout="this.style.color='rgba(255,255,255,0.4)';">
+          Privacy Policy
+        </a>
+        <a href="#" style="font-size:0.8rem;color:rgba(255,255,255,0.4);
+                           text-decoration:none;"
+           onmouseover="this.style.color='white';"
+           onmouseout="this.style.color='rgba(255,255,255,0.4)';">
+          Terms of Service
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
