@@ -416,20 +416,36 @@ def payment_list_view(request):
 
 
 def custom_login(request):
-    if request.method == "POST":
-        form = CustomAuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            messages.success(request, 'You have been logged in successfully.')
-            if user.is_staff:
-                return redirect('admin_dashboard')
-            return redirect('dashboard')
+    if request.user.is_authenticated:
+        if request.user.is_staff:
+            return redirect('admin_dashboard')
+        return redirect('dashboard')
+
+    error = None
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+
+        if not username or not password:
+            error = 'Please enter both username and password.'
         else:
-            messages.error(request, 'Invalid username or password.')
-    else:
-        form = CustomAuthenticationForm()
-    return render(request, "auth/login.html", {"form": form})
+            from django.contrib.auth import authenticate, login
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                next_url = request.POST.get('next') or request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+                if user.is_staff:
+                    return redirect('admin_dashboard')
+                return redirect('dashboard')
+            else:
+                error = 'Incorrect username or password. Please try again.'
+
+    return render(request, 'auth/login.html', {
+        'error': error,
+        'next': request.GET.get('next', ''),
+    })
 
 
 @staff_member_required

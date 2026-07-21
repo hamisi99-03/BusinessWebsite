@@ -1,12 +1,9 @@
-- [x] Add Notification model to ecommerce/models.py
-- [x] Run makemigrations
-- [x] Run migrate
-- [x] Create Notification objects in checkout_from_cart and order_product_view
-- [x] Add notification bell to ecommerce/templates/ecommerce/base.html
-- [x] Add ecommerce/context_processors.py
-- [x] Register context processor in ecommerce_manager/settings.py
-- [x] Add staff-only notifications_view in ecommerce/views.py
-- [x] Add notifications URL in ecommerce/urls.py
-- [x] Create ecommerce/templates/ecommerce/notifications.html
-- [x] Run python manage.py check
+# Login Error Handling Implementation
+
+- [x] STEP 1: Analyze current code (views.py, login.html, forms.py, urls.py)
+- [x] STEP 2: Plan approved
+- [x] STEP 3: Update `custom_login` in views.py
+- [x] STEP 4: Update auth/login.html (messages block, form inputs, hidden next field)
+- [x] STEP 5: Run `python manage.py check`
+- [ ] STEP 6: Git commit and push
 

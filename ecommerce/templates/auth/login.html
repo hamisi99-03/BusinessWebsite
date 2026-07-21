@@ -135,31 +135,51 @@
     </div>
     <div class="auth-subtitle">Sign in to your account</div>
 
+    {% if error %}
+    <div class="alert d-flex align-items-center gap-2"
+         style="background:#FEE2E2;color:#991B1B;
+                border-radius:10px;padding:0.875rem 1rem;
+                margin-bottom:1.25rem;font-size:0.875rem;
+                font-weight:500;">
+      <i class="bi bi-exclamation-circle-fill"
+         style="font-size:1rem;flex-shrink:0;"></i>
+      <span>{{ error }}</span>
+    </div>
+    {% endif %}
     {% if messages %}
       {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+      <div class="alert d-flex align-items-center gap-2"
+           style="background:{% if message.tags == 'success' %}#D1FAE5;color:#065F46;{% else %}#FEE2E2;color:#991B1B;{% endif %}
+                  border-radius:10px;padding:0.875rem 1rem;
+                  margin-bottom:1.25rem;font-size:0.875rem;
+                  font-weight:500;">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% else %}exclamation-circle-fill{% endif %}"
+           style="font-size:1rem;flex-shrink:0;"></i>
+        <span>{{ message }}</span>
+      </div>
       {% endfor %}
     {% endif %}
 
     <form method="POST">
        {% csrf_token %}
         
-       {{ form.non_field_errors }}
+       <input type="hidden" name="next" value="{{ next }}">
         
        <div class="mb-3">
          <label class="form-label">Username</label>
          <div class="input-icon-wrap">
            <i class="bi bi-person"></i>
-           {{ form.username }}
-           {{ form.username.errors }}
+           <input type="text" name="username" class="form-control {% if error %}is-invalid{% endif %}"
+                  placeholder="Enter your username" required autofocus
+                  value="{{ request.POST.username|default:'' }}">
          </div>
        </div>
        <div class="mb-3">
          <label class="form-label">Password</label>
          <div class="input-icon-wrap">
            <i class="bi bi-lock"></i>
-           {{ form.password }}
-           {{ form.password.errors }}
+           <input type="password" name="password" class="form-control {% if error %}is-invalid{% endif %}"
+                  placeholder="Enter your password" required>
          </div>
        </div>
        <button type="submit" class="btn-signin">
