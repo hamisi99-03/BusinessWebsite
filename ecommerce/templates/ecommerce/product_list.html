@@ -2,12 +2,198 @@
 {% block title %}Products — BizStore{% endblock %}
 
 {% block content %}
+{% if not user.is_authenticated %}
+<!-- HERO SECTION FOR GUESTS -->
+<div style="background:linear-gradient(135deg, #E07A5F 0%, #3D405B 100%);
+            border-radius:24px;padding:4rem 3rem;margin-bottom:2.5rem;
+            position:relative;overflow:hidden;">
+
+  <!-- Background decorative circles -->
+  <div style="position:absolute;top:-60px;right:-60px;width:300px;height:300px;
+              border-radius:50%;background:rgba(255,255,255,0.06);"></div>
+  <div style="position:absolute;bottom:-80px;left:-40px;width:250px;height:250px;
+              border-radius:50%;background:rgba(255,255,255,0.04);"></div>
+  <div style="position:absolute;top:50%;right:15%;width:120px;height:120px;
+              border-radius:50%;background:rgba(255,255,255,0.08);
+              transform:translateY(-50%);"></div>
+
+  <div class="row align-items-center position-relative">
+    <div class="col-lg-7">
+      <!-- Badge -->
+      <div style="display:inline-flex;align-items:center;gap:8px;
+                  background:rgba(255,255,255,0.15);border-radius:999px;
+                  padding:6px 16px;margin-bottom:1.5rem;">
+        <i class="bi bi-stars" style="color:#F2CC8F;font-size:0.9rem;"></i>
+        <span style="color:white;font-size:0.8rem;font-weight:600;
+                     letter-spacing:0.05em;">
+          Premium Quality Products
+        </span>
+      </div>
+
+      <!-- Headline -->
+      <h1 style="font-family:'Quicksand',sans-serif;font-weight:800;
+                 font-size:clamp(2rem,4vw,3rem);color:white;
+                 line-height:1.15;margin-bottom:1rem;letter-spacing:-0.02em;">
+        Shop Smart,<br>
+        <span style="color:#F2CC8F;">Live Better</span>
+      </h1>
+
+      <!-- Subtext -->
+      <p style="color:rgba(255,255,255,0.8);font-size:1.05rem;
+                margin-bottom:2rem;max-width:480px;line-height:1.7;">
+        Browse our curated collection of quality products.
+        Fast ordering, flexible payment — Cash or M-Pesa.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="d-flex flex-wrap gap-3">
+        <a href="{% url 'register' %}"
+           style="background:white;color:#E07A5F;border:none;
+                  border-radius:50px;padding:0.75rem 2rem;
+                  font-weight:700;font-size:0.95rem;
+                  text-decoration:none;display:inline-flex;
+                  align-items:center;gap:8px;
+                  box-shadow:0 4px 15px rgba(0,0,0,0.15);
+                  transition:all 0.2s ease;"
+           onmouseover="this.style.transform='translateY(-2px)';
+                        this.style.boxShadow='0 8px 25px rgba(0,0,0,0.2)';"
+           onmouseout="this.style.transform='translateY(0)';
+                       this.style.boxShadow='0 4px 15px rgba(0,0,0,0.15)';">
+          <i class="bi bi-person-plus"></i>
+          Get Started Free
+        </a>
+        <a href="{% url 'login' %}"
+           style="background:transparent;color:white;
+                  border:2px solid rgba(255,255,255,0.5);
+                  border-radius:50px;padding:0.75rem 2rem;
+                  font-weight:600;font-size:0.95rem;
+                  text-decoration:none;display:inline-flex;
+                  align-items:center;gap:8px;
+                  transition:all 0.2s ease;"
+           onmouseover="this.style.borderColor='white';
+                        this.style.background='rgba(255,255,255,0.1)';"
+           onmouseout="this.style.borderColor='rgba(255,255,255,0.5)';
+                       this.style.background='transparent';">
+          <i class="bi bi-box-arrow-in-right"></i>
+          Sign In
+        </a>
+      </div>
+    </div>
+
+    <!-- Right side feature pills -->
+    <div class="col-lg-5 d-none d-lg-flex flex-column gap-3 align-items-end">
+      <div style="background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);
+                  border-radius:16px;padding:1rem 1.5rem;
+                  border:1px solid rgba(255,255,255,0.2);
+                  display:flex;align-items:center;gap:12px;width:fit-content;">
+        <div style="width:40px;height:40px;border-radius:10px;
+                    background:rgba(255,255,255,0.2);display:flex;
+                    align-items:center;justify-content:center;">
+          <i class="bi bi-cart-check" style="color:white;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <div style="color:white;font-weight:700;font-size:0.9rem;">
+            Easy Ordering
+          </div>
+          <div style="color:rgba(255,255,255,0.7);font-size:0.78rem;">
+            Add to cart & checkout in seconds
+          </div>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);
+                  border-radius:16px;padding:1rem 1.5rem;
+                  border:1px solid rgba(255,255,255,0.2);
+                  display:flex;align-items:center;gap:12px;width:fit-content;">
+        <div style="width:40px;height:40px;border-radius:10px;
+                    background:rgba(255,255,255,0.2);display:flex;
+                    align-items:center;justify-content:center;">
+          <i class="bi bi-phone" style="color:white;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <div style="color:white;font-weight:700;font-size:0.9rem;">
+            M-Pesa & Cash
+          </div>
+          <div style="color:rgba(255,255,255,0.7);font-size:0.78rem;">
+            Flexible payment options
+          </div>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);
+                  border-radius:16px;padding:1rem 1.5rem;
+                  border:1px solid rgba(255,255,255,0.2);
+                  display:flex;align-items:center;gap:12px;width:fit-content;">
+        <div style="width:40px;height:40px;border-radius:10px;
+                    background:rgba(255,255,255,0.2);display:flex;
+                    align-items:center;justify-content:center;">
+          <i class="bi bi-shield-check" style="color:white;font-size:1.1rem;"></i>
+        </div>
+        <div>
+          <div style="color:white;font-weight:700;font-size:0.9rem;">
+            Track Your Orders
+          </div>
+          <div style="color:rgba(255,255,255,0.7);font-size:0.78rem;">
+            Real-time order status updates
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS ROW -->
+<div class="row g-3 mb-4">
+  <div class="col-4">
+    <div style="text-align:center;background:white;border-radius:16px;
+                padding:1.25rem;border:1px solid var(--border);
+                box-shadow:var(--shadow);">
+      <div style="font-size:1.6rem;font-weight:800;color:var(--primary);
+                  font-family:'Quicksand',sans-serif;">
+        {{ products|length }}+
+      </div>
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:500;">
+        Products
+      </div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div style="text-align:center;background:white;border-radius:16px;
+                padding:1.25rem;border:1px solid var(--border);
+                box-shadow:var(--shadow);">
+      <div style="font-size:1.6rem;font-weight:800;color:var(--primary);
+                  font-family:'Quicksand',sans-serif;">
+        Fast
+      </div>
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:500;">
+        Delivery
+      </div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div style="text-align:center;background:white;border-radius:16px;
+                padding:1.25rem;border:1px solid var(--border);
+                box-shadow:var(--shadow);">
+      <div style="font-size:1.6rem;font-weight:800;color:var(--primary);
+                  font-family:'Quicksand',sans-serif;">
+        24/7
+      </div>
+      <div style="font-size:0.78rem;color:var(--muted);font-weight:500;">
+        Support
+      </div>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- LOGGED IN HEADER -->
 <div class="page-header d-flex justify-content-between align-items-center">
   <div>
     <h1>Products</h1>
     <p>Browse and order available items</p>
   </div>
 </div>
+{% endif %}
 
 <!-- SEARCH & FILTER BAR -->
 <div class="card mb-4 p-3">
