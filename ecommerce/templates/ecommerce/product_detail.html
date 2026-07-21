@@ -2,176 +2,304 @@
 {% block title %}{{ product.name }} — BizStore{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-  <!-- Left column — Product Images -->
-  <div class="col-12 col-lg-6">
-    <div class="product-gallery">
-      <div class="gallery-container">
-        {% for image in product.images.all %}
-        <img src="{{ image.image.url }}" alt="{{ product.name }}" class="gallery-image {% if not forloop.first %}hidden{% endif %}">
-        {% endfor %}
-        {% if not product.images.all %}
-        <div class="placeholder-image" style="aspect-ratio:1;background:#F3F4F6;display:flex;align-items:center;justify-content:center;">
-          <i class="bi bi-image fs-1" style="color:var(--muted);"></i>
-        </div>
+<!-- BREADCRUMB -->
+<nav style="margin-bottom:1.5rem;">
+  <div style="display:flex;align-items:center;gap:8px;
+              font-size:0.875rem;color:var(--muted);">
+    <a href="{% url 'product_list' %}"
+       style="color:var(--muted);text-decoration:none;">
+      <i class="bi bi-grid me-1"></i>Products
+    </a>
+    <i class="bi bi-chevron-right" style="font-size:0.7rem;"></i>
+    <span style="color:var(--text);font-weight:600;">
+      {{ product.name }}
+    </span>
+  </div>
+</nav>
+
+<div class="row g-4 mb-5">
+
+  <!-- IMAGE GALLERY -->
+  <div class="col-lg-6">
+    <div style="position:sticky;top:90px;">
+
+      <!-- Main Image -->
+      <div id="mainImageBox"
+           style="background:#F3F4F6;border-radius:24px;
+                  overflow:hidden;aspect-ratio:1;
+                  margin-bottom:1rem;">
+        {% if product.images.first %}
+          <img id="mainImage"
+               src="{{ product.images.first.image.url }}"
+               alt="{{ product.name }}"
+               style="width:100%;height:100%;object-fit:cover;
+                      transition:opacity 0.2s ease;">
+        {% else %}
+          <div style="width:100%;height:100%;display:flex;
+                      align-items:center;justify-content:center;">
+            <i class="bi bi-image"
+               style="font-size:4rem;color:#D1D5DB;"></i>
+          </div>
         {% endif %}
       </div>
+
+      <!-- Thumbnail Strip -->
       {% if product.images.all|length > 1 %}
-      <div class="gallery-controls mt-2">
-        <button class="gallery-nav prev-btn" onclick="prevDetailImage(this)"><i class="bi bi-chevron-left"></i></button>
-        <div class="gallery-dots">
-          {% for image in product.images.all %}
-          <span class="dot {% if forloop.first %}active{% endif %}" onclick="goToDetailImage(this, {{ forloop.counter0 }})"></span>
-          {% endfor %}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        {% for image in product.images.all %}
+        <div onclick="switchImage('{{ image.image.url }}', this)"
+             style="width:72px;height:72px;border-radius:12px;
+                    overflow:hidden;cursor:pointer;
+                    border:2px solid {% if forloop.first %}var(--primary){% else %}var(--border){% endif %};
+                    transition:border 0.15s ease;flex-shrink:0;"
+             class="thumb-btn">
+          <img src="{{ image.image.url }}"
+               style="width:100%;height:100%;object-fit:cover;">
         </div>
-        <button class="gallery-nav next-btn" onclick="nextDetailImage(this)"><i class="bi bi-chevron-right"></i></button>
+        {% endfor %}
       </div>
       {% endif %}
     </div>
   </div>
 
-  <!-- Right column — Product Info -->
-  <div class="col-12 col-lg-6">
-    <div class="product-info">
-      <h2 class="mb-2">{{ product.name }}</h2>
-      
-      {% if product.category or product.brand %}
-      <div class="d-flex gap-2 mb-3">
-        {% if product.category %}
-          <span class="badge" style="background:#EEF2FF;color:#4F46E5;">{{ product.category.name }}</span>
-        {% endif %}
-        {% if product.brand %}
-          <span class="badge" style="background:#FEF3C7;color:#92400E;">{{ product.brand.name }}</span>
-        {% endif %}
-      </div>
-      {% endif %}
-      
-      <div class="product-price fs-3 fw-bold mb-3">KSh {{ product.price }}</div>
-      
+  <!-- PRODUCT INFO -->
+  <div class="col-lg-6">
+
+    <!-- Name & Stock -->
+    <div style="margin-bottom:1rem;">
+      <h1 style="font-size:clamp(1.5rem,3vw,2rem);font-weight:800;
+                 margin-bottom:0.5rem;">
+        {{ product.name }}
+      </h1>
       {% if product.stock > 0 %}
-        <span class="stock-badge mb-3 d-inline-block" style="background:#D1FAE5;color:#065F46;">
-          {{ product.stock }} in stock
+        <span class="badge-status badge-delivered">
+          <i class="bi bi-check-circle-fill me-1"></i>
+          In Stock ({{ product.stock }} available)
         </span>
       {% else %}
-        <span class="stock-badge mb-3 d-inline-block" style="background:#FEE2E2;color:#991B1B;">
+        <span class="badge-status badge-cancelled">
+          <i class="bi bi-x-circle-fill me-1"></i>
           Out of Stock
         </span>
       {% endif %}
-      
-      {% if product.description %}
-      <p class="mb-4">{{ product.description }}</p>
-      {% endif %}
-      
-      <div class="d-flex gap-2">
-        {% if product.stock > 0 %}
-          <a href="{% url 'order_product' %}?product_id={{ product.id }}" class="btn btn-primary flex-grow-1">
-            <i class="bi bi-cart-plus me-1"></i> Place Order
+    </div>
+
+    <!-- Price -->
+    <div style="background:linear-gradient(135deg,#FFFBF5,#FEF3C7);
+                border-radius:16px;padding:1.25rem;
+                border:1px solid var(--border);margin-bottom:1.5rem;">
+      <div style="font-size:0.8rem;color:var(--muted);
+                  font-weight:600;text-transform:uppercase;
+                  letter-spacing:0.06em;margin-bottom:4px;">
+        Price
+      </div>
+      <div style="font-size:2.2rem;font-weight:800;
+                  color:var(--primary);font-family:'Quicksand',sans-serif;
+                  letter-spacing:-0.02em;">
+        KSh {{ product.price|floatformat:0 }}
+      </div>
+    </div>
+
+    <!-- Description -->
+    {% if product.description %}
+    <div style="margin-bottom:1.5rem;">
+      <div style="font-size:0.8rem;color:var(--muted);font-weight:700;
+                  text-transform:uppercase;letter-spacing:0.06em;
+                  margin-bottom:0.75rem;">
+        Description
+      </div>
+      <p style="color:var(--text);line-height:1.8;font-size:0.95rem;
+                margin:0;">
+        {{ product.description }}
+      </p>
+    </div>
+    {% endif %}
+
+    <!-- Add to Cart -->
+    {% if product.stock > 0 %}
+      {% if user.is_authenticated %}
+      <div style="background:white;border-radius:16px;padding:1.25rem;
+                  border:1px solid var(--border);margin-bottom:1rem;">
+        <form method="POST" action="{% url 'add_to_cart' product.id %}"
+              id="addToCartForm">
+          {% csrf_token %}
+          <div style="margin-bottom:1rem;">
+            <label style="font-size:0.8rem;font-weight:700;
+                          color:var(--muted);text-transform:uppercase;
+                          letter-spacing:0.06em;display:block;
+                          margin-bottom:0.5rem;">
+              Quantity
+            </label>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <button type="button" onclick="changeQty(-1)"
+                      style="width:40px;height:40px;border-radius:10px;
+                             border:1px solid var(--border);
+                             background:var(--bg);font-size:1.2rem;
+                             cursor:pointer;font-weight:700;
+                             display:flex;align-items:center;
+                             justify-content:center;">−</button>
+              <input type="number" name="quantity" id="qtyInput"
+                     value="1" min="1" max="{{ product.stock }}"
+                     style="width:60px;text-align:center;font-weight:700;
+                            font-size:1.1rem;border:1px solid var(--border);
+                            border-radius:10px;padding:8px;">
+              <button type="button" onclick="changeQty(1)"
+                      style="width:40px;height:40px;border-radius:10px;
+                             border:1px solid var(--border);
+                             background:var(--bg);font-size:1.2rem;
+                             cursor:pointer;font-weight:700;
+                             display:flex;align-items:center;
+                             justify-content:center;">+</button>
+              <span style="font-size:0.8rem;color:var(--muted);">
+                Max {{ product.stock }}
+              </span>
+            </div>
+          </div>
+          <button type="submit"
+                  class="btn btn-primary w-100"
+                  style="padding:0.85rem;font-size:1rem;">
+            <i class="bi bi-cart-plus me-2"></i> Add to Cart
+          </button>
+        </form>
+      </div>
+      <a href="{% url 'cart_view' %}"
+         class="btn btn-outline-primary w-100">
+        <i class="bi bi-cart3 me-2"></i> View Cart
+      </a>
+      {% else %}
+      <div style="background:#EEF2FF;border-radius:16px;
+                  padding:1.5rem;text-align:center;">
+        <div style="font-weight:700;color:#3D405B;margin-bottom:8px;">
+          Sign in to order this product
+        </div>
+        <div style="font-size:0.875rem;color:var(--muted);
+                    margin-bottom:1rem;">
+          Create an account or sign in to add items to your cart
+        </div>
+        <div class="d-flex gap-2 justify-content-center">
+          <a href="{% url 'login' %}?next={{ request.path }}"
+             class="btn btn-primary btn-sm">
+            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
           </a>
-        {% else %}
-          <button class="btn btn-secondary flex-grow-1" disabled>Unavailable</button>
-        {% endif %}
-        <a href="{% url 'webcat' %}" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left"></i>
-        </a>
+          <a href="{% url 'register' %}"
+             class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i> Register
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    {% else %}
+      <button class="btn w-100" disabled
+              style="background:#F3F4F6;color:var(--muted);
+                     border-radius:50px;padding:0.85rem;
+                     font-weight:600;font-size:1rem;">
+        <i class="bi bi-x-circle me-2"></i> Out of Stock
+      </button>
+    {% endif %}
+
+    <!-- Features -->
+    <div class="row g-2 mt-3">
+      <div class="col-4">
+        <div style="text-align:center;padding:0.75rem;
+                    background:var(--bg);border-radius:12px;
+                    border:1px solid var(--border);">
+          <i class="bi bi-shield-check"
+             style="color:var(--primary);font-size:1.2rem;
+                    display:block;margin-bottom:4px;"></i>
+          <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">
+            Quality Assured
+          </div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div style="text-align:center;padding:0.75rem;
+                    background:var(--bg);border-radius:12px;
+                    border:1px solid var(--border);">
+          <i class="bi bi-phone"
+             style="color:var(--primary);font-size:1.2rem;
+                    display:block;margin-bottom:4px;"></i>
+          <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">
+            M-Pesa / Cash
+          </div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div style="text-align:center;padding:0.75rem;
+                    background:var(--bg);border-radius:12px;
+                    border:1px solid var(--border);">
+          <i class="bi bi-headset"
+             style="color:var(--primary);font-size:1.2rem;
+                    display:block;margin-bottom:4px;"></i>
+          <div style="font-size:0.72rem;color:var(--muted);font-weight:600;">
+            24/7 Support
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<style>
-  .product-gallery {
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 1;
-    border-radius: 12px;
-    background:#F9FAFB;
-  }
-  .gallery-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-  }
-  .gallery-image, .placeholder-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    flex-shrink: 0;
-  }
-  .hidden {
-    display: none;
-  }
-  .gallery-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 8px;
-  }
-  .gallery-nav {
-    background: rgba(255,255,255,0.8);
-    border: none;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-  }
-  .gallery-dots {
-    display: flex;
-    gap: 6px;
-  }
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(0,0,0,0.3);
-    cursor: pointer;
-  }
-  .dot.active {
-    background: #4F46E5;
-    transform: scale(1.2);
-  }
-</style>
+<!-- RELATED PRODUCTS -->
+{% if related_products %}
+<div style="margin-top:2rem;">
+  <div style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1.3rem;font-weight:800;">
+      You might also like
+    </h2>
+    <p style="color:var(--muted);font-size:0.875rem;margin:0;">
+      Other available products
+    </p>
+  </div>
+  <div class="row g-3">
+    {% for related in related_products %}
+    <div class="col-6 col-md-3">
+      <div class="product-card h-100">
+        {% if related.images.first %}
+          <img src="{{ related.images.first.image.url }}"
+               alt="{{ related.name }}">
+        {% else %}
+          <div style="aspect-ratio:1;background:#F3F4F6;display:flex;
+                      align-items:center;justify-content:center;">
+            <i class="bi bi-image fs-2" style="color:#D1D5DB;"></i>
+          </div>
+        {% endif %}
+        <div class="product-info">
+          <div class="product-name">{{ related.name }}</div>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="product-price">KSh {{ related.price|floatformat:0 }}</div>
+            <a href="{% url 'product_detail' related.id %}"
+               class="btn btn-sm btn-outline-primary">
+              View
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const gallery = document.querySelector('.product-gallery');
-  if (!gallery) return;
-  
-  const images = gallery.querySelectorAll('.gallery-image');
-  const dots = gallery.querySelectorAll('.dot');
-  
-  function showImage(index) {
-    images.forEach((img, i) => img.classList.toggle('hidden', i !== index));
-    dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
-    gallery.dataset.current = index;
+  function switchImage(url, thumbEl) {
+    document.getElementById('mainImage').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('mainImage').src = url;
+      document.getElementById('mainImage').style.opacity = '1';
+    }, 150);
+    document.querySelectorAll('.thumb-btn').forEach(t => {
+      t.style.borderColor = 'var(--border)';
+    });
+    thumbEl.style.borderColor = 'var(--primary)';
   }
-  
-  window.nextDetailImage = function(btn) {
-    let idx = parseInt(gallery.dataset.current || 0);
-    idx = (idx + 1) % images.length;
-    showImage(idx);
-  };
-  
-  window.prevDetailImage = function(btn) {
-    let idx = parseInt(gallery.dataset.current || 0);
-    idx = (idx - 1 + images.length) % images.length;
-    showImage(idx);
-  };
-  
-  window.goToDetailImage = function(dot, idx) {
-    showImage(idx);
-  };
-  
-  // Touch swipe support
-  let startX = 0;
-  gallery.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-  gallery.addEventListener('touchend', e => {
-    const endX = e.changedTouches[0].clientX;
-    const diff = startX - endX;
-    if (Math.abs(diff) > 50) diff > 0 ? nextDetailImage() : prevDetailImage();
-  });
-});
+
+  function changeQty(delta) {
+    const input = document.getElementById('qtyInput');
+    const max = parseInt(input.max) || 99;
+    const newVal = Math.max(1, Math.min(
+      (parseInt(input.value) || 1) + delta, max
+    ));
+    input.value = newVal;
+  }
 </script>
 {% endblock %}

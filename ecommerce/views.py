@@ -749,9 +749,20 @@ def product_list(request):
     })
 
 
-def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    return render(request, 'ecommerce/product_detail.html', {'product': product})
+def product_detail(request, product_id):
+    product = get_object_or_404(
+        Product.objects.prefetch_related('images'), 
+        id=product_id
+    )
+    # Get related products (same stock range, exclude current)
+    related_products = Product.objects.prefetch_related('images').exclude(
+        id=product_id
+    ).filter(stock__gt=0)[:4]
+    
+    return render(request, 'ecommerce/product_detail.html', {
+        'product': product,
+        'related_products': related_products,
+    })
 
 
 @staff_member_required
