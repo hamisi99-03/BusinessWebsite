@@ -242,51 +242,7 @@ def change_password_view(request):
 
 @login_required
 def order_product_view(request):
-    product_id = request.GET.get('product_id')
-    initial_product = None
-    if product_id:
-        initial_product = get_object_or_404(Product, pk=product_id)
-        if initial_product.stock <= 0:
-            messages.error(request, f"{initial_product.name} is out of stock.")
-            return redirect('product_list')
-    
-    if request.method == 'POST':
-        form = OrderForm(request.POST)
-        if form.is_valid():
-            product = form.cleaned_data['product']
-            quantity = form.cleaned_data['quantity']
-
-            if product.stock <= 0:
-                messages.error(request, f"{product.name} is out of stock.")
-                return redirect('orders_list')
-
-            if quantity > product.stock:
-                messages.error(request, f"Only {product.stock} items left in stock.")
-                return redirect('orders_list')
-
-            order = Order.objects.create(customer=request.user.customer, status='pending')
-
-            order_item = OrderItem(
-                order=order,
-                product=product,
-                quantity=quantity,
-                price=product.price
-            )
-            order_item.save()
-
-            # Notify admin
-            Notification.objects.create(
-                notification_type='new_order',
-                order=order,
-                message=f"New order #{order.id} placed by {request.user.username} for KSh {order.get_total_amount()}"
-            )
-
-            messages.success(request, f"Order #{order.id} placed successfully for {product.name}!")
-            return redirect('orders_list')
-    else:
-        form = OrderForm(initial={'product': initial_product} if initial_product else None)
-
-    return render(request, 'ecommerce/order_product.html', {'form': form, 'preselected_product': initial_product})
+    return redirect('product_list')
 
 # -------------------
 # API Profile Endpoint

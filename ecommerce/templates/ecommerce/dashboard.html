@@ -7,8 +7,8 @@
     <h1>Good to see you, {{ user.username }} 👋</h1>
     <p>Here's what's happening with your store today.</p>
   </div>
-  <a href="{% url 'order_product' %}" class="btn btn-primary">
-    <i class="bi bi-plus-lg me-1"></i> New Order
+  <a href="{% url 'cart_view' %}" class="btn btn-primary">
+    <i class="bi bi-cart3 me-1"></i> View Cart
   </a>
 </div>
 
@@ -121,7 +121,7 @@
           <tr>
             <td colspan="8" class="text-center py-4" style="color:var(--muted);">
               <i class="bi bi-inbox fs-4 d-block mb-2"></i>
-              No orders yet. <a href="{% url 'order_product' %}">Place your first order</a>
+              No orders yet. <a href="{% url 'product_list' %}">Browse products to get started</a>
             </td>
           </tr>
           {% endfor %}

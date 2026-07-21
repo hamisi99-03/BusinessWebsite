@@ -1,158 +1,297 @@
 {% extends "ecommerce/base.html" %}
-
-{% block title %}Place Order{% endblock %}
+{% block title %}Place Order — BizStore{% endblock %}
 
 {% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Place New Order</h1>
+    <p>Select a product and quantity to place your order</p>
+  </div>
+  <a href="{% url 'product_list' %}" class="btn btn-outline-primary">
+    <i class="bi bi-arrow-left me-1"></i> Back to Products
+  </a>
+</div>
+
 <div class="row g-4">
 
-  <!-- Left column — Order form -->
+  <!-- LEFT — Order Form -->
   <div class="col-12 col-lg-7">
-    <div class="card shadow-sm rounded-3 p-4">
-      <h4 class="mb-4">Place New Order</h4>
-      <form method="post" action="" id="order-form">
-        {% csrf_token %}
-        {% if preselected_product %}
-        <input type="hidden" name="product" value="{{ preselected_product.id }}" id="productInput">
-        <div class="mb-3 p-3 bg-light rounded-3 border">
-          <div class="d-flex align-items-center">
+    <form method="POST" action="" id="order-form">
+      {% csrf_token %}
+
+      <!-- PRODUCT SELECTION -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="bi bi-box-seam me-2"></i>Select Product
+        </div>
+        <div class="card-body p-4">
+          {% if preselected_product %}
+          <input type="hidden" name="product"
+                 value="{{ preselected_product.id }}" id="productInput">
+          <div style="display:flex;align-items:center;gap:16px;
+                      background:#FFFBF5;border:1px solid var(--border);
+                      border-radius:16px;padding:1rem;">
             {% if preselected_product.images.first %}
-              <img src="{{ preselected_product.images.first.image.url }}" alt="{{ preselected_product.name }}" style="height:60px;width:60px;object-fit:cover;border-radius:8px;margin-right:12px;">
+              <img src="{{ preselected_product.images.first.image.url }}"
+                   alt="{{ preselected_product.name }}"
+                   style="width:72px;height:72px;object-fit:cover;
+                          border-radius:12px;flex-shrink:0;">
             {% else %}
-              <div style="height:60px;width:60px;background:#E5E7EB;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-right:12px;">
-                <i class="bi bi-image text-muted"></i>
+              <div style="width:72px;height:72px;background:#F3F4F6;
+                          border-radius:12px;display:flex;align-items:center;
+                          justify-content:center;flex-shrink:0;">
+                <i class="bi bi-image fs-3" style="color:var(--muted);"></i>
               </div>
             {% endif %}
             <div>
-              <div class="fw-bold">{{ preselected_product.name }}</div>
-              <div class="text-muted" style="font-size:0.875rem;">KSh {{ preselected_product.price|floatformat:0 }} • {{ preselected_product.stock }} in stock</div>
+              <div style="font-weight:700;font-size:1rem;color:var(--text);">
+                {{ preselected_product.name }}
+              </div>
+              <div style="font-size:0.875rem;color:var(--muted);margin-top:2px;">
+                KSh {{ preselected_product.price|floatformat:0 }}
+              </div>
+              {% if preselected_product.stock > 0 %}
+                <span class="badge-status badge-delivered mt-1 d-inline-block">
+                  <i class="bi bi-check-circle me-1"></i>
+                  {{ preselected_product.stock }} in stock
+                </span>
+              {% else %}
+                <span class="badge-status badge-cancelled mt-1 d-inline-block">
+                  Out of Stock
+                </span>
+              {% endif %}
             </div>
           </div>
-        </div>
-        {% else %}
-        <!-- Product -->
-        <div class="mb-3">
-          <label for="productSelect" class="form-label">Product</label>
-          <select name="product" id="productSelect" class="form-select">
+          {% else %}
+          <label class="form-label">
+            Product <span style="color:#EF4444;">*</span>
+          </label>
+          <select name="product" id="productSelect" class="form-select" required>
             <option value="">— Select a product —</option>
             {% for product in form.fields.product.queryset %}
-              <option
-                value="{{ product.id }}"
-                data-price="{{ product.price }}"
-                data-stock="{{ product.stock }}"
-                {% if product.stock == 0 %}disabled{% endif %}
-              >
-                {{ product.name }} — KSh {{ product.price|floatformat:0 }} ({{ product.stock }} in stock)
+              <option value="{{ product.id }}"
+                      data-price="{{ product.price }}"
+                      data-stock="{{ product.stock }}"
+                      data-name="{{ product.name }}"
+                      {% if product.stock == 0 %}disabled{% endif %}>
+                {{ product.name }} — KSh {{ product.price|floatformat:0 }}
+                ({{ product.stock }} in stock)
               </option>
             {% endfor %}
           </select>
+          {% endif %}
         </div>
-        {% endif %}
+      </div>
 
-        <!-- Quantity -->
-        <div class="mb-3">
-          <label for="quantityInput" class="form-label">Quantity</label>
-          <input
-            type="number"
-            name="quantity"
-            id="quantityInput"
-            class="form-control"
-            min="1"
-            value="1"
-          >
+      <!-- QUANTITY -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="bi bi-hash me-2"></i>Quantity
         </div>
+        <div class="card-body p-4">
+          <label class="form-label">
+            How many do you want?
+            <span style="color:#EF4444;">*</span>
+          </label>
+          <div class="d-flex align-items-center gap-3">
+            <button type="button" id="decreaseBtn"
+                    onclick="changeQty(-1)"
+                    style="width:44px;height:44px;border-radius:12px;
+                           border:1px solid var(--border);background:var(--bg);
+                           font-size:1.3rem;cursor:pointer;font-weight:700;
+                           color:var(--text);transition:all 0.15s ease;"
+                    onmouseover="this.style.background='var(--primary)';this.style.color='white';"
+                    onmouseout="this.style.background='var(--bg)';this.style.color='var(--text)';">
+              −
+            </button>
+            <input type="number" name="quantity" id="quantityInput"
+                   class="form-control text-center"
+                   style="max-width:100px;font-weight:700;font-size:1.2rem;
+                          border-radius:12px;"
+                   min="1" value="1" required>
+            <button type="button" id="increaseBtn"
+                    onclick="changeQty(1)"
+                    style="width:44px;height:44px;border-radius:12px;
+                           border:1px solid var(--border);background:var(--bg);
+                           font-size:1.3rem;cursor:pointer;font-weight:700;
+                           color:var(--text);transition:all 0.15s ease;"
+                    onmouseover="this.style.background='var(--primary)';this.style.color='white';"
+                    onmouseout="this.style.background='var(--bg)';this.style.color='var(--text)';">
+              +
+            </button>
+            <span id="stockInfo"
+                  style="font-size:0.8rem;color:var(--muted);">
+              {% if preselected_product %}
+                Max: {{ preselected_product.stock }}
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
 
-        <button type="submit" class="btn btn-primary w-100 mt-3">Place Order</button>
-      </form>
-    </div>
+      <!-- SUBMIT -->
+      <button type="submit" id="submitBtn"
+              class="btn btn-primary w-100"
+              style="padding:0.85rem;font-size:1rem;">
+        <i class="bi bi-bag-check me-2"></i> Place Order
+      </button>
+    </form>
   </div>
 
-  <!-- Right column — Order summary -->
+  <!-- RIGHT — Order Summary -->
   <div class="col-12 col-lg-5">
-    <div class="card shadow-sm rounded-3 p-4 bg-light">
-      <h5 class="mb-3">Order Summary</h5>
-      <table class="table table-borderless mb-0">
-        <tbody>
-          <tr>
-            <td class="text-muted">Product</td>
-            <td class="text-end" id="summary-product">{% if preselected_product %}{{ preselected_product.name }}{% else %}Select a product{% endif %}</td>
-          </tr>
-          <tr>
-            <td class="text-muted">Unit price</td>
-            <td class="text-end" id="summary-price">{% if preselected_product %}KSh {{ preselected_product.price|floatformat:0 }}{% else %}—{% endif %}</td>
-          </tr>
-          <tr>
-            <td class="text-muted">Quantity</td>
-            <td class="text-end" id="summary-quantity">1</td>
-          </tr>
-          <tr class="border-top">
-            <td class="fw-bold">Total</td>
-            <td class="text-end fw-bold fs-5" id="summary-total">{% if preselected_product %}KSh {{ preselected_product.price|floatformat:0 }}{% else %}—{% endif %}</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="text-muted mt-3 mb-0" style="font-size: 0.875rem;">
-        Payment can be made after the order is placed.
-      </p>
+    <div class="card"
+         style="position:sticky;top:90px;">
+      <div class="card-header">
+        <i class="bi bi-receipt me-2"></i>Order Summary
+      </div>
+      <div class="card-body p-4">
+
+        <!-- Product Preview -->
+        <div id="summaryProductBox"
+             style="background:var(--bg);border-radius:12px;
+                    padding:1rem;margin-bottom:1.25rem;
+                    border:1px solid var(--border);">
+          <div style="font-size:0.75rem;font-weight:700;
+                      text-transform:uppercase;letter-spacing:0.06em;
+                      color:var(--muted);margin-bottom:6px;">
+            Product
+          </div>
+          <div id="summary-product"
+               style="font-weight:700;font-size:1rem;color:var(--text);">
+            {% if preselected_product %}
+              {{ preselected_product.name }}
+            {% else %}
+              <span style="color:var(--muted);font-weight:400;">
+                Select a product
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Price Breakdown -->
+        <div style="border-top:1px solid var(--border);padding-top:1rem;">
+          <div class="d-flex justify-content-between mb-2"
+               style="font-size:0.875rem;">
+            <span style="color:var(--muted);">Unit Price</span>
+            <span style="font-weight:600;" id="summary-price">
+              {% if preselected_product %}
+                KSh {{ preselected_product.price|floatformat:0 }}
+              {% else %}—{% endif %}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between mb-2"
+               style="font-size:0.875rem;">
+            <span style="color:var(--muted);">Quantity</span>
+            <span style="font-weight:600;" id="summary-quantity">1</span>
+          </div>
+          <div class="d-flex justify-content-between mt-3 pt-3"
+               style="border-top:2px dashed var(--border);">
+            <span style="font-weight:800;font-size:1rem;">Total</span>
+            <span style="font-weight:800;font-size:1.3rem;color:var(--primary);"
+                  id="summary-total">
+              {% if preselected_product %}
+                KSh {{ preselected_product.price|floatformat:0 }}
+              {% else %}—{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <!-- Notice -->
+        <div style="background:#EEF2FF;border-radius:12px;
+                    padding:0.875rem;margin-top:1.25rem;">
+          <div style="font-size:0.8rem;color:#4338CA;">
+            <i class="bi bi-info-circle me-1"></i>
+            Payment can be made after the order is placed via
+            Cash or M-Pesa.
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- JavaScript — dynamic summary + confirmation dialog -->
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-  const productSelect   = document.getElementById('productSelect');
-  const quantityInput   = document.getElementById('quantityInput');
-  const orderForm       = document.getElementById('order-form');
-  const summaryProduct  = document.getElementById('summary-product');
-  const summaryPrice    = document.getElementById('summary-price');
-  const summaryQuantity = document.getElementById('summary-quantity');
-  const summaryTotal    = document.getElementById('summary-total');
+document.addEventListener('DOMContentLoaded', function() {
+  const productSelect  = document.getElementById('productSelect');
+  const quantityInput  = document.getElementById('quantityInput');
+  const orderForm      = document.getElementById('order-form');
+  const summaryProduct = document.getElementById('summary-product');
+  const summaryPrice   = document.getElementById('summary-price');
+  const summaryQty     = document.getElementById('summary-quantity');
+  const summaryTotal   = document.getElementById('summary-total');
+  const stockInfo      = document.getElementById('stockInfo');
 
   {% if preselected_product %}
   const fixedPrice = {{ preselected_product.price }};
   const fixedStock = {{ preselected_product.stock }};
+  quantityInput.max = fixedStock;
 
-  function updateSummary () {
-    var quantity = Math.max(1, Math.min(parseInt(quantityInput.value) || 1, fixedStock));
-    summaryProduct.textContent  = '{{ preselected_product.name }}';
-    summaryPrice.textContent    = 'KSh ' + fixedPrice.toLocaleString();
-    summaryTotal.textContent    = 'KSh ' + (fixedPrice * quantity).toLocaleString();
-    summaryQuantity.textContent = quantity;
+  function updateSummary() {
+    const qty = Math.max(1, Math.min(
+      parseInt(quantityInput.value) || 1, fixedStock
+    ));
+    quantityInput.value = qty;
+    summaryQty.textContent   = qty;
+    summaryPrice.textContent = 'KSh ' + fixedPrice.toLocaleString();
+    summaryTotal.textContent = 'KSh ' + (fixedPrice * qty).toLocaleString();
   }
+  updateSummary();
+
   {% else %}
-  function updateSummary () {
-    var selectedOption = productSelect.options[productSelect.selectedIndex];
-    var productName    = selectedOption.textContent.trim();
-    var price          = parseFloat(selectedOption.dataset.price) || 0;
-    var stock          = parseInt(selectedOption.dataset.stock) || 0;
-    var quantity       = Math.max(1, Math.min(parseInt(quantityInput.value) || 1, stock || 99999));
+  let currentPrice = 0;
+  let currentStock = 0;
 
-    if (selectedOption.value === '') {
-      summaryProduct.textContent  = 'Select a product';
-      summaryPrice.textContent    = '—';
-      summaryTotal.textContent    = 'KSh —';
+  function updateSummary() {
+    if (!productSelect) return;
+    const opt = productSelect.options[productSelect.selectedIndex];
+    currentPrice = parseFloat(opt.dataset.price) || 0;
+    currentStock = parseInt(opt.dataset.stock) || 0;
+    const qty = Math.max(1, Math.min(
+      parseInt(quantityInput.value) || 1,
+      currentStock || 99999
+    ));
+    quantityInput.value = qty;
+    quantityInput.max = currentStock;
+
+    if (!opt.value) {
+      summaryProduct.innerHTML =
+        '<span style="color:var(--muted);font-weight:400;">Select a product</span>';
+      summaryPrice.textContent = '—';
+      summaryTotal.textContent = '—';
+      summaryQty.textContent   = qty;
+      stockInfo.textContent    = '';
     } else {
-      summaryProduct.textContent  = productName;
-      summaryPrice.textContent    = 'KSh ' + price.toLocaleString();
-      summaryTotal.textContent    = 'KSh ' + (price * quantity).toLocaleString();
+      summaryProduct.textContent = opt.dataset.name || opt.textContent.trim();
+      summaryPrice.textContent   = 'KSh ' + currentPrice.toLocaleString();
+      summaryTotal.textContent   = 'KSh ' + (currentPrice * qty).toLocaleString();
+      summaryQty.textContent     = qty;
+      stockInfo.textContent      = 'Max: ' + currentStock;
     }
-    summaryQuantity.textContent = quantity;
   }
 
-  productSelect.addEventListener('change', function () {
-    var selected = this.options[this.selectedIndex];
-    if (selected.value && parseInt(selected.dataset.stock)) {
-      quantityInput.max = parseInt(selected.dataset.stock);
-    }
-    quantityInput.value = quantityInput.min;
-    updateSummary();
-  });
+  if (productSelect) {
+    productSelect.addEventListener('change', function() {
+      quantityInput.value = 1;
+      updateSummary();
+    });
+  }
   {% endif %}
 
   quantityInput.addEventListener('input', updateSummary);
 
-  orderForm.addEventListener('submit', function (e) {
-    if (!confirm('Confirm order?')) {
+  window.changeQty = function(delta) {
+    const max = parseInt(quantityInput.max) || 99999;
+    const newVal = Math.max(1, Math.min(
+      (parseInt(quantityInput.value) || 1) + delta, max
+    ));
+    quantityInput.value = newVal;
+    updateSummary();
+  };
+
+  orderForm.addEventListener('submit', function(e) {
+    const total = summaryTotal.textContent;
+    if (!confirm(`Confirm order for ${total}?`)) {
       e.preventDefault();
     }
   });
