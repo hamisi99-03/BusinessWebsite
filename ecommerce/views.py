@@ -902,9 +902,6 @@ def checkout_from_cart(request):
                     quantity=item.quantity,
                     price=item.product.price
                 )
-                # Deduct stock
-                item.product.stock -= item.quantity
-                item.product.save()
 
             # Create debt record
             Debt.objects.create(

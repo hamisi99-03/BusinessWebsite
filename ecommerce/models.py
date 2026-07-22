@@ -126,6 +126,7 @@ class OrderItem(models.Model):
             old_quantity = OrderItem.objects.get(pk=self.pk).quantity
             available_stock = self.product.stock + old_quantity
         else:
+            old_quantity = 0
             available_stock = self.product.stock
 
         if self.quantity > available_stock:
@@ -133,10 +134,8 @@ class OrderItem(models.Model):
 
         super().save(*args, **kwargs)
 
-        if self.pk:
-            old_quantity = OrderItem.objects.get(pk=self.pk).quantity
-            self.product.stock += old_quantity
-
+        # Restore old stock then deduct new quantity
+        self.product.stock += old_quantity
         self.product.stock -= self.quantity
         if self.product.stock < 0:
             self.product.stock = 0

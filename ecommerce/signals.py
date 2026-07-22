@@ -66,17 +66,6 @@ def create_customer(sender, instance, created, **kwargs):
 def update_debt_after_payment(sender, instance, **kwargs):
     print(f"Signal fired for Payment {instance.id}, Order {instance.order.id}")
     ...
-@receiver(post_save, sender=OrderItem)
-def reduce_stock(sender, instance, created, **kwargs):
-    if created:
-        instance.product.stock -= instance.quantity
-        instance.product.save()
-
-@receiver(post_delete, sender=OrderItem)
-def restore_stock(sender, instance, **kwargs):
-    instance.product.stock += instance.quantity
-    instance.product.save()
-
 @receiver(post_delete, sender=ProductImage)
 def delete_product_image_file(sender, instance, **kwargs):
     print("Signal fired for:", instance)
