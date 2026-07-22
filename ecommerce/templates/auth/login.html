@@ -5,195 +5,326 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In — BizStore</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
-    * { font-family: 'Inter', sans-serif; }
+    :root {
+      --primary: #E07A5F;
+      --primary-hover: #C9664D;
+      --bg: #FFFBF5;
+      --surface: #FFFFFF;
+      --border: #F2E8DA;
+      --text: #3D405B;
+      --muted: #818589;
+      --success: #81B29A;
+      --danger: #EF4444;
+      --radius: 24px;
+      --shadow: 0 10px 30px rgba(224, 122, 95, 0.04);
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      background: #F5F5F7;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 2rem 1rem;
+      margin: 0;
     }
-    .auth-card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      padding: 2.5rem;
+
+    .auth-wrapper {
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
+      animation: fadeInUp 0.5s ease forwards;
     }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2.5rem 2.25rem;
+      border: 1px solid var(--border);
+    }
+
     .auth-logo {
-      font-size: 1.4rem;
+      font-family: 'Quicksand', sans-serif;
+      font-size: 1.6rem;
       font-weight: 800;
-      color: #4F46E5;
+      color: var(--primary);
       letter-spacing: -0.03em;
       margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
+    .auth-logo i {
+      font-size: 1.4rem;
+    }
+
     .auth-subtitle {
       font-size: 0.875rem;
-      color: #6B7280;
-      margin-bottom: 2rem;
+      color: var(--muted);
+      margin-bottom: 1.75rem;
+      margin-top: 0.25rem;
     }
+
     .form-label {
       font-weight: 600;
-      font-size: 0.875rem;
-      color: #374151;
+      font-size: 0.8125rem;
+      color: var(--text);
+      margin-bottom: 0.35rem;
     }
+
     .form-control {
-      border: 1px solid #E5E7EB;
-      border-radius: 8px;
-      padding: 0.6rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.65rem 0.9rem 0.65rem 2.4rem;
       font-size: 0.9rem;
-      transition: all 0.15s ease;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
     }
     .form-control:focus {
-      border-color: #4F46E5;
-      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
-    }
-    .btn-signin {
-      background: #4F46E5;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.95rem;
-      padding: 0.65rem;
-      width: 100%;
-      transition: all 0.15s ease;
-      margin-top: 0.5rem;
-    }
-    .btn-signin:hover {
-      background: #4338CA;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(224, 122, 95, 0.12);
       transform: translateY(-1px);
-      color: white;
+      background: var(--surface);
+      color: var(--text);
     }
-    .auth-divider {
-      text-align: center;
-      color: #9CA3AF;
-      font-size: 0.8rem;
-      margin: 1.25rem 0;
+    .form-control::placeholder {
+      color: #BFB8AE;
+    }
+
+    .input-icon-wrap {
       position: relative;
     }
-    .auth-divider::before, .auth-divider::after {
+    .input-icon-wrap > .bi {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 1rem;
+      z-index: 1;
+      transition: color 0.15s ease;
+    }
+    .input-icon-wrap:focus-within > .bi {
+      color: var(--primary);
+    }
+    .input-icon-wrap:has(.password-toggle) .form-control {
+      padding-right: 2.5rem;
+    }
+
+    .btn-signin {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 0.9375rem;
+      font-family: 'DM Sans', sans-serif;
+      padding: 0.7rem 1.5rem;
+      width: 100%;
+      transition: all 0.2s ease;
+      margin-top: 0.75rem;
+      letter-spacing: 0.01em;
+    }
+    .btn-signin:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(224, 122, 95, 0.3);
+      color: white;
+    }
+    .btn-signin:active {
+      transform: scale(0.98);
+    }
+
+    .auth-divider {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin: 1.25rem 0;
+      position: relative;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .auth-divider::before,
+    .auth-divider::after {
       content: '';
       position: absolute;
       top: 50%;
       width: 42%;
       height: 1px;
-      background: #E5E7EB;
+      background: var(--border);
     }
     .auth-divider::before { left: 0; }
     .auth-divider::after { right: 0; }
+
     .auth-footer {
       text-align: center;
       font-size: 0.875rem;
-      color: #6B7280;
+      color: var(--muted);
       margin-top: 1.5rem;
     }
     .auth-footer a {
-      color: #4F46E5;
+      color: var(--primary);
       font-weight: 600;
       text-decoration: none;
+      transition: color 0.15s ease;
     }
-    .auth-footer a:hover { text-decoration: underline; }
+    .auth-footer a:hover {
+      color: var(--primary-hover);
+      text-decoration: underline;
+    }
+
     .alert {
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 0.875rem;
       border: none;
-      padding: 0.75rem 1rem;
+      font-weight: 500;
+      animation: slideInRight 0.3s ease forwards;
     }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
     .errorlist {
-      color: #dc3545;
+      color: var(--danger);
       font-size: 0.8rem;
       list-style: none;
       padding-left: 0;
       margin-bottom: 0;
     }
-    .input-icon-wrap {
-      position: relative;
+
+    .mb-3 {
+      margin-bottom: 1rem !important;
     }
-    .input-icon-wrap .bi {
+
+    .password-toggle {
       position: absolute;
-      left: 12px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
-      color: #9CA3AF;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
       font-size: 1rem;
+      z-index: 1;
+      transition: color 0.15s ease;
+      display: flex;
+      align-items: center;
     }
-    .input-icon-wrap .form-control {
-      padding-left: 2.2rem;
+    .password-toggle:hover {
+      color: var(--primary);
+    }
+
+    @media (max-width: 480px) {
+      .auth-card {
+        padding: 2rem 1.5rem;
+        border-radius: 20px;
+      }
+      .auth-logo {
+        font-size: 1.4rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="auth-card">
-    <div class="auth-logo">
-      <i class="bi bi-bag-fill me-1"></i> BizStore
-    </div>
-    <div class="auth-subtitle">Sign in to your account</div>
-
-    {% if error %}
-    <div class="alert d-flex align-items-center gap-2"
-         style="background:#FEE2E2;color:#991B1B;
-                border-radius:10px;padding:0.875rem 1rem;
-                margin-bottom:1.25rem;font-size:0.875rem;
-                font-weight:500;">
-      <i class="bi bi-exclamation-circle-fill"
-         style="font-size:1rem;flex-shrink:0;"></i>
-      <span>{{ error }}</span>
-    </div>
-    {% endif %}
-    {% if messages %}
-      {% for message in messages %}
-      <div class="alert d-flex align-items-center gap-2"
-           style="background:{% if message.tags == 'success' %}#D1FAE5;color:#065F46;{% else %}#FEE2E2;color:#991B1B;{% endif %}
-                  border-radius:10px;padding:0.875rem 1rem;
-                  margin-bottom:1.25rem;font-size:0.875rem;
-                  font-weight:500;">
-        <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% else %}exclamation-circle-fill{% endif %}"
-           style="font-size:1rem;flex-shrink:0;"></i>
-        <span>{{ message }}</span>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <i class="bi bi-bag-fill"></i> BizStore
       </div>
-      {% endfor %}
-    {% endif %}
+      <div class="auth-subtitle">Sign in to your account</div>
 
-    <form method="POST">
-       {% csrf_token %}
-        
-       <input type="hidden" name="next" value="{{ next }}">
-        
-       <div class="mb-3">
-         <label class="form-label">Username</label>
-         <div class="input-icon-wrap">
-           <i class="bi bi-person"></i>
-           <input type="text" name="username" class="form-control {% if error %}is-invalid{% endif %}"
-                  placeholder="Enter your username" required autofocus
-                  value="{{ request.POST.username|default:'' }}">
+      {% if error %}
+      <div class="alert d-flex align-items-center gap-2"
+           style="background:#FEE2E2;color:#991B1B;padding:0.875rem 1rem;margin-bottom:1.25rem;">
+        <i class="bi bi-exclamation-circle-fill" style="font-size:1rem;flex-shrink:0;"></i>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+      {% if messages %}
+        {% for message in messages %}
+        <div class="alert d-flex align-items-center gap-2"
+             style="background:{% if message.tags == 'success' %}#D1FAE5;color:#065F46;{% else %}#FEE2E2;color:#991B1B;{% endif %}
+                    padding:0.875rem 1rem;margin-bottom:1.25rem;">
+          <i class="bi bi-{% if message.tags == 'success' %}check-circle-fill{% else %}exclamation-circle-fill{% endif %}"
+             style="font-size:1rem;flex-shrink:0;"></i>
+          <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="POST">
+         {% csrf_token %}
+
+         <input type="hidden" name="next" value="{{ next }}">
+
+         <div class="mb-3">
+           <label class="form-label">Username</label>
+           <div class="input-icon-wrap">
+             <i class="bi bi-person"></i>
+             <input type="text" name="username"
+                    class="form-control {% if error %}is-invalid{% endif %}"
+                    placeholder="Enter your username" required autofocus
+                    value="{{ request.POST.username|default:'' }}">
+           </div>
          </div>
-       </div>
-       <div class="mb-3">
-         <label class="form-label">Password</label>
-         <div class="input-icon-wrap">
-           <i class="bi bi-lock"></i>
-           <input type="password" name="password" class="form-control {% if error %}is-invalid{% endif %}"
-                  placeholder="Enter your password" required>
+          <div class="mb-3">
+           <label class="form-label">Password</label>
+           <div class="input-icon-wrap">
+             <i class="bi bi-lock"></i>
+             <input type="password" name="password" id="login-password"
+                    class="form-control {% if error %}is-invalid{% endif %}"
+                    placeholder="Enter your password" required>
+             <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)" tabindex="-1">
+               <i class="bi bi-eye"></i>
+             </button>
+           </div>
          </div>
-       </div>
-       <button type="submit" class="btn-signin">
-         <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
-       </button>
-     </form>
+         <button type="submit" class="btn-signin">
+           <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+         </button>
+      </form>
 
-    <div class="auth-divider">or</div>
+      <div class="auth-divider">or</div>
 
-    <div class="auth-footer">
-      Don't have an account?
-      <a href="{% url 'register' %}">Create one</a>
+      <div class="auth-footer">
+        Don't have an account?
+        <a href="{% url 'register' %}">Create one</a>
+      </div>
     </div>
   </div>
 
+  <script>
+    function togglePassword(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    }
+  </script>
 </body>
 </html>

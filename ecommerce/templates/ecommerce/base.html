@@ -633,10 +633,17 @@
         </a>
       {% endif %}
 
+      {% if user.is_staff %}
+      <a href="{% url 'admin_products_list' %}"
+         class="nav-link {% if request.resolver_match.url_name == 'admin_products_list' %}active{% endif %}">
+        <i class="bi bi-grid me-1"></i> Products
+      </a>
+      {% else %}
       <a href="{% url 'product_list' %}"
          class="nav-link {% if request.resolver_match.url_name == 'product_list' %}active{% endif %}">
         <i class="bi bi-grid me-1"></i> Products
       </a>
+      {% endif %}
 
       {% if user.is_authenticated %}
         {% if not user.is_staff %}
