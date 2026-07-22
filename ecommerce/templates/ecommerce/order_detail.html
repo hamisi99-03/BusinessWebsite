@@ -1,125 +1,314 @@
 {% extends "ecommerce/base.html" %}
-
-{% block title %}Order {{ order.id }}{% endblock %}
+{% block title %}Order #{{ order.id }} — BizStore{% endblock %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center mb-4">
+
+<!-- BREADCRUMB -->
+<nav style="margin-bottom:1.5rem;">
+  <div style="display:flex;align-items:center;gap:8px;
+              font-size:0.875rem;color:var(--muted);">
+    <a href="{% url 'orders_list' %}"
+       style="color:var(--muted);text-decoration:none;">
+      <i class="bi bi-receipt me-1"></i>My Orders
+    </a>
+    <i class="bi bi-chevron-right" style="font-size:0.7rem;"></i>
+    <span style="color:var(--text);font-weight:600;">
+      Order #{{ order.id }}
+    </span>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header d-flex justify-content-between align-items-center">
   <div>
     <h1>Order #{{ order.id }}</h1>
-    <p>Order details</p>
+    <p>Placed on {{ order.order_date|date:"M d, Y" }} at
+       {{ order.order_date|time:"g:i A" }}</p>
   </div>
-  <a href="{% url 'orders_list' %}" class="btn btn-outline-secondary">Back to Orders</a>
+  <span class="badge-status badge-{{ order.status|lower }}"
+        style="font-size:0.875rem;padding:0.5em 1.25em;">
+    {{ order.status|title }}
+  </span>
 </div>
 
-<div class="row">
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">Order Information</h5>
-      </div>
-      <div class="card-body">
-        <p><strong>Status:</strong> <span class="badge badge-status badge-{{ order.status|lower }}">{{ order.status }}</span></p>
-        <p><strong>Created:</strong> {{ order.order_date }}</p>
-        <p><strong>Total:</strong> KSh {{ order.get_total_amount|floatformat:0 }}</p>
-        <p><strong>Paid:</strong> KSh {{ order.get_total_paid|floatformat:0 }}</p>
-        <p><strong>Balance:</strong> <span class="{% if order.get_outstanding_balance > 0 %}text-danger{% endif %}">KSh {{ order.get_outstanding_balance|floatformat:0 }}</span></p>
-        {% if request.user.is_staff %}
-          <p><strong>Customer:</strong> {{ order.customer.user.get_full_name|default:order.customer.user.username }}</p>
-        {% endif %}
-        {% if request.user.is_staff and order.status != 'delivered' and order.get_outstanding_balance > 0 %}
-          <form method="post" action="{% url 'mark_payment_paid' order.pk %}" class="mt-3">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Mark entire balance as paid?');">
-              <i class="bi bi-check-circle me-1"></i> Mark as Paid
-            </button>
-          </form>
-        {% endif %}
-        {% if request.user.is_staff and order.status == 'pending' %}
-          <form method="post" action="{% url 'update_order_status' order.pk %}" class="mt-2">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="shipped">
-            <button type="submit" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-truck me-1"></i> Mark Shipped
-            </button>
-          </form>
-        {% endif %}
-        {% if request.user.is_staff and order.status == 'shipped' %}
-          <form method="post" action="{% url 'update_order_status' order.pk %}" class="mt-2">
-            {% csrf_token %}
-            <input type="hidden" name="status" value="delivered">
-            <button type="submit" class="btn btn-outline-success btn-sm">
-              <i class="bi bi-check-lg me-1"></i> Mark Delivered
-            </button>
-          </form>
-        {% endif %}
-      </div>
-    </div>
-  </div>
+<div class="row g-4">
 
-  <div class="col-md-8">
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">Order Items</h5>
-      </div>
-      <div class="card-body">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Quantity</th>
-              <th>Price</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in order.items.all %}
-              <tr>
-                <td>{{ item.product.name }}</td>
-                <td>{{ item.quantity }}</td>
-                <td>{{ item.price }}</td>
-                <td>{{ item.total }}</td>
-              </tr>
-            {% empty %}
-              <tr>
-                <td colspan="4">No items in this order.</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
+  <!-- LEFT COLUMN -->
+  <div class="col-lg-8">
 
-<div class="card mt-4">
-  <div class="card-header">
-    <h5 class="mb-0">Payments</h5>
-  </div>
-  <div class="card-body">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Amount</th>
-          <th>Method</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for payment in order.payments.all %}
-<tr>
-             <td>{{ payment.amount }}</td>
-             <td>{{ payment.get_payment_method_display }}</td>
-             <td><span class="badge badge-status badge-{{ payment.status|lower }}">{{ payment.status }}</span></td>
-             <td>{{ payment.payment_date }}</td>
-           </tr>
+    <!-- ORDER ITEMS -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-box-seam me-2"></i>Items Ordered</span>
+        <span style="font-size:0.8rem;color:var(--muted);">
+          {{ order.orderitem_set.count }}
+          item{{ order.orderitem_set.count|pluralize }}
+        </span>
+      </div>
+      <div class="card-body p-0">
+        {% for item in order.orderitem_set.all %}
+        <div style="padding:1.25rem;border-bottom:1px solid var(--border);
+                    display:flex;align-items:center;gap:16px;">
+          {% if item.product.images.first %}
+            <img src="{{ item.product.images.first.image.url }}"
+                 alt="{{ item.product.name }}"
+                 style="width:72px;height:72px;border-radius:12px;
+                        object-fit:cover;flex-shrink:0;">
+          {% else %}
+            <div style="width:72px;height:72px;border-radius:12px;
+                        background:#F3F4F6;display:flex;
+                        align-items:center;justify-content:center;
+                        flex-shrink:0;">
+              <i class="bi bi-image fs-3" style="color:#D1D5DB;"></i>
+            </div>
+          {% endif %}
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.95rem;
+                        color:var(--text);margin-bottom:2px;">
+              {{ item.product.name }}
+            </div>
+            <div style="font-size:0.82rem;color:var(--muted);">
+              KSh {{ item.price|floatformat:0 }} each
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:0.78rem;color:var(--muted);
+                        margin-bottom:2px;">
+              Qty: {{ item.quantity }}
+            </div>
+            <div style="font-weight:800;color:var(--text);">
+              KSh {{ item.get_subtotal|floatformat:0 }}
+            </div>
+          </div>
+        </div>
         {% empty %}
-          <tr>
-            <td colspan="4">No payments recorded yet.</td>
-          </tr>
+        <div style="text-align:center;padding:2rem;color:var(--muted);">
+          No items found
+        </div>
         {% endfor %}
-      </tbody>
-    </table>
+
+        <!-- TOTALS -->
+        <div style="padding:1.25rem;background:#FFFBF5;">
+          <div class="d-flex justify-content-between mb-2"
+               style="font-size:0.875rem;">
+            <span style="color:var(--muted);">Subtotal</span>
+            <span style="font-weight:600;">
+              KSh {{ order.get_total_amount|floatformat:0 }}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between mb-2"
+               style="font-size:0.875rem;">
+            <span style="color:var(--muted);">Amount Paid</span>
+            <span style="font-weight:600;color:#10B981;">
+              KSh {{ order.get_total_paid|floatformat:0 }}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between pt-2"
+               style="border-top:2px dashed var(--border);margin-top:0.5rem;">
+            <span style="font-weight:800;font-size:1rem;">
+              Outstanding Balance
+            </span>
+            <span style="font-weight:800;font-size:1.1rem;
+                         color:{% if order.get_outstanding_balance > 0 %}#EF4444{% else %}#10B981{% endif %};">
+              {% if order.get_outstanding_balance > 0 %}
+                KSh {{ order.get_outstanding_balance|floatformat:0 }}
+              {% else %}
+                <i class="bi bi-check-circle-fill me-1"></i>Fully Paid
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT HISTORY -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-credit-card me-2"></i>Payment History
+      </div>
+      <div class="card-body p-0">
+        {% for payment in order.payment_set.all %}
+        <div style="padding:1rem 1.25rem;
+                    border-bottom:1px solid var(--border);
+                    display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:10px;
+                      background:{% if payment.payment_method == 'mpesa' %}#D1FAE5{% else %}#FEF3C7{% endif %};
+                      display:flex;align-items:center;
+                      justify-content:center;flex-shrink:0;">
+            <i class="bi bi-{% if payment.payment_method == 'mpesa' %}phone{% else %}cash-coin{% endif %}"
+               style="color:{% if payment.payment_method == 'mpesa' %}#10B981{% else %}#F59E0B{% endif %};
+                      font-size:1rem;"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:0.875rem;">
+              {{ payment.payment_method|title }} Payment
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);">
+              {{ payment.payment_date|date:"M d, Y" }} at
+              {{ payment.payment_date|time:"g:i A" }}
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:800;color:#10B981;">
+              KSh {{ payment.amount|floatformat:0 }}
+            </div>
+            <span class="badge-status badge-{{ payment.status|lower }}"
+                  style="font-size:0.7rem;">
+              {{ payment.status|title }}
+            </span>
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:2.5rem;">
+          <div style="width:80px;height:80px;border-radius:50%;
+                      background:#FEF3C7;display:flex;
+                      align-items:center;justify-content:center;
+                      margin:0 auto 1rem;">
+            <i class="bi bi-wallet2"
+               style="font-size:2rem;color:#F59E0B;"></i>
+          </div>
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px;">
+            No payments yet
+          </div>
+          <div style="font-size:0.875rem;color:var(--muted);">
+            Payments will appear here once recorded
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="col-lg-4">
+
+    <!-- ORDER STATUS -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-info-circle me-2"></i>Order Status
+      </div>
+      <div class="card-body p-4">
+
+        <!-- Status Timeline -->
+        {% with status=order.status|lower %}
+        <div style="position:relative;padding-left:2rem;">
+
+          <!-- Pending -->
+          <div style="position:relative;margin-bottom:1.25rem;">
+            <div style="position:absolute;left:-2rem;top:2px;
+                        width:20px;height:20px;border-radius:50%;
+                        background:{% if status == 'pending' or status == 'shipped' or status == 'delivered' %}var(--primary){% else %}#E5E7EB{% endif %};
+                        display:flex;align-items:center;
+                        justify-content:center;">
+              <i class="bi bi-check"
+                 style="color:white;font-size:0.7rem;"></i>
+            </div>
+            {% if not forloop.last %}
+            <div style="position:absolute;left:-1.55rem;top:22px;
+                        width:2px;height:calc(100% + 0.5rem);
+                        background:#E5E7EB;"></div>
+            {% endif %}
+            <div style="font-weight:600;font-size:0.875rem;
+                        color:{% if status == 'pending' %}var(--primary){% else %}var(--text){% endif %};">
+              Order Placed
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);">
+              {{ order.order_date|date:"M d, Y" }}
+            </div>
+          </div>
+
+          <!-- Processing -->
+          <div style="position:relative;margin-bottom:1.25rem;">
+            <div style="position:absolute;left:-2rem;top:2px;
+                        width:20px;height:20px;border-radius:50%;
+                        background:{% if status == 'shipped' or status == 'delivered' %}var(--primary){% else %}#E5E7EB{% endif %};
+                        display:flex;align-items:center;
+                        justify-content:center;">
+              <i class="bi bi-check"
+                 style="color:white;font-size:0.7rem;"></i>
+            </div>
+            <div style="font-weight:600;font-size:0.875rem;
+                        color:{% if status == 'shipped' %}var(--primary){% else %}var(--text){% endif %};">
+              Shipped
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);">
+              {% if order.shipped_date %}
+                {{ order.shipped_date|date:"M d, Y" }}
+              {% else %}
+                Pending
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Delivered -->
+          <div style="position:relative;">
+            <div style="position:absolute;left:-2rem;top:2px;
+                        width:20px;height:20px;border-radius:50%;
+                        background:{% if status == 'delivered' %}#10B981{% else %}#E5E7EB{% endif %};
+                        display:flex;align-items:center;
+                        justify-content:center;">
+              <i class="bi bi-check"
+                 style="color:white;font-size:0.7rem;"></i>
+            </div>
+            <div style="font-weight:600;font-size:0.875rem;
+                        color:{% if status == 'delivered' %}#10B981{% else %}var(--text){% endif %};">
+              Delivered
+            </div>
+            <div style="font-size:0.78rem;color:var(--muted);">
+              {% if status == 'delivered' %}Completed{% else %}Pending{% endif %}
+            </div>
+          </div>
+        </div>
+        {% endwith %}
+      </div>
+    </div>
+
+    <!-- SUMMARY CARD -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-receipt me-2"></i>Summary
+      </div>
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between mb-3"
+             style="font-size:0.875rem;">
+          <span style="color:var(--muted);">Order Total</span>
+          <span style="font-weight:700;">
+            KSh {{ order.get_total_amount|floatformat:0 }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between mb-3"
+             style="font-size:0.875rem;">
+          <span style="color:var(--muted);">Total Paid</span>
+          <span style="font-weight:700;color:#10B981;">
+            KSh {{ order.get_total_paid|floatformat:0 }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between pt-3"
+             style="border-top:1px solid var(--border);font-size:0.875rem;">
+          <span style="font-weight:700;">Balance Due</span>
+          <span style="font-weight:800;
+                       color:{% if order.get_outstanding_balance > 0 %}#EF4444{% else %}#10B981{% endif %};">
+            {% if order.get_outstanding_balance > 0 %}
+              KSh {{ order.get_outstanding_balance|floatformat:0 }}
+            {% else %}
+              Fully Paid
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="d-flex flex-column gap-2">
+      <a href="{% url 'orders_list' %}"
+         class="btn btn-outline-primary w-100">
+        <i class="bi bi-arrow-left me-1"></i> Back to Orders
+      </a>
+      <a href="{% url 'product_list' %}"
+         class="btn btn-primary w-100">
+        <i class="bi bi-grid me-1"></i> Continue Shopping
+      </a>
+    </div>
   </div>
 </div>
 {% endblock %}
