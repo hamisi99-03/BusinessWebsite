@@ -158,19 +158,31 @@
           </tr>
           {% empty %}
            <tr>
-             <td colspan="9" class="text-center py-5" style="color:#6B7280;">
-               <i class="bi bi-inbox fs-1 d-block mb-3" style="color:#D1D5DB;"></i>
-               <div style="font-weight:600;font-size:1rem;margin-bottom:4px;">
-                 No orders yet
+             <td colspan="9">
+               <div style="text-align:center;padding:4rem 2rem;">
+                 <div style="width:100px;height:100px;border-radius:50%;
+                             background:linear-gradient(135deg,#FFFBF5,#EEF2FF);
+                             display:flex;align-items:center;justify-content:center;
+                             margin:0 auto 1.25rem;border:2px solid var(--border);">
+                   <i class="bi bi-receipt"
+                      style="font-size:2.5rem;color:#E07A5F;"></i>
+                 </div>
+                 <h3 style="font-family:'Quicksand',sans-serif;font-weight:800;
+                            font-size:1.25rem;color:var(--text);margin-bottom:0.5rem;">
+                   No orders yet
+                 </h3>
+                 <p style="color:var(--muted);font-size:0.875rem;
+                           margin-bottom:1.5rem;max-width:280px;
+                           margin-left:auto;margin-right:auto;line-height:1.7;">
+                   You haven't placed any orders yet. 
+                   Start by browsing our products.
+                 </p>
+                 {% if not is_admin %}
+                 <a href="{% url 'product_list' %}" class="btn btn-primary btn-sm">
+                   <i class="bi bi-grid me-1"></i> Browse Products
+                 </a>
+                 {% endif %}
                </div>
-               <div style="font-size:0.875rem;margin-bottom:1rem;">
-                 Place your first order to get started
-               </div>
-               {% if not is_admin %}
-               <a href="{% url 'product_list' %}" class="btn btn-primary btn-sm">
-                 <i class="bi bi-grid me-1"></i> Browse Products
-               </a>
-               {% endif %}
              </td>
            </tr>
           {% endfor %}
