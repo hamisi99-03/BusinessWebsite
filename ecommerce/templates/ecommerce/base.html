@@ -368,6 +368,219 @@
         margin-bottom: 1.5rem;
       }
     }
+
+    /* ===== ANIMATIONS & POLISH ===== */
+
+    /* Page fade in */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    @keyframes cartBounce {
+      0%, 100% { transform: scale(1); }
+      30% { transform: scale(1.3); }
+      60% { transform: scale(0.9); }
+    }
+
+    /* Apply fade in to main content */
+    .main-content {
+      animation: fadeInUp 0.4s ease forwards;
+    }
+
+    /* Page header animation */
+    .page-header {
+      animation: fadeInUp 0.35s ease forwards;
+    }
+
+    /* Stat cards stagger animation */
+    .stat-card {
+      animation: fadeInUp 0.4s ease forwards;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(224,122,95,0.15) !important;
+    }
+
+    /* Card hover lift */
+    .card {
+      transition: box-shadow 0.2s ease;
+    }
+
+    /* Product card polish */
+    .product-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    .product-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 40px rgba(224,122,95,0.15) !important;
+    }
+
+    /* Button press effect */
+    .btn {
+      transition: all 0.2s ease !important;
+    }
+    .btn:active {
+      transform: scale(0.97) !important;
+    }
+
+    /* Nav link hover underline */
+    .navbar .nav-link {
+      position: relative;
+    }
+    .navbar .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      right: 50%;
+      height: 2px;
+      background: var(--primary);
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+    .navbar .nav-link:hover::after,
+    .navbar .nav-link.active::after {
+      left: 8px;
+      right: 8px;
+    }
+
+    /* Table row slide in */
+    .table tbody tr {
+      transition: background 0.15s ease;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    /* Badge pulse on new notifications */
+    .notification-badge {
+      animation: pulse 2s infinite;
+    }
+
+    /* Alert slide in */
+    .alert {
+      animation: slideInRight 0.3s ease forwards;
+    }
+
+    /* Cart icon bounce when item added */
+    .cart-bounce {
+      animation: cartBounce 0.4s ease;
+    }
+
+    /* Image hover zoom */
+    .product-card img {
+      transition: transform 0.4s ease;
+    }
+    .product-card:hover img {
+      transform: scale(1.05);
+    }
+
+    /* Smooth form focus */
+    .form-control, .form-select {
+      transition: border-color 0.15s ease,
+                  box-shadow 0.15s ease,
+                  transform 0.1s ease !important;
+    }
+    .form-control:focus, .form-select:focus {
+      transform: translateY(-1px);
+    }
+
+    /* Link hover color transition */
+    a {
+      transition: color 0.15s ease, opacity 0.15s ease;
+    }
+
+    /* Smooth scroll */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Loading shimmer for images */
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .img-loading {
+      background: linear-gradient(
+        90deg,
+        #F3F4F6 25%,
+        #E5E7EB 50%,
+        #F3F4F6 75%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    /* Stagger animation for product grid */
+    .product-item:nth-child(1) { animation-delay: 0.05s; }
+    .product-item:nth-child(2) { animation-delay: 0.1s; }
+    .product-item:nth-child(3) { animation-delay: 0.15s; }
+    .product-item:nth-child(4) { animation-delay: 0.2s; }
+    .product-item:nth-child(5) { animation-delay: 0.25s; }
+    .product-item:nth-child(6) { animation-delay: 0.3s; }
+    .product-item:nth-child(7) { animation-delay: 0.35s; }
+    .product-item:nth-child(8) { animation-delay: 0.4s; }
+
+    .product-item {
+      animation: fadeInUp 0.4s ease both;
+      opacity: 0;
+    }
+
+    /* Scroll to top button */
+    #scrollTopBtn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 16px rgba(224,122,95,0.4);
+      transition: all 0.2s ease;
+      z-index: 999;
+    }
+    #scrollTopBtn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(224,122,95,0.5);
+    }
+    #scrollTopBtn.visible {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -770,6 +983,50 @@
   </div>
 </footer>
 
+<!-- Scroll to top button -->
+<button id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <i class="bi bi-arrow-up"></i>
+</button>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Scroll to top button
+  window.addEventListener('scroll', function() {
+    const btn = document.getElementById('scrollTopBtn');
+    if (window.scrollY > 300) {
+      btn.classList.add('visible');
+    } else {
+      btn.classList.remove('visible');
+    }
+  });
+
+  // Cart icon bounce when item added
+  document.querySelectorAll('form[action*="add_to_cart"]').forEach(form => {
+    form.addEventListener('submit', function() {
+      const cartIcon = document.querySelector('a[href*="cart"] .bi-cart3');
+      if (cartIcon) {
+        cartIcon.classList.add('cart-bounce');
+        setTimeout(() => cartIcon.classList.remove('cart-bounce'), 400);
+      }
+    });
+  });
+
+  // Image lazy loading shimmer
+  document.querySelectorAll('img').forEach(img => {
+    img.classList.add('img-loading');
+    img.addEventListener('load', function() {
+      this.classList.remove('img-loading');
+    });
+    if (img.complete) img.classList.remove('img-loading');
+  });
+
+  // Stagger stat cards
+  document.querySelectorAll('.stat-card').forEach((card, i) => {
+    card.style.animationDelay = (i * 0.1) + 's';
+    card.style.animation = 'fadeInUp 0.4s ease forwards';
+    card.style.opacity = '0';
+  });
+</script>
 </body>
 </html>
