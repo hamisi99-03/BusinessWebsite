@@ -440,6 +440,34 @@
     background: #fff;
     transform: scale(1.2);
   }
+
+  @media (max-width: 576px) {
+    .product-card .product-info {
+      padding: 0.75rem;
+    }
+    .product-card .product-name {
+      font-size: 0.8rem;
+      margin-bottom: 2px;
+    }
+    .product-card .product-price {
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+    .product-card .product-info .d-flex {
+      flex-direction: column;
+      gap: 6px;
+    }
+    .product-card .product-info .btn {
+      width: 100%;
+      font-size: 0.75rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 8px;
+    }
+    .product-card .stock-badge {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+    }
+  }
 </style>
 
 <script>
