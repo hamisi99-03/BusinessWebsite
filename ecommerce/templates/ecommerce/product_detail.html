@@ -23,17 +23,22 @@
   <div class="col-lg-6">
     <div style="position:sticky;top:90px;">
 
-      <!-- Main Image -->
-      <div id="mainImageBox"
-           style="background:#F3F4F6;border-radius:24px;
+      <!-- MAIN IMAGE with slideshow -->
+      <div style="position:relative;border-radius:24px;
                   overflow:hidden;aspect-ratio:1;
-                  margin-bottom:1rem;">
-        {% if product.images.first %}
-          <img id="mainImage"
-               src="{{ product.images.first.image.url }}"
+                  background:#F3F4F6;margin-bottom:1rem;">
+
+        {% if product.images.all %}
+          {% for image in product.images.all %}
+          <img src="{{ image.image.url }}"
                alt="{{ product.name }}"
-               style="width:100%;height:100%;object-fit:cover;
-                      transition:opacity 0.2s ease;">
+               class="main-slide"
+               style="position:absolute;top:0;left:0;
+                      width:100%;height:100%;
+                      object-fit:cover;
+                      opacity:{% if forloop.first %}1{% else %}0{% endif %};
+                      transition:opacity 0.4s ease;">
+          {% endfor %}
         {% else %}
           <div style="width:100%;height:100%;display:flex;
                       align-items:center;justify-content:center;">
@@ -41,24 +46,93 @@
                style="font-size:4rem;color:#D1D5DB;"></i>
           </div>
         {% endif %}
+
+        <!-- Navigation arrows (only if more than 1 image) -->
+        {% if product.images.all|length > 1 %}
+        <button onclick="slideGallery(-1)"
+                style="position:absolute;left:12px;top:50%;
+                       transform:translateY(-50%);
+                       width:40px;height:40px;border-radius:50%;
+                       background:rgba(255,255,255,0.9);
+                       border:none;cursor:pointer;
+                       display:flex;align-items:center;
+                       justify-content:center;
+                       box-shadow:0 2px 8px rgba(0,0,0,0.15);
+                       transition:all 0.2s ease;z-index:2;"
+                onmouseover="this.style.background='white';
+                             this.style.transform='translateY(-50%) scale(1.1)';"
+                onmouseout="this.style.background='rgba(255,255,255,0.9)';
+                            this.style.transform='translateY(-50%) scale(1)';">
+          <i class="bi bi-chevron-left"
+             style="font-size:0.9rem;color:var(--text);"></i>
+        </button>
+        <button onclick="slideGallery(1)"
+                style="position:absolute;right:12px;top:50%;
+                       transform:translateY(-50%);
+                       width:40px;height:40px;border-radius:50%;
+                       background:rgba(255,255,255,0.9);
+                       border:none;cursor:pointer;
+                       display:flex;align-items:center;
+                       justify-content:center;
+                       box-shadow:0 2px 8px rgba(0,0,0,0.15);
+                       transition:all 0.2s ease;z-index:2;"
+                onmouseover="this.style.background='white';
+                             this.style.transform='translateY(-50%) scale(1.1)';"
+                onmouseout="this.style.background='rgba(255,255,255,0.9)';
+                            this.style.transform='translateY(-50%) scale(1)';">
+          <i class="bi bi-chevron-right"
+             style="font-size:0.9rem;color:var(--text);"></i>
+        </button>
+
+        <!-- Dot indicators -->
+        <div style="position:absolute;bottom:12px;left:50%;
+                    transform:translateX(-50%);
+                    display:flex;gap:6px;z-index:2;">
+          {% for image in product.images.all %}
+          <button onclick="goToSlide({{ forloop.counter0 }})"
+                  class="slide-dot"
+                  data-index="{{ forloop.counter0 }}"
+                  style="width:{% if forloop.first %}24px{% else %}8px{% endif %};
+                         height:8px;border-radius:4px;
+                         background:{% if forloop.first %}var(--primary){% else %}rgba(255,255,255,0.6){% endif %};
+                         border:none;cursor:pointer;
+                         transition:all 0.3s ease;padding:0;">
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Image counter badge -->
+        {% if product.images.all|length > 1 %}
+        <div style="position:absolute;top:12px;right:12px;
+                    background:rgba(0,0,0,0.5);color:white;
+                    border-radius:999px;padding:4px 10px;
+                    font-size:0.75rem;font-weight:600;z-index:2;">
+          <span id="currentSlide">1</span>/{{ product.images.all|length }}
+        </div>
+        {% endif %}
       </div>
 
-      <!-- Thumbnail Strip -->
+      <!-- THUMBNAIL STRIP -->
       {% if product.images.all|length > 1 %}
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:0.5rem;">
         {% for image in product.images.all %}
-        <div onclick="switchImage('{{ image.image.url }}', this)"
-             style="width:72px;height:72px;border-radius:12px;
-                    overflow:hidden;cursor:pointer;
-                    border:2px solid {% if forloop.first %}var(--primary){% else %}var(--border){% endif %};
-                    transition:border 0.15s ease;flex-shrink:0;"
-             class="thumb-btn">
+        <button onclick="goToSlide({{ forloop.counter0 }})"
+                class="thumb-btn"
+                data-index="{{ forloop.counter0 }}"
+                style="width:72px;height:72px;border-radius:12px;
+                       overflow:hidden;cursor:pointer;padding:0;
+                       border:2px solid {% if forloop.first %}var(--primary){% else %}var(--border){% endif %};
+                       transition:all 0.2s ease;flex-shrink:0;
+                       background:none;">
           <img src="{{ image.image.url }}"
+               alt="{{ product.name }} image {{ forloop.counter }}"
                style="width:100%;height:100%;object-fit:cover;">
-        </div>
+        </button>
         {% endfor %}
       </div>
       {% endif %}
+
     </div>
   </div>
 
@@ -281,18 +355,91 @@
 {% endif %}
 
 <script>
-  function switchImage(url, thumbEl) {
-    document.getElementById('mainImage').style.opacity = '0';
-    setTimeout(() => {
-      document.getElementById('mainImage').src = url;
-      document.getElementById('mainImage').style.opacity = '1';
-    }, 150);
-    document.querySelectorAll('.thumb-btn').forEach(t => {
-      t.style.borderColor = 'var(--border)';
+  // Gallery slideshow
+  const slides = document.querySelectorAll('.main-slide');
+  const dots = document.querySelectorAll('.slide-dot');
+  const thumbs = document.querySelectorAll('.thumb-btn');
+  const counter = document.getElementById('currentSlide');
+  let current = 0;
+  let autoTimer = null;
+
+  function showSlide(index) {
+    // Wrap around
+    if (index >= slides.length) index = 0;
+    if (index < 0) index = slides.length - 1;
+    current = index;
+
+    // Update images
+    slides.forEach((slide, i) => {
+      slide.style.opacity = i === current ? '1' : '0';
     });
-    thumbEl.style.borderColor = 'var(--primary)';
+
+    // Update dots
+    dots.forEach((dot, i) => {
+      dot.style.width = i === current ? '24px' : '8px';
+      dot.style.background = i === current
+        ? 'var(--primary)'
+        : 'rgba(255,255,255,0.6)';
+    });
+
+    // Update thumbnails
+    thumbs.forEach((thumb, i) => {
+      thumb.style.borderColor = i === current
+        ? 'var(--primary)'
+        : 'var(--border)';
+      thumb.style.transform = i === current
+        ? 'scale(1.05)'
+        : 'scale(1)';
+    });
+
+    // Update counter
+    if (counter) counter.textContent = current + 1;
   }
 
+  function slideGallery(direction) {
+    showSlide(current + direction);
+    resetAutoPlay();
+  }
+
+  function goToSlide(index) {
+    showSlide(index);
+    resetAutoPlay();
+  }
+
+  // Auto slideshow every 4 seconds
+  function startAutoPlay() {
+    if (slides.length > 1) {
+      autoTimer = setInterval(() => showSlide(current + 1), 4000);
+    }
+  }
+
+  function resetAutoPlay() {
+    clearInterval(autoTimer);
+    startAutoPlay();
+  }
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  const galleryBox = document.querySelector('.main-slide')?.parentElement;
+  if (galleryBox) {
+    galleryBox.addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+    });
+    galleryBox.addEventListener('touchend', e => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) {
+        diff > 0 ? slideGallery(1) : slideGallery(-1);
+      }
+    });
+  }
+
+  // Initialize
+  if (slides.length > 0) {
+    showSlide(0);
+    startAutoPlay();
+  }
+
+  // Quantity controls
   function changeQty(delta) {
     const input = document.getElementById('qtyInput');
     const max = parseInt(input.max) || 99;
