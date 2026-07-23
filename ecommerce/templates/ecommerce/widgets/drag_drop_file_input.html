@@ -1,0 +1,19 @@
+<div class="drag-drop-wrapper">
+  <div class="drag-drop-zone">
+    <i class="bi bi-cloud-upload" style="font-size:1.5rem;color:#9CA3AF;display:block;"></i>
+    <span style="font-size:0.8rem;color:#6B7280;">Click or drag image</span>
+  </div>
+  {% if widget.is_initial %}
+    <div class="drag-drop-current" style="margin:4px 0;font-size:0.75rem;">
+      <a href="{{ widget.value.url }}" target="_blank">{{ widget.value.name }}</a>
+      <label style="margin-left:8px;">
+        <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}">
+        Clear
+      </label>
+    </div>
+  {% endif %}
+  <input type="{{ widget.type }}" name="{{ widget.name }}"
+         id="{{ widget.attrs.id }}"
+         accept="image/png,image/jpeg,image/webp"
+         {% include "django/forms/widgets/attrs.html" %}>
+</div>

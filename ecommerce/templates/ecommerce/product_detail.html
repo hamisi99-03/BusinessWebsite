@@ -24,9 +24,13 @@
     <div style="position:sticky;top:90px;">
 
       <!-- MAIN IMAGE with slideshow -->
-      <div style="position:relative;border-radius:24px;
-                  overflow:hidden;aspect-ratio:1;
-                  background:#F3F4F6;margin-bottom:1rem;">
+      <div id="galleryWrapper"
+           style="position:relative;border-radius:24px;
+                  overflow:hidden;background:#F3F4F6;
+                  margin-bottom:1rem;
+                  width:100%;padding-top:100%;">
+        <div style="position:absolute;top:0;left:0;
+                    right:0;bottom:0;">
 
         {% if product.images.all %}
           {% for image in product.images.all %}
@@ -111,6 +115,7 @@
           <span id="currentSlide">1</span>/{{ product.images.all|length }}
         </div>
         {% endif %}
+      </div>
       </div>
 
       <!-- THUMBNAIL STRIP -->
@@ -355,98 +360,67 @@
 {% endif %}
 
 <script>
-  // Gallery slideshow
-  const slides = document.querySelectorAll('.main-slide');
-  const dots = document.querySelectorAll('.slide-dot');
-  const thumbs = document.querySelectorAll('.thumb-btn');
-  const counter = document.getElementById('currentSlide');
-  let current = 0;
-  let autoTimer = null;
+(function(){
+  var slides = document.querySelectorAll('.main-slide');
+  if (!slides || slides.length < 2) return;
 
-  function showSlide(index) {
-    // Wrap around
-    if (index >= slides.length) index = 0;
-    if (index < 0) index = slides.length - 1;
-    current = index;
+  var dots = document.querySelectorAll('.slide-dot');
+  var thumbs = document.querySelectorAll('.thumb-btn');
+  var counter = document.getElementById('currentSlide');
+  var current = 0;
+  var timer = null;
 
-    // Update images
-    slides.forEach((slide, i) => {
-      slide.style.opacity = i === current ? '1' : '0';
-    });
-
-    // Update dots
-    dots.forEach((dot, i) => {
-      dot.style.width = i === current ? '24px' : '8px';
-      dot.style.background = i === current
-        ? 'var(--primary)'
-        : 'rgba(255,255,255,0.6)';
-    });
-
-    // Update thumbnails
-    thumbs.forEach((thumb, i) => {
-      thumb.style.borderColor = i === current
-        ? 'var(--primary)'
-        : 'var(--border)';
-      thumb.style.transform = i === current
-        ? 'scale(1.05)'
-        : 'scale(1)';
-    });
-
-    // Update counter
+  function show(n) {
+    current = n;
+    for (var i = 0; i < slides.length; i++) {
+      slides[i].style.opacity = i === current ? '1' : '0';
+      slides[i].style.zIndex = i === current ? '1' : '0';
+    }
+    for (var i = 0; i < dots.length; i++) {
+      dots[i].style.width = i === current ? '24px' : '8px';
+      dots[i].style.background = i === current ? 'var(--primary)' : 'rgba(255,255,255,0.6)';
+    }
+    for (var i = 0; i < thumbs.length; i++) {
+      thumbs[i].style.borderColor = i === current ? 'var(--primary)' : 'var(--border)';
+    }
     if (counter) counter.textContent = current + 1;
   }
 
-  function slideGallery(direction) {
-    showSlide(current + direction);
-    resetAutoPlay();
-  }
+  window.slideGallery = function(dir) {
+    var next = current + parseInt(dir);
+    if (next >= slides.length) next = 0;
+    if (next < 0) next = slides.length - 1;
+    clearInterval(timer);
+    show(next);
+    timer = setInterval(function() { show(current + 1 >= slides.length ? 0 : current + 1); }, 3500);
+  };
+  window.goToSlide = function(idx) {
+    var i = parseInt(idx);
+    if (i < 0 || i >= slides.length) return;
+    clearInterval(timer);
+    show(i);
+    timer = setInterval(function() { show(current + 1 >= slides.length ? 0 : current + 1); }, 3500);
+  };
 
-  function goToSlide(index) {
-    showSlide(index);
-    resetAutoPlay();
-  }
+  show(0);
+  timer = setInterval(function() { show(current + 1 >= slides.length ? 0 : current + 1); }, 3500);
 
-  // Auto slideshow every 4 seconds
-  function startAutoPlay() {
-    if (slides.length > 1) {
-      autoTimer = setInterval(() => showSlide(current + 1), 4000);
-    }
-  }
-
-  function resetAutoPlay() {
-    clearInterval(autoTimer);
-    startAutoPlay();
-  }
-
-  // Touch/swipe support
-  let touchStartX = 0;
-  const galleryBox = document.querySelector('.main-slide')?.parentElement;
-  if (galleryBox) {
-    galleryBox.addEventListener('touchstart', e => {
-      touchStartX = e.touches[0].clientX;
-    });
-    galleryBox.addEventListener('touchend', e => {
-      const diff = touchStartX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 50) {
-        diff > 0 ? slideGallery(1) : slideGallery(-1);
-      }
+  var touchStartX = 0;
+  var wrapper = document.getElementById('galleryWrapper');
+  if (wrapper) {
+    wrapper.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; }, { passive: true });
+    wrapper.addEventListener('touchend', function(e) {
+      var dx = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(dx) > 40) dx > 0 ? window.slideGallery(1) : window.slideGallery(-1);
     });
   }
+})();
 
-  // Initialize
-  if (slides.length > 0) {
-    showSlide(0);
-    startAutoPlay();
-  }
-
-  // Quantity controls
-  function changeQty(delta) {
-    const input = document.getElementById('qtyInput');
-    const max = parseInt(input.max) || 99;
-    const newVal = Math.max(1, Math.min(
-      (parseInt(input.value) || 1) + delta, max
-    ));
-    input.value = newVal;
-  }
+function changeQty(delta) {
+  var input = document.getElementById('qtyInput');
+  if (!input) return;
+  var max = parseInt(input.max) || 99;
+  input.value = Math.max(1, Math.min((parseInt(input.value) || 1) + delta, max));
+}
 </script>
 {% endblock %}

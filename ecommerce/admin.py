@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Customer, Product, ProductImage, Order, OrderItem, Payment, Debt, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense
+from .widgets import DragDropFileInput
 
 # --- Category & Brand ---
 @admin.register(Category)
@@ -51,6 +52,12 @@ class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 1
     readonly_fields = ("image_preview",)
+    fields = ("image", "image_preview")
+
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == "image":
+            kwargs["widget"] = DragDropFileInput
+        return super().formfield_for_dbfield(db_field, **kwargs)
 
     def image_preview(self, obj):
         if obj.image:
