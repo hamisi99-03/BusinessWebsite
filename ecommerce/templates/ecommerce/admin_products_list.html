@@ -62,11 +62,25 @@
              placeholder="Search products..."
              style="border-left:none;border-radius:0 8px 8px 0;">
     </div>
-    <select id="stockFilter" class="form-select" style="max-width:160px;">
+    <select id="catFilter" class="form-select" style="max-width:160px;">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+      <option value="{{ c.name }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <select id="brandFilter" class="form-select" style="max-width:160px;">
+      <option value="">All Brands</option>
+      {% for b in brands %}
+      <option value="{{ b.name }}">{{ b.name }}</option>
+      {% endfor %}
+    </select>
+    <select id="stockFilter" class="form-select" style="max-width:140px;">
       <option value="all">All Stock</option>
       <option value="instock">In Stock</option>
       <option value="outofstock">Out of Stock</option>
     </select>
+    <button type="button" onclick="openCatPopup()" style="padding:8px 14px;border-radius:50px;border:1px solid var(--border,#F2E8DA);background:white;color:var(--muted,#818589);cursor:pointer;font-size:0.78rem;font-weight:600;font-family:'Quicksand',sans-serif;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary,#E07A5F)';this.style.color='var(--primary,#E07A5F)'" onmouseout="this.style.borderColor='var(--border,#F2E8DA)';this.style.color='var(--muted,#818589)'"><i class="bi bi-plus-lg"></i> Category</button>
+    <button type="button" onclick="openBrandPopup()" style="padding:8px 14px;border-radius:50px;border:1px solid var(--border,#F2E8DA);background:white;color:var(--muted,#818589);cursor:pointer;font-size:0.78rem;font-weight:600;font-family:'Quicksand',sans-serif;display:inline-flex;align-items:center;gap:4px;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary,#E07A5F)';this.style.color='var(--primary,#E07A5F)'" onmouseout="this.style.borderColor='var(--border,#F2E8DA)';this.style.color='var(--muted,#818589)'"><i class="bi bi-plus-lg"></i> Brand</button>
     <span class="ms-auto" style="font-size:0.8rem;color:#6B7280;">
       <span id="productCount">{{ products|length }}</span> products
     </span>
@@ -77,7 +91,9 @@
   {% for product in products %}
   <div class="col-6 col-md-4 col-xl-3 product-item"
        data-name="{{ product.name|lower }}"
-       data-stock="{{ product.stock }}">
+       data-stock="{{ product.stock }}"
+       data-category="{{ product.category.name|default:'' }}"
+       data-brand="{{ product.brand.name|default:'' }}">
     <div class="product-card h-100">
       <div class="product-gallery" data-product-id="{{ product.id }}">
         <div class="gallery-container">
@@ -378,30 +394,128 @@
 </script>
 
 <script>
-  const searchInput = document.getElementById('productSearch');
-  const stockFilter = document.getElementById('stockFilter');
-  const items = document.querySelectorAll('.product-item');
-  const countEl = document.getElementById('productCount');
+  var searchInput = document.getElementById('productSearch');
+  var stockFilter = document.getElementById('stockFilter');
+  var catFilter = document.getElementById('catFilter');
+  var brandFilter = document.getElementById('brandFilter');
+  var items = document.querySelectorAll('.product-item');
+  var countEl = document.getElementById('productCount');
 
   function filterProducts() {
-    const q = searchInput.value.toLowerCase();
-    const stock = stockFilter.value;
-    let visible = 0;
-    items.forEach(item => {
-      const nameMatch = item.dataset.name.includes(q);
-      const stockVal = parseInt(item.dataset.stock);
-      const stockMatch = stock === 'all'
+    var q = searchInput.value.toLowerCase();
+    var stock = stockFilter.value;
+    var cat = catFilter.value;
+    var brand = brandFilter.value;
+    var visible = 0;
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var nameMatch = item.dataset.name.includes(q);
+      var stockVal = parseInt(item.dataset.stock);
+      var stockMatch = stock === 'all'
         || (stock === 'instock' && stockVal > 0)
         || (stock === 'outofstock' && stockVal === 0);
-      const show = nameMatch && stockMatch;
+      var catMatch = !cat || item.dataset.category === cat;
+      var brandMatch = !brand || item.dataset.brand === brand;
+      var show = nameMatch && stockMatch && catMatch && brandMatch;
       item.style.display = show ? '' : 'none';
       if (show) visible++;
-    });
+    }
     countEl.textContent = visible;
   }
 
   searchInput.addEventListener('input', filterProducts);
   stockFilter.addEventListener('change', filterProducts);
+  catFilter.addEventListener('change', filterProducts);
+  brandFilter.addEventListener('change', filterProducts);
+</script>
+
+<!-- Category Quick-Add Popup -->
+<div id="catOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;justify-content:center;align-items:center;backdrop-filter:blur(4px);font-family:'Quicksand',sans-serif;">
+  <div style="background:var(--bg,#FFFBF5);border-radius:16px;width:360px;max-width:92vw;box-shadow:0 16px 40px rgba(0,0,0,0.15);border:1px solid var(--border,#F2E8DA);">
+    <div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="margin:0;font-weight:700;color:var(--text,#3D405B);font-size:1.1rem;">Add Category</h5>
+      <button type="button" onclick="closeCatPopup()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted,#818589);padding:0;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;">&times;</button>
+    </div>
+    <div style="padding:16px 24px;">
+      <input type="text" id="catName" placeholder="Category name" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;transition:border 0.15s,box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'">
+      <div id="catResult" style="display:none;margin-top:10px;"></div>
+    </div>
+    <div style="padding:12px 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closeCatPopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;">Cancel</button>
+      <button type="button" id="catApplyBtn" style="padding:10px 22px;border:none;border-radius:50px;background:var(--primary,#E07A5F);color:white;cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;">Add Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Brand Quick-Add Popup -->
+<div id="brandOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;justify-content:center;align-items:center;backdrop-filter:blur(4px);font-family:'Quicksand',sans-serif;">
+  <div style="background:var(--bg,#FFFBF5);border-radius:16px;width:360px;max-width:92vw;box-shadow:0 16px 40px rgba(0,0,0,0.15);border:1px solid var(--border,#F2E8DA);">
+    <div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="margin:0;font-weight:700;color:var(--text,#3D405B);font-size:1.1rem;">Add Brand</h5>
+      <button type="button" onclick="closeBrandPopup()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted,#818589);padding:0;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;">&times;</button>
+    </div>
+    <div style="padding:16px 24px;">
+      <input type="text" id="brandName" placeholder="Brand name" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;transition:border 0.15s,box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'">
+      <div id="brandResult" style="display:none;margin-top:10px;"></div>
+    </div>
+    <div style="padding:12px 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closeBrandPopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;">Cancel</button>
+      <button type="button" id="brandApplyBtn" style="padding:10px 22px;border:none;border-radius:50px;background:var(--primary,#E07A5F);color:white;cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;">Add Brand</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var catOverlay = document.getElementById('catOverlay');
+var brandOverlay = document.getElementById('brandOverlay');
+
+window.openCatPopup = function() { catOverlay.style.display = 'flex'; document.getElementById('catResult').style.display = 'none'; document.getElementById('catName').value = ''; };
+window.closeCatPopup = function() { catOverlay.style.display = 'none'; };
+window.openBrandPopup = function() { brandOverlay.style.display = 'flex'; document.getElementById('brandResult').style.display = 'none'; document.getElementById('brandName').value = ''; };
+window.closeBrandPopup = function() { brandOverlay.style.display = 'none'; };
+
+catOverlay.addEventListener('click', function(e) { if (e.target === catOverlay) closeCatPopup(); });
+brandOverlay.addEventListener('click', function(e) { if (e.target === brandOverlay) closeBrandPopup(); });
+
+document.getElementById('catApplyBtn').addEventListener('click', function() {
+  var name = document.getElementById('catName').value.trim();
+  if (!name) return;
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Adding...';
+  var data = new URLSearchParams();
+  data.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  data.append('name', name);
+  fetch('/api/category/create/', { method: 'POST', body: data, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (j.success) { window.location.reload(); }
+      else {
+        document.getElementById('catResult').style.display = 'block';
+        document.getElementById('catResult').innerHTML = '<div style="padding:10px;background:#FEF2F2;color:#DC2626;border-radius:8px;font-size:0.85rem;">' + j.error + '</div>';
+        btn.disabled = false; btn.textContent = 'Add Category';
+      }
+    });
+});
+
+document.getElementById('brandApplyBtn').addEventListener('click', function() {
+  var name = document.getElementById('brandName').value.trim();
+  if (!name) return;
+  var btn = this;
+  btn.disabled = true; btn.textContent = 'Adding...';
+  var data = new URLSearchParams();
+  data.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  data.append('name', name);
+  fetch('/api/brand/create/', { method: 'POST', body: data, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+    .then(function(r) { return r.json(); })
+    .then(function(j) {
+      if (j.success) { window.location.reload(); }
+      else {
+        document.getElementById('brandResult').style.display = 'block';
+        document.getElementById('brandResult').innerHTML = '<div style="padding:10px;background:#FEF2F2;color:#DC2626;border-radius:8px;font-size:0.85rem;">' + j.error + '</div>';
+        btn.disabled = false; btn.textContent = 'Add Brand';
+      }
+    });
+});
 </script>
 {% endblock %}
 

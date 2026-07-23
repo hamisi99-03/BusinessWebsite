@@ -882,13 +882,43 @@ def admin_products_list(request):
     in_stock_count = products.filter(stock__gt=0).count()
     out_of_stock_count = products.filter(stock=0).count()
     total_value = sum(p.price * p.stock for p in products)
+    categories = Category.objects.all()
+    brands = Brand.objects.all()
 
     return render(request, 'ecommerce/admin_products_list.html', {
         'products': products,
         'in_stock_count': in_stock_count,
         'out_of_stock_count': out_of_stock_count,
         'total_value': total_value,
+        'categories': categories,
+        'brands': brands,
     })
+
+
+@staff_member_required
+def create_category(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'error': 'Name is required.'}, status=400)
+    cat, created = Category.objects.get_or_create(name=name)
+    if not created:
+        return JsonResponse({'error': 'Category already exists.'}, status=400)
+    return JsonResponse({'success': True, 'id': cat.id, 'name': cat.name})
+
+
+@staff_member_required
+def create_brand(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+    name = request.POST.get('name', '').strip()
+    if not name:
+        return JsonResponse({'error': 'Name is required.'}, status=400)
+    brand, created = Brand.objects.get_or_create(name=name)
+    if not created:
+        return JsonResponse({'error': 'Brand already exists.'}, status=400)
+    return JsonResponse({'success': True, 'id': brand.id, 'name': brand.name})
 
 
 @login_required

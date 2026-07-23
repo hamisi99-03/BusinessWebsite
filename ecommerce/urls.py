@@ -12,7 +12,7 @@ from .views import (
     dashboard_view, orders_list_view, order_detail_view, debts_list_view,
     profile_view, ProfileView, order_product_view, change_password_view,
     custom_login, admin_dashboard, payment_list_view, update_order_status, add_product, update_product, delete_product, product_list, admin_products_list, reports_view,
-    admin_update_order, admin_delete_order, adjust_stock, record_payment, cart_view, add_to_cart, remove_from_cart, update_cart_item, checkout_from_cart,
+    admin_update_order, admin_delete_order, adjust_stock, record_payment, create_category, create_brand, cart_view, add_to_cart, remove_from_cart, update_cart_item, checkout_from_cart,
     product_detail, mark_payment_paid,
     consignment_list, add_consignment, add_supplier, add_expense, expense_list, financial_report,
     notifications_view
@@ -80,6 +80,8 @@ urlpatterns = [
     path("admin-dashboard/financial-report/", financial_report, name="financial_report"),
     path('admin-dashboard/notifications/', notifications_view, name='notifications'),
     path('ordering/payment/record/', record_payment, name='record_payment'),
+    path('category/create/', create_category, name='create_category'),
+    path('brand/create/', create_brand, name='create_brand'),
 
     path('api-auth/', include('rest_framework.urls')),
 ]

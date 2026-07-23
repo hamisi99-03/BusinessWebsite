@@ -53,6 +53,16 @@
               {% if form.stock.errors %}<div class="text-danger small">{{ form.stock.errors }}</div>{% endif %}
             </div>
           </div>
+          <div class="mb-3 mt-3">
+            <label class="form-label">Category</label>
+            {{ form.category }}
+            {% if form.category.errors %}<div class="text-danger small">{{ form.category.errors }}</div>{% endif %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Brand</label>
+            {{ form.brand }}
+            {% if form.brand.errors %}<div class="text-danger small">{{ form.brand.errors }}</div>{% endif %}
+          </div>
         </div>
       </div>
 
