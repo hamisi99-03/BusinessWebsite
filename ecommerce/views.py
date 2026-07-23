@@ -788,6 +788,54 @@ def admin_delete_order(request, pk):
     })
 
 
+@staff_member_required
+def record_payment(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+
+    try:
+        order_id = int(request.POST.get('order_id', 0))
+        amount = request.POST.get('amount', '0')
+        payment_method = request.POST.get('payment_method', 'cash')
+        notes = request.POST.get('notes', '')
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Invalid parameters.'}, status=400)
+
+    order = get_object_or_404(Order, pk=order_id)
+    outstanding = order.get_outstanding_balance()
+
+    try:
+        amount = Decimal(amount)
+    except Exception:
+        return JsonResponse({'error': 'Amount must be a valid number.'}, status=400)
+
+    if amount <= 0:
+        return JsonResponse({'error': 'Amount must be greater than zero.'}, status=400)
+
+    if amount > outstanding:
+        return JsonResponse({
+            'error': f'Amount exceeds outstanding balance of KSh {outstanding}.'
+        }, status=400)
+
+    try:
+        payment = Payment(
+            order=order,
+            amount=amount,
+            payment_method=payment_method,
+            notes=notes,
+            created_by=request.user,
+            status='completed'
+        )
+        payment.full_clean()
+        payment.save()
+    except ValidationError as e:
+        messages.error(request, str(e))
+        return redirect('orders_list')
+
+    messages.success(request, f'Payment of KSh {amount} recorded for Order #{order.id}. Outstanding: KSh {order.get_outstanding_balance()}')
+    return redirect('orders_list')
+
+
 def product_list(request):
     category_slug = request.GET.get('category')
     brand_slug = request.GET.get('brand')

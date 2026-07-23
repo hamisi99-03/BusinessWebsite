@@ -152,6 +152,11 @@
               </a>
               {% if is_admin %}
                 <a href="{% url 'admin_update_order' order.pk %}" class="btn btn-sm btn-outline-secondary ms-1">Edit</a>
+                {% if order.get_outstanding_balance > 0 %}
+                <button type="button" class="btn btn-sm btn-outline-success ms-1" onclick="openPayPopup({{ order.id }}, '{{ order.get_outstanding_balance }}')">
+                  <i class="bi bi-cash me-1"></i> Pay
+                </button>
+                {% endif %}
                 <a href="{% url 'admin_delete_order' order.pk %}" class="btn btn-sm btn-outline-danger ms-1">Delete</a>
               {% endif %}
             </td>
@@ -192,7 +197,85 @@
   </div>
 </div>
 
+<!-- Payment Popup -->
+<div id="payOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;justify-content:center;align-items:center;backdrop-filter:blur(4px);font-family:'Quicksand',sans-serif;">
+  <div style="background:var(--bg,#FFFBF5);border-radius:16px;width:400px;max-width:92vw;box-shadow:0 16px 40px rgba(0,0,0,0.15);border:1px solid var(--border,#F2E8DA);">
+    <div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="margin:0;font-weight:700;color:var(--text,#3D405B);font-size:1.1rem;">Record Payment — Order #<span id="payOrderId"></span></h5>
+      <button type="button" onclick="closePayPopup()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted,#818589);padding:0;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;">&times;</button>
+    </div>
+    <div style="padding:16px 24px;">
+      <p style="color:var(--muted,#818589);font-size:0.85rem;margin:0 0 14px;">Outstanding: <strong style="color:var(--text,#3D405B);">KSh <span id="payOutstanding"></span></strong></p>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;font-size:0.8rem;color:var(--muted,#818589);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Amount</label>
+        <input type="number" id="payAmount" min="1" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;transition:border 0.15s,box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;font-size:0.8rem;color:var(--muted,#818589);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Method</label>
+        <select id="payMethod" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;transition:border 0.15s,box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'">
+          <option value="cash">Cash</option>
+          <option value="mpesa">M-Pesa</option>
+          <option value="bank">Bank Transfer</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;font-size:0.8rem;color:var(--muted,#818589);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+        <textarea id="payNotes" rows="2" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;resize:vertical;transition:border 0.15s,box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'"></textarea>
+      </div>
+      <div id="payResult" style="display:none;"></div>
+    </div>
+    <div style="padding:12px 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closePayPopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;">Cancel</button>
+      <button type="button" id="payApplyBtn" style="padding:10px 22px;border:none;border-radius:50px;background:var(--primary,#E07A5F);color:white;cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='var(--primary-hover,#C9664D)'" onmouseout="this.style.background='var(--primary,#E07A5F)'">Record Payment</button>
+    </div>
+  </div>
+</div>
+
+<form method="POST" id="payForm" action="/api/ordering/payment/record/" style="display:none;">{% csrf_token %}
+  <input type="hidden" name="order_id" id="payFormOrderId">
+  <input type="hidden" name="amount" id="payFormAmount">
+  <input type="hidden" name="payment_method" id="payFormMethod">
+  <input type="hidden" name="notes" id="payFormNotes">
+</form>
+
 <script>
+  var payOverlay = document.getElementById('payOverlay');
+  var payOrderId = document.getElementById('payOrderId');
+  var payOutstanding = document.getElementById('payOutstanding');
+  var payAmount = document.getElementById('payAmount');
+  var payMethod = document.getElementById('payMethod');
+  var payNotes = document.getElementById('payNotes');
+  var payResult = document.getElementById('payResult');
+  var payApplyBtn = document.getElementById('payApplyBtn');
+
+  window.openPayPopup = function(orderId, outstanding) {
+    payOrderId.textContent = orderId;
+    payOutstanding.textContent = outstanding;
+    payAmount.value = outstanding;
+    payMethod.value = 'cash';
+    payNotes.value = '';
+    payResult.style.display = 'none';
+    payApplyBtn.disabled = false;
+    payApplyBtn.textContent = 'Record Payment';
+    payOverlay.style.display = 'flex';
+  };
+
+  window.closePayPopup = function() {
+    payOverlay.style.display = 'none';
+  };
+
+  payApplyBtn.addEventListener('click', function() {
+    document.getElementById('payFormOrderId').value = payOrderId.textContent;
+    document.getElementById('payFormAmount').value = payAmount.value;
+    document.getElementById('payFormMethod').value = payMethod.value;
+    document.getElementById('payFormNotes').value = payNotes.value;
+    document.getElementById('payForm').submit();
+  });
+
+  payOverlay.addEventListener('click', function(e) {
+    if (e.target === payOverlay) closePayPopup();
+  });
+
   const searchInput = document.getElementById('orderSearch');
   const statusFilter = document.getElementById('statusFilter');
   const customerFilter = document.getElementById('customerFilter');

@@ -29,8 +29,6 @@ def update_debt_after_payment(sender, instance, **kwargs):
             'paid_at': None
         }
     )
-
-    # Recalculate balance using your model method
     debt.calculate_outstanding_balance()
 
 
@@ -48,11 +46,13 @@ def create_debt_for_order(sender, instance, created, **kwargs):
 @receiver(post_save, sender=OrderItem)
 def update_debt_after_orderitem(sender, instance, **kwargs):
     order = instance.order
-    debt, created = Debt.objects.get_or_create(
-        customer=order.customer,
-        order=order,
-        defaults={'outstanding_balance': 0, 'is_paid': False, 'paid_at': None}
-    )
+    try:
+        debt = Debt.objects.get(customer=order.customer, order=order)
+    except Debt.DoesNotExist:
+        debt = Debt.objects.create(
+            customer=order.customer, order=order,
+            outstanding_balance=0, is_paid=False, paid_at=None
+        )
     debt.calculate_outstanding_balance()
 
 User = get_user_model()
@@ -62,10 +62,6 @@ def create_customer(sender, instance, created, **kwargs):
     if created:
         Customer.objects.create(user=instance)
 
-@receiver(post_save, sender=Payment)
-def update_debt_after_payment(sender, instance, **kwargs):
-    print(f"Signal fired for Payment {instance.id}, Order {instance.order.id}")
-    ...
 @receiver(post_delete, sender=ProductImage)
 def delete_product_image_file(sender, instance, **kwargs):
     print("Signal fired for:", instance)
