@@ -29,7 +29,7 @@
 <div class="row g-3 mb-4">
   <!-- Card 1: Total Revenue -->
   <div class="col-6 col-md-3">
-    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#revenueModal">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" onclick="openPopup('revenue')">
       <div class="d-flex justify-content-between align-items-start">
         <div>
           <div class="text-muted mb-1">Total Revenue</div>
@@ -44,7 +44,7 @@
   </div>
   <!-- Card 2: Total Orders -->
   <div class="col-6 col-md-3">
-    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#ordersModal">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" onclick="openPopup('orders')">
       <div class="d-flex justify-content-between align-items-start">
         <div>
           <div class="text-muted mb-1">Total Orders</div>
@@ -59,7 +59,7 @@
   </div>
   <!-- Card 3: Outstanding -->
   <div class="col-6 col-md-3">
-    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#debtModal">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" onclick="openPopup('debt')">
       <div class="d-flex justify-content-between align-items-start">
         <div>
           <div class="text-muted mb-1">Outstanding</div>
@@ -74,7 +74,7 @@
   </div>
   <!-- Card 4: Products -->
   <div class="col-6 col-md-3">
-    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" data-bs-toggle="modal" data-bs-target="#productsModal">
+    <div class="card rounded-3 shadow-sm p-4 cursor-pointer" onclick="openPopup('products')">
       <div class="d-flex justify-content-between align-items-start">
         <div>
           <div class="text-muted mb-1">Products</div>
@@ -197,134 +197,72 @@
    </div>
  </div>
 
-<!-- SECTION 4 — Modals -->
-<!-- Revenue Modal -->
-<div class="modal fade" id="revenueModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Revenue Breakdown</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Customer</th><th>Amount</th><th>Method</th><th>Date</th></tr></thead>
-          <tbody>
-            {% for payment in recent_payments %}
-            <tr>
-              <td>{{ payment.order.customer.user.get_full_name|default:payment.order.customer.user.username }}</td>
-              <td>KSh {{ payment.amount|floatformat:0 }}</td>
-              <td>{{ payment.payment_method|title }}</td>
-              <td>{{ payment.payment_date|date:"d M Y" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" class="text-center text-muted">No payments</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
+<!-- --- Popup Overlay (replaces all 4 modals) --- -->
+<div id="popupOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;justify-content:center;align-items:center;backdrop-filter:blur(4px);font-family:'Quicksand',sans-serif;">
+  <div id="popupBox" style="background:var(--bg,#FFFBF5);border-radius:16px;width:560px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 16px 40px rgba(0,0,0,0.15);border:1px solid var(--border,#F2E8DA);">
+    <div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+      <h5 id="popupTitle" style="margin:0;font-weight:700;color:var(--text,#3D405B);font-size:1.1rem;">Title</h5>
+      <button type="button" onclick="closePopup()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted,#818589);padding:0;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.15s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">&times;</button>
+    </div>
+    <div id="popupBody" style="padding:16px 24px;overflow-y:auto;flex:1;min-height:0;">
+    </div>
+    <div id="popupFooter" style="padding:12px 24px 20px;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;">
     </div>
   </div>
 </div>
 
-<!-- Orders Modal -->
-<div class="modal fade" id="ordersModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Order Summary</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2"><strong>Total Orders:</strong> {{ total_orders }}</p>
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Status</th><th>Count</th></tr></thead>
-          <tbody>
-            {% for item in order_status_breakdown %}
-            <tr><td>{{ item.status|title }}</td><td>{{ item.count }}</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <a href="{% url 'orders_list' %}" class="btn btn-primary">Manage Orders</a>
-      </div>
-    </div>
-  </div>
-</div>
+<script>
+var overlay = document.getElementById('popupOverlay');
+var popupTitle = document.getElementById('popupTitle');
+var popupBody = document.getElementById('popupBody');
+var popupFooter = document.getElementById('popupFooter');
 
-<!-- Debt Modal -->
-<div class="modal fade" id="debtModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Outstanding Debts</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2"><strong>Total Outstanding:</strong> KSh {{ outstanding_debt|floatformat:0 }}</p>
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Customer</th><th>Balance</th><th>Status</th></tr></thead>
-          <tbody>
-            {% for debt in top_debtors %}
-            <tr>
-              <td>{{ debt.customer.user.username }}</td>
-              <td>KSh {{ debt.outstanding_balance|floatformat:0 }}</td>
-              <td><span class="badge bg-danger">Unpaid</span></td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="3" class="text-center text-muted">No outstanding debts</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
+window.openPopup = function(type) {
+  var title = '', bodyHTML = '', footerHTML = '';
 
-<!-- Products Modal -->
-<div class="modal fade" id="productsModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Stock Alert</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Product</th><th>Stock</th><th>Status</th></tr></thead>
-          <tbody>
-            {% for product in low_stock_products %}
-            <tr>
-              <td>{{ product.name }}</td>
-              <td>{{ product.stock }}</td>
-              <td>
-                {% if product.stock == 0 %}
-                  <span class="badge bg-danger">Out of Stock</span>
-                {% else %}
-                  <span class="badge bg-warning">Low Stock</span>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="3" class="text-center text-muted">No low stock products</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <a href="{% url 'admin_products_list' %}" class="btn btn-primary">Manage Products</a>
-      </div>
-    </div>
-  </div>
-</div>
+  if (type === 'revenue') {
+    title = 'Revenue Breakdown';
+    bodyHTML = '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="border-bottom:2px solid var(--border,#F2E8DA);"><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Customer</th><th style="padding:8px 6px;text-align:right;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Amount</th><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Method</th><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Date</th></tr></thead><tbody>'
+      + '{% for payment in recent_payments %}<tr style="border-bottom:1px solid var(--border,#F2E8DA);"><td style="padding:10px 6px;color:var(--text,#3D405B);">{{ payment.order.customer.user.get_full_name|default:payment.order.customer.user.username }}</td><td style="padding:10px 6px;text-align:right;font-weight:600;">KSh {{ payment.amount|floatformat:0 }}</td><td style="padding:10px 6px;color:var(--text,#3D405B);">{{ payment.payment_method|title }}</td><td style="padding:10px 6px;color:var(--muted,#818589);">{{ payment.payment_date|date:"d M Y" }}</td></tr>{% empty %}<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted,#818589);">No payments</td></tr>{% endfor %}'
+      + '</tbody></table>';
+    footerHTML = '<button type="button" onclick="closePopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;">Close</button>';
+  } else if (type === 'orders') {
+    title = 'Order Summary';
+    bodyHTML = '<p style="margin:0 0 14px;color:var(--text,#3D405B);"><strong>Total Orders:</strong> {{ total_orders }}</p>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="border-bottom:2px solid var(--border,#F2E8DA);"><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Status</th><th style="padding:8px 6px;text-align:right;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Count</th></tr></thead><tbody>'
+      + '{% for item in order_status_breakdown %}<tr style="border-bottom:1px solid var(--border,#F2E8DA);"><td style="padding:10px 6px;color:var(--text,#3D405B);">{{ item.status|title }}</td><td style="padding:10px 6px;text-align:right;font-weight:600;">{{ item.count }}</td></tr>{% endfor %}'
+      + '</tbody></table>';
+    footerHTML = '<button type="button" onclick="closePopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;">Close</button>'
+      + '<a href="{% url "orders_list" %}" style="padding:10px 22px;border:none;border-radius:50px;background:var(--primary,#E07A5F);color:white;cursor:pointer;font-weight:600;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;text-decoration:none;" onmouseover="this.style.background=\'var(--primary-hover,#C9664D)\'" onmouseout="this.style.background=\'var(--primary,#E07A5F)\'">Manage Orders</a>';
+  } else if (type === 'debt') {
+    title = 'Outstanding Debts';
+    bodyHTML = '<p style="margin:0 0 14px;color:var(--text,#3D405B);"><strong>Total Outstanding:</strong> KSh {{ outstanding_debt|floatformat:0 }}</p>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="border-bottom:2px solid var(--border,#F2E8DA);"><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Customer</th><th style="padding:8px 6px;text-align:right;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Balance</th><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Status</th></tr></thead><tbody>'
+      + '{% for debt in top_debtors %}<tr style="border-bottom:1px solid var(--border,#F2E8DA);"><td style="padding:10px 6px;color:var(--text,#3D405B);">{{ debt.customer.user.username }}</td><td style="padding:10px 6px;text-align:right;font-weight:600;color:#DC2626;">KSh {{ debt.outstanding_balance|floatformat:0 }}</td><td style="padding:10px 6px;"><span style="display:inline-block;padding:2px 10px;border-radius:999px;background:#FEF2F2;color:#DC2626;font-size:0.75rem;font-weight:600;">Unpaid</span></td></tr>{% empty %}<tr><td colspan="3" style="padding:20px;text-align:center;color:var(--muted,#818589);">No outstanding debts</td></tr>{% endfor %}'
+      + '</tbody></table>';
+    footerHTML = '<button type="button" onclick="closePopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;">Close</button>';
+  } else if (type === 'products') {
+    title = 'Stock Alert';
+    bodyHTML = '<table style="width:100%;border-collapse:collapse;font-size:0.9rem;"><thead><tr style="border-bottom:2px solid var(--border,#F2E8DA);"><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Product</th><th style="padding:8px 6px;text-align:right;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Stock</th><th style="padding:8px 6px;text-align:left;color:var(--muted,#818589);font-weight:600;font-size:0.75rem;text-transform:uppercase;">Status</th></tr></thead><tbody>'
+      + '{% for product in low_stock_products %}<tr style="border-bottom:1px solid var(--border,#F2E8DA);"><td style="padding:10px 6px;color:var(--text,#3D405B);">{{ product.name }}</td><td style="padding:10px 6px;text-align:right;font-weight:600;">{{ product.stock }}</td><td style="padding:10px 6px;">{% if product.stock == 0 %}<span style="display:inline-block;padding:2px 10px;border-radius:999px;background:#FEF2F2;color:#DC2626;font-size:0.75rem;font-weight:600;">Out of Stock</span>{% else %}<span style="display:inline-block;padding:2px 10px;border-radius:999px;background:#FFFBEB;color:#D97706;font-size:0.75rem;font-weight:600;">Low Stock</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="3" style="padding:20px;text-align:center;color:var(--muted,#818589);">No low stock products</td></tr>{% endfor %}'
+      + '</tbody></table>';
+    footerHTML = '<button type="button" onclick="closePopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;">Close</button>'
+      + '<a href="{% url "admin_products_list" %}" style="padding:10px 22px;border:none;border-radius:50px;background:var(--primary,#E07A5F);color:white;cursor:pointer;font-weight:600;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;text-decoration:none;" onmouseover="this.style.background=\'var(--primary-hover,#C9664D)\'" onmouseout="this.style.background=\'var(--primary,#E07A5F)\'">Manage Products</a>';
+  }
+
+  popupTitle.textContent = title;
+  popupBody.innerHTML = bodyHTML;
+  popupFooter.innerHTML = footerHTML;
+  overlay.style.display = 'flex';
+};
+
+window.closePopup = function() {
+  overlay.style.display = 'none';
+};
+
+overlay.addEventListener('click', function(e) {
+  if (e.target === overlay) closePopup();
+});
+</script>
 
 {% endblock %}

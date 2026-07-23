@@ -28,27 +28,24 @@
            style="position:relative;border-radius:24px;
                   overflow:hidden;background:#F3F4F6;
                   margin-bottom:1rem;
-                  width:100%;padding-top:100%;">
-        <div style="position:absolute;top:0;left:0;
-                    right:0;bottom:0;">
-
+                  width:100%;aspect-ratio:1;">
         {% if product.images.all %}
+        <div class="slides-track"
+             style="display:flex;height:100%;transition:transform 0.4s ease;">
           {% for image in product.images.all %}
           <img src="{{ image.image.url }}"
                alt="{{ product.name }}"
                class="main-slide"
-               style="position:absolute;top:0;left:0;
-                      width:100%;height:100%;
-                      object-fit:cover;
-                      opacity:{% if forloop.first %}1{% else %}0{% endif %};
-                      transition:opacity 0.4s ease;">
+               style="flex:0 0 100%;width:100%;height:100%;
+                      object-fit:cover;">
           {% endfor %}
+        </div>
         {% else %}
-          <div style="width:100%;height:100%;display:flex;
-                      align-items:center;justify-content:center;">
-            <i class="bi bi-image"
-               style="font-size:4rem;color:#D1D5DB;"></i>
-          </div>
+        <div style="width:100%;height:100%;display:flex;
+                    align-items:center;justify-content:center;">
+          <i class="bi bi-image"
+             style="font-size:4rem;color:#D1D5DB;"></i>
+        </div>
         {% endif %}
 
         <!-- Navigation arrows (only if more than 1 image) -->
@@ -115,7 +112,6 @@
           <span id="currentSlide">1</span>/{{ product.images.all|length }}
         </div>
         {% endif %}
-      </div>
       </div>
 
       <!-- THUMBNAIL STRIP -->
@@ -361,8 +357,9 @@
 
 <script>
 (function(){
-  var slides = document.querySelectorAll('.main-slide');
-  if (!slides || slides.length < 2) return;
+  var track = document.querySelector('.slides-track');
+  var slides = track ? track.querySelectorAll('.main-slide') : [];
+  if (!track || slides.length < 2) return;
 
   var dots = document.querySelectorAll('.slide-dot');
   var thumbs = document.querySelectorAll('.thumb-btn');
@@ -372,10 +369,7 @@
 
   function show(n) {
     current = n;
-    for (var i = 0; i < slides.length; i++) {
-      slides[i].style.opacity = i === current ? '1' : '0';
-      slides[i].style.zIndex = i === current ? '1' : '0';
-    }
+    track.style.transform = 'translateX(-' + (current * 100) + '%)';
     for (var i = 0; i < dots.length; i++) {
       dots[i].style.width = i === current ? '24px' : '8px';
       dots[i].style.background = i === current ? 'var(--primary)' : 'rgba(255,255,255,0.6)';
@@ -386,24 +380,25 @@
     if (counter) counter.textContent = current + 1;
   }
 
+  function next() { show(current + 1 >= slides.length ? 0 : current + 1); }
+  function start() { clearInterval(timer); timer = setInterval(next, 3500); }
+
   window.slideGallery = function(dir) {
-    var next = current + parseInt(dir);
-    if (next >= slides.length) next = 0;
-    if (next < 0) next = slides.length - 1;
-    clearInterval(timer);
-    show(next);
-    timer = setInterval(function() { show(current + 1 >= slides.length ? 0 : current + 1); }, 3500);
+    var n = current + parseInt(dir);
+    if (n >= slides.length) n = 0;
+    if (n < 0) n = slides.length - 1;
+    show(n);
+    start();
   };
   window.goToSlide = function(idx) {
     var i = parseInt(idx);
     if (i < 0 || i >= slides.length) return;
-    clearInterval(timer);
     show(i);
-    timer = setInterval(function() { show(current + 1 >= slides.length ? 0 : current + 1); }, 3500);
+    start();
   };
 
   show(0);
-  timer = setInterval(function() { show(current + 1 >= slides.length ? 0 : current + 1); }, 3500);
+  start();
 
   var touchStartX = 0;
   var wrapper = document.getElementById('galleryWrapper');

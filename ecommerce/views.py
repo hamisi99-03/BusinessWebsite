@@ -15,7 +15,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -242,7 +242,49 @@ def change_password_view(request):
 
 @login_required
 def order_product_view(request):
-    return redirect('product_list')
+    preselected_product = None
+    product_id = request.GET.get('product')
+    if product_id:
+        try:
+            preselected_product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            preselected_product = None
+
+    if request.method == 'POST':
+        form = OrderForm(request.POST)
+        if form.is_valid():
+            product = form.cleaned_data['product']
+            quantity = form.cleaned_data['quantity']
+
+            if quantity > product.stock:
+                messages.error(request, f'Only {product.stock} units of "{product.name}" are in stock.')
+                return render(request, 'ecommerce/order_product.html', {
+                    'form': form, 'preselected_product': preselected_product,
+                })
+
+            customer, _ = Customer.objects.get_or_create(user=request.user)
+            order = Order.objects.create(customer=customer, status='pending')
+            OrderItem.objects.create(
+                order=order, product=product,
+                quantity=quantity, price=product.price
+            )
+            product.stock -= quantity
+            product.save()
+
+            messages.success(request, f'Order #{order.id} placed successfully for {product.name} x{quantity}!')
+            return redirect('order_detail', pk=order.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        initial = {}
+        if preselected_product:
+            initial['product'] = preselected_product
+        form = OrderForm(initial=initial)
+
+    return render(request, 'ecommerce/order_product.html', {
+        'form': form,
+        'preselected_product': preselected_product,
+    })
 
 # -------------------
 # API Profile Endpoint
@@ -670,32 +712,37 @@ def delete_product(request, pk):
 
 
 @staff_member_required
-@require_POST
 def adjust_stock(request, pk):
     product = get_object_or_404(Product, pk=pk)
-    adjustment_type = request.POST.get('adjustment_type')
-    quantity = int(request.POST.get('quantity', 0))
-    reason = request.POST.get('reason', '')
 
-    if adjustment_type not in ('increase', 'decrease'):
-        messages.error(request, 'Invalid adjustment type.')
-        return redirect('admin_products_list')
+    if request.method == 'POST':
+        adjustment_type = request.POST.get('adjustment_type')
+        quantity = request.POST.get('quantity', '0')
+        reason = request.POST.get('reason', '')
 
-    if quantity <= 0:
-        messages.error(request, 'Quantity must be greater than zero.')
-        return redirect('admin_products_list')
+        if adjustment_type not in ('increase', 'decrease'):
+            return JsonResponse({'error': 'Invalid adjustment type.'}, status=400)
 
-    if adjustment_type == 'increase':
-        product.stock += quantity
-    else:
-        product.stock = max(0, product.stock - quantity)
+        try:
+            quantity = int(quantity)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Quantity must be a valid number.'}, status=400)
 
-    product.save()
-    StockAdjustment.objects.create(
-        product=product, adjusted_by=request.user,
-        adjustment_type=adjustment_type, quantity=quantity, reason=reason
-    )
-    messages.success(request, f"Stock for '{product.name}' {adjustment_type}d by {quantity}.")
+        if quantity <= 0:
+            return JsonResponse({'error': 'Quantity must be greater than zero.'}, status=400)
+
+        if adjustment_type == 'increase':
+            product.stock += quantity
+        else:
+            product.stock = max(0, product.stock - quantity)
+
+        product.save()
+        StockAdjustment.objects.create(
+            product=product, adjusted_by=request.user,
+            adjustment_type=adjustment_type, quantity=quantity, reason=reason
+        )
+        return JsonResponse({'success': True, 'new_stock': product.stock})
+
     return redirect('admin_products_list')
 
 

@@ -120,9 +120,8 @@
           </a>
           <button type="button"
                   class="btn btn-sm btn-outline-primary flex-fill"
-                  data-bs-toggle="modal"
-                  data-bs-target="#stockModal"
-                  data-product-id="{{ product.pk }}"
+                  onclick="openStockPopup(this)"
+                  data-url="{% url 'adjust_stock' product.pk %}"
                   data-product-name="{{ product.name }}"
                   data-current-stock="{{ product.stock }}">
             <i class="bi bi-arrow-up-down"></i> Stock
@@ -252,48 +251,95 @@
   });
 </script>
 
-<div class="modal fade" id="stockModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Adjust Stock — <span id="modalProductName"></span></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="stockOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:9999;justify-content:center;align-items:center;backdrop-filter:blur(4px);font-family:'Quicksand',sans-serif;">
+  <div style="background:var(--bg,#FFFBF5);border-radius:16px;width:420px;max-width:90vw;box-shadow:0 16px 40px rgba(0,0,0,0.15);border:1px solid var(--border,#F2E8DA);">
+    <div style="padding:20px 24px 0;display:flex;justify-content:space-between;align-items:center;">
+      <h5 style="margin:0;font-weight:700;color:var(--text,#3D405B);font-size:1.1rem;">Adjust Stock — <span id="popupProductName"></span></h5>
+      <button type="button" onclick="closeStockPopup()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--muted,#818589);padding:0;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:background 0.15s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">&times;</button>
+    </div>
+    <div style="padding:16px 24px;">
+      <p style="color:var(--muted,#818589);font-size:0.85rem;margin:0 0 16px;">Current stock: <strong style="color:var(--text,#3D405B);" id="popupCurrentStock"></strong></p>
+      {% csrf_token %}
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;font-size:0.8rem;color:var(--muted,#818589);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Adjustment Type</label>
+        <select id="popupType" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;transition:border 0.15s, box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'">
+          <option value="increase">Increase</option>
+          <option value="decrease">Decrease</option>
+        </select>
       </div>
-      <form method="post" id="stockForm">
-        {% csrf_token %}
-        <div class="modal-body">
-          <p class="text-muted">Current stock: <strong id="modalCurrentStock"></strong></p>
-          <div class="mb-3">
-            <label class="form-label">Adjustment Type</label>
-            <select name="adjustment_type" class="form-select">
-              <option value="increase">Increase</option>
-              <option value="decrease">Decrease</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Quantity</label>
-            <input type="number" name="quantity" class="form-control" min="1" required>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Reason (optional)</label>
-            <textarea name="reason" class="form-control" rows="2"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Apply Adjustment</button>
-        </div>
-      </form>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;font-size:0.8rem;color:var(--muted,#818589);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Quantity</label>
+        <input type="number" id="popupQty" value="1" min="1" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;transition:border 0.15s, box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-weight:600;font-size:0.8rem;color:var(--muted,#818589);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;">Reason <span style="font-weight:400;text-transform:none;color:var(--muted,#818589);">(optional)</span></label>
+        <textarea id="popupReason" rows="2" style="width:100%;padding:10px 14px;border:1px solid var(--border,#F2E8DA);border-radius:10px;font-size:0.9rem;color:var(--text,#3D405B);background:white;font-family:'Quicksand',sans-serif;outline:none;resize:vertical;transition:border 0.15s, box-shadow 0.15s;" onfocus="this.style.borderColor='var(--primary,#E07A5F)';this.style.boxShadow='0 0 0 3px rgba(224,122,95,0.1)'" onblur="this.style.borderColor='var(--border,#F2E8DA)';this.style.boxShadow='none'"></textarea>
+      </div>
+      <div id="popupResult" style="display:none;"></div>
+    </div>
+    <div style="padding:12px 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
+      <button type="button" onclick="closeStockPopup()" style="padding:10px 22px;border:1px solid var(--border,#F2E8DA);border-radius:50px;background:white;color:var(--text,#3D405B);cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;transition:all 0.15s;" onmouseover="this.style.background='var(--bg,#FFFBF5)'" onmouseout="this.style.background='white'">Cancel</button>
+      <button type="button" id="popupApplyBtn" style="padding:10px 22px;border:none;border-radius:50px;background:var(--primary,#E07A5F);color:white;cursor:pointer;font-weight:600;font-size:0.85rem;font-family:'Quicksand',sans-serif;transition:all 0.15s;" onmouseover="this.style.background='var(--primary-hover,#C9664D)'" onmouseout="this.style.background='var(--primary,#E07A5F)'">Apply Adjustment</button>
     </div>
   </div>
 </div>
 
 <script>
-  document.getElementById('stockModal').addEventListener('show.bs.modal', function(event) {
-    const btn = event.relatedTarget;
-    document.getElementById('modalProductName').textContent = btn.dataset.productName;
-    document.getElementById('modalCurrentStock').textContent = btn.dataset.currentStock;
-    document.getElementById('stockForm').action = `/api/admin-dashboard/product/${btn.dataset.productId}/adjust-stock/`;
+  var activeUrl = '';
+  var popup = document.getElementById('stockOverlay');
+
+  window.openStockPopup = function(btn) {
+    activeUrl = btn.getAttribute('data-url') || '';
+    document.getElementById('popupProductName').textContent = btn.getAttribute('data-product-name') || '';
+    document.getElementById('popupCurrentStock').textContent = btn.getAttribute('data-current-stock') || '';
+    document.getElementById('popupResult').style.display = 'none';
+    document.getElementById('popupType').value = 'increase';
+    document.getElementById('popupQty').value = '1';
+    document.getElementById('popupReason').value = '';
+    var apply = document.getElementById('popupApplyBtn');
+    apply.disabled = false;
+    apply.textContent = 'Apply Adjustment';
+    popup.style.display = 'flex';
+  };
+
+  window.closeStockPopup = function() {
+    popup.style.display = 'none';
+  };
+
+  document.getElementById('popupApplyBtn').addEventListener('click', function() {
+    var data = new URLSearchParams();
+    data.append('csrfmiddlewaretoken', popup.querySelector('[name=csrfmiddlewaretoken]').value);
+    data.append('adjustment_type', document.getElementById('popupType').value);
+    data.append('quantity', document.getElementById('popupQty').value);
+    data.append('reason', document.getElementById('popupReason').value);
+
+    var apply = document.getElementById('popupApplyBtn');
+    apply.disabled = true;
+    apply.textContent = 'Processing...';
+
+    fetch(activeUrl, {
+      method: 'POST',
+      body: data,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    }).then(function(r) {
+      if (r.ok) {
+        window.location.reload();
+      } else {
+        document.getElementById('popupResult').style.display = 'block';
+        document.getElementById('popupResult').innerHTML = '<div style="padding:12px 14px;background:#FEF2F2;color:#DC2626;border-radius:10px;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;border:1px solid #FECACA;">Error adjusting stock. Try again.</div>';
+        apply.disabled = false;
+        apply.textContent = 'Apply Adjustment';
+      }
+    }).catch(function() {
+      document.getElementById('popupResult').style.display = 'block';
+      document.getElementById('popupResult').innerHTML = '<div style="padding:12px 14px;background:#FEF2F2;color:#DC2626;border-radius:10px;font-size:0.85rem;font-family:\'Quicksand\',sans-serif;border:1px solid #FECACA;">Network error. Check your connection.</div>';
+      apply.disabled = false;
+      apply.textContent = 'Apply Adjustment';
+    });
+  });
+
+  popup.addEventListener('click', function(e) {
+    if (e.target === popup) closeStockPopup();
   });
 </script>
 
