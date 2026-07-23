@@ -471,58 +471,71 @@
 </style>
 
 <script>
-  document.querySelectorAll('.product-gallery').forEach(gallery => {
-    let currentIndex = 0;
-    const images = gallery.querySelectorAll('.gallery-image');
-    const dots = gallery.querySelectorAll('.dot');
+  document.querySelectorAll('.product-gallery').forEach(function(gallery) {
+    var imgs = gallery.querySelectorAll('.gallery-image');
+    var dots = gallery.querySelectorAll('.dot');
+    if (imgs.length < 2) return;
+    gallery.dataset.current = 0;
 
-    function showImage(index) {
-      images.forEach((img, i) => img.classList.toggle('hidden', i !== index));
-      dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
-      currentIndex = index;
-    }
+    var timer = setInterval(function() {
+      var cur = parseInt(gallery.dataset.current || 0);
+      cur = (cur + 1) % imgs.length;
+      gallery.dataset.current = cur;
+      for (var i = 0; i < imgs.length; i++) imgs[i].classList.toggle('hidden', i !== cur);
+      for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('active', i === cur);
+    }, 3500);
+
+    gallery.addEventListener('mouseenter', function() { clearInterval(timer); });
+    gallery.addEventListener('mouseleave', function() {
+      timer = setInterval(function() {
+        var cur = parseInt(gallery.dataset.current || 0);
+        cur = (cur + 1) % imgs.length;
+        for (var i = 0; i < imgs.length; i++) imgs[i].classList.toggle('hidden', i !== cur);
+        for (var i = 0; i < dots.length; i++) dots[i].classList.toggle('active', i === cur);
+      }, 3500);
+    });
 
     window.nextImage = function(btn) {
-      const g = btn.closest('.product-gallery');
-      const imgs = g.querySelectorAll('.gallery-image');
-      let idx = parseInt(g.dataset.current || 0);
-      idx = (idx + 1) % imgs.length;
-      g.dataset.current = idx;
-      const imgList = g.querySelectorAll('.gallery-image');
-      const dotList = g.querySelectorAll('.dot');
-      imgList.forEach((img, i) => img.classList.toggle('hidden', i !== idx));
-      dotList.forEach((dot, i) => dot.classList.toggle('active', i === idx));
+      var g = btn.closest('.product-gallery');
+      var cur = parseInt(g.dataset.current || 0);
+      var allImgs = g.querySelectorAll('.gallery-image');
+      cur = (cur + 1) % allImgs.length;
+      g.dataset.current = cur;
+      var imgs2 = g.querySelectorAll('.gallery-image');
+      var dots2 = g.querySelectorAll('.dot');
+      for (var i = 0; i < imgs2.length; i++) imgs2[i].classList.toggle('hidden', i !== cur);
+      for (var i = 0; i < dots2.length; i++) dots2[i].classList.toggle('active', i === cur);
     };
 
     window.prevImage = function(btn) {
-      const g = btn.closest('.product-gallery');
-      const imgs = g.querySelectorAll('.gallery-image');
-      let idx = parseInt(g.dataset.current || 0);
-      idx = (idx - 1 + imgs.length) % imgs.length;
-      g.dataset.current = idx;
-      const imgList = g.querySelectorAll('.gallery-image');
-      const dotList = g.querySelectorAll('.dot');
-      imgList.forEach((img, i) => img.classList.toggle('hidden', i !== idx));
-      dotList.forEach((dot, i) => dot.classList.toggle('active', i === idx));
+      var g = btn.closest('.product-gallery');
+      var allImgs = g.querySelectorAll('.gallery-image');
+      var cur = parseInt(g.dataset.current || 0);
+      cur = (cur - 1 + allImgs.length) % allImgs.length;
+      g.dataset.current = cur;
+      var imgs2 = g.querySelectorAll('.gallery-image');
+      var dots2 = g.querySelectorAll('.dot');
+      for (var i = 0; i < imgs2.length; i++) imgs2[i].classList.toggle('hidden', i !== cur);
+      for (var i = 0; i < dots2.length; i++) dots2[i].classList.toggle('active', i === cur);
     };
 
     window.goToImage = function(dot, idx) {
-      const g = dot.closest('.product-gallery');
+      var g = dot.closest('.product-gallery');
       g.dataset.current = idx;
-      const imgList = g.querySelectorAll('.gallery-image');
-      const dotList = g.querySelectorAll('.dot');
-      imgList.forEach((img, i) => img.classList.toggle('hidden', i !== idx));
-      dotList.forEach((d, i) => d.classList.toggle('active', i === idx));
+      var imgs2 = g.querySelectorAll('.gallery-image');
+      var dots2 = g.querySelectorAll('.dot');
+      for (var i = 0; i < imgs2.length; i++) imgs2[i].classList.toggle('hidden', i !== idx);
+      for (var i = 0; i < dots2.length; i++) dots2[i].classList.toggle('active', i === idx);
     };
 
-    let startX = 0;
-    gallery.addEventListener('touchstart', e => startX = e.touches[0].clientX);
-    gallery.addEventListener('touchend', e => {
-      const diff = startX - e.changedTouches[0].clientX;
+    var startX = 0;
+    gallery.addEventListener('touchstart', function(e) { startX = e.touches[0].clientX; }, { passive: true });
+    gallery.addEventListener('touchend', function(e) {
+      var diff = startX - e.changedTouches[0].clientX;
       if (Math.abs(diff) > 50) {
         diff > 0
-          ? nextImage(gallery.querySelector('.next-btn'))
-          : prevImage(gallery.querySelector('.prev-btn'));
+          ? window.nextImage(gallery.querySelector('.next-btn'))
+          : window.prevImage(gallery.querySelector('.prev-btn'));
       }
     });
   });
