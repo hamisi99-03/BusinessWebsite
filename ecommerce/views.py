@@ -207,18 +207,83 @@ def debts_list_view(request):
 
 
 @login_required
+@login_required
 def profile_view(request):
+    try:
+        customer = Customer.objects.get(user=request.user)
+    except Customer.DoesNotExist:
+        customer = None
+
+    # Calculate stats
+    if customer:
+        orders = Order.objects.filter(customer=customer)
+        total_orders = orders.count()
+        total_spent = sum(o.get_total_amount() for o in orders)
+        outstanding = sum(o.get_outstanding_balance() for o in orders)
+    else:
+        total_orders = 0
+        total_spent = 0
+        outstanding = 0
+
     if request.method == 'POST':
-        try:
-            customer = request.user.customer
-            if 'profile_picture' in request.FILES:
-                customer.profile_picture = request.FILES['profile_picture']
+        action = request.POST.get('action')
+
+        if action == 'update_profile':
+            user = request.user
+            user.first_name = request.POST.get('first_name', '')
+            user.last_name = request.POST.get('last_name', '')
+            user.email = request.POST.get('email', '')
+            new_username = request.POST.get('username', '').strip()
+            if new_username and new_username != user.username:
+                from django.contrib.auth.models import User
+                if not User.objects.filter(
+                    username=new_username
+                ).exclude(pk=user.pk).exists():
+                    user.username = new_username
+                else:
+                    messages.error(request, 'Username already taken.')
+                    return redirect('profile_page')
+            user.save()
+
+            if customer:
+                customer.phone_number = request.POST.get(
+                    'phone_number', ''
+                )
+                customer.address = request.POST.get('address', '')
                 customer.save()
-                messages.success(request, 'Profile picture updated.')
-        except Customer.DoesNotExist:
-            messages.error(request, 'Customer profile not found.')
-        return redirect('profile_page')
-    return render(request, 'ecommerce/profile.html', {'user': request.user})
+
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('profile_page')
+
+        elif action == 'change_password':
+            from django.contrib.auth import update_session_auth_hash
+            current = request.POST.get('current_password')
+            new_pass = request.POST.get('new_password')
+            confirm = request.POST.get('confirm_password')
+
+            if not request.user.check_password(current):
+                messages.error(request, 'Current password is incorrect.')
+            elif new_pass != confirm:
+                messages.error(request, 'New passwords do not match.')
+            elif len(new_pass) < 6:
+                messages.error(
+                    request, 'Password must be at least 6 characters.'
+                )
+            else:
+                request.user.set_password(new_pass)
+                request.user.save()
+                update_session_auth_hash(request, request.user)
+                messages.success(
+                    request, 'Password changed successfully!'
+                )
+            return redirect('profile_page')
+
+    return render(request, 'ecommerce/profile.html', {
+        'customer': customer,
+        'total_orders': total_orders,
+        'total_spent': total_spent,
+        'outstanding': outstanding,
+    })
 
 @login_required
 def change_password_view(request):

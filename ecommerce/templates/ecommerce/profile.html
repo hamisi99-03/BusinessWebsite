@@ -1,92 +1,309 @@
 {% extends "ecommerce/base.html" %}
-
-{% block title %}Profile{% endblock %}
+{% block title %}My Profile — BizStore{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm rounded-3 mb-4 bg-light">
-  <div class="card-body p-4">
-    <div class="row align-items-center">
-      <div class="col-auto">
-        {% if user.customer.profile_picture %}
-          <img src="{{ user.customer.profile_picture.url }}" class="rounded-circle" style="width:100px;height:100px;object-fit:cover;">
-        {% else %}
-          <i class="bi bi-person-circle" style="font-size: 5rem; color: #6c757d;"></i>
-        {% endif %}
-        <form method="post" enctype="multipart/form-data" class="mt-2">
-          {% csrf_token %}
-          <label class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-camera"></i> Change Photo
-            <input type="file" name="profile_picture" accept="image/*" class="d-none" onchange="this.form.submit()">
-          </label>
-        </form>
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>My Profile</h1>
+    <p>Manage your account details</p>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- LEFT — Profile Card -->
+  <div class="col-lg-4">
+
+    <!-- Avatar Card -->
+    <div class="card mb-4 text-center p-4">
+      <div style="width:96px;height:96px;border-radius:50%;
+                  background:linear-gradient(135deg,#E07A5F,#3D405B);
+                  display:flex;align-items:center;justify-content:center;
+                  margin:0 auto 1rem;font-size:2.5rem;font-weight:800;
+                  color:white;font-family:'Quicksand',sans-serif;">
+        {{ user.username|first|upper }}
       </div>
-      <div class="col">
-        <h2 class="mb-1 fw-bold">{{ user.get_full_name|default:user.username }}</h2>
-        <p class="mb-1 text-muted">@{{ user.username }}</p>
-        {% if user.date_joined %}
-        <small class="text-muted">Member since {{ user.date_joined|date:"M Y" }}</small>
-        {% endif %}
+      <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:4px;">
+        {{ user.get_full_name|default:user.username }}
+      </h2>
+      <div style="color:var(--muted);font-size:0.875rem;margin-bottom:1rem;">
+        @{{ user.username }}
+      </div>
+      {% if user.is_staff %}
+      <span class="badge-status badge-shipped"
+            style="display:inline-block;">
+        <i class="bi bi-shield-check me-1"></i> Admin
+      </span>
+      {% else %}
+      <span class="badge-status badge-delivered"
+            style="display:inline-block;">
+        <i class="bi bi-person-check me-1"></i> Customer
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card p-0">
+      <div class="card-header">
+        <i class="bi bi-bar-chart me-2"></i>My Stats
+      </div>
+      <div class="card-body p-0">
+        <div style="padding:1rem 1.25rem;
+                    border-bottom:1px solid var(--border);
+                    display:flex;justify-content:space-between;
+                    align-items:center;">
+          <span style="font-size:0.875rem;color:var(--muted);">
+            Total Orders
+          </span>
+          <span style="font-weight:700;color:var(--text);">
+            {{ total_orders|default:"0" }}
+          </span>
+        </div>
+        <div style="padding:1rem 1.25rem;
+                    border-bottom:1px solid var(--border);
+                    display:flex;justify-content:space-between;
+                    align-items:center;">
+          <span style="font-size:0.875rem;color:var(--muted);">
+            Total Spent
+          </span>
+          <span style="font-weight:700;color:var(--primary);">
+            KSh {{ total_spent|default:"0" }}
+          </span>
+        </div>
+        <div style="padding:1rem 1.25rem;
+                    border-bottom:1px solid var(--border);
+                    display:flex;justify-content:space-between;
+                    align-items:center;">
+          <span style="font-size:0.875rem;color:var(--muted);">
+            Outstanding
+          </span>
+          <span style="font-weight:700;color:#EF4444;">
+            KSh {{ outstanding|default:"0" }}
+          </span>
+        </div>
+        <div style="padding:1rem 1.25rem;
+                    display:flex;justify-content:space-between;
+                    align-items:center;">
+          <span style="font-size:0.875rem;color:var(--muted);">
+            Member Since
+          </span>
+          <span style="font-weight:700;color:var(--text);">
+            {{ user.date_joined|date:"M Y" }}
+          </span>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<div class="card shadow-sm rounded-3 mb-4">
-  <div class="card-header bg-white">
-    <h5 class="mb-0 fw-bold">Account Details</h5>
-  </div>
-  <div class="card-body p-0">
-    <table class="table table-borderless mb-0">
-      <tbody>
-        <tr>
-          <td class="text-muted small text-uppercase fw-medium px-4" style="width: 30%;">Username</td>
-          <td class="px-4">{{ user.username }}</td>
-        </tr>
-        <tr>
-          <td class="text-muted small text-uppercase fw-medium px-4">Email</td>
-          <td class="px-4">{{ user.email|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="text-muted small text-uppercase fw-medium px-4">Full Name</td>
-          <td class="px-4">{{ user.get_full_name|default:"—" }}</td>
-        </tr>
-        {% if user.customer %}
-        <tr>
-          <td class="text-muted small text-uppercase fw-medium px-4">Phone</td>
-          <td class="px-4">{{ user.customer.phone_number|default:"—" }}</td>
-        </tr>
-        <tr>
-          <td class="text-muted small text-uppercase fw-medium px-4">Address</td>
-          <td class="px-4">{{ user.customer.address|default:"—" }}</td>
-        </tr>
-        {% endif %}
-      </tbody>
-    </table>
-  </div>
-</div>
+  <!-- RIGHT — Account Details -->
+  <div class="col-lg-8">
 
-<div class="card shadow-sm rounded-3">
-  <div class="card-header bg-white">
-    <h5 class="mb-0 fw-bold">Security</h5>
-  </div>
-  <div class="card-body p-0">
-    <table class="table table-borderless mb-0">
-      <tbody>
-        <tr>
-          <td class="text-muted small text-uppercase fw-medium px-4" style="width: 30%;">Password</td>
-          <td class="px-4">
-            <span class="text-muted">••••••••</span>
-            <a href="{% url 'change_password' %}" class="ms-2">Change Password</a>
-          </td>
-        </tr>
-        <tr>
-          <td class="text-muted small text-uppercase fw-medium px-4">Account Status</td>
-          <td class="px-4">
-            <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill">Active</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- Personal Info -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person me-2"></i>Personal Information</span>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST" action="{% url 'profile_page' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_profile">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">First Name</label>
+              <input type="text" name="first_name"
+                     class="form-control"
+                     value="{{ user.first_name }}"
+                     placeholder="Your first name">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Last Name</label>
+              <input type="text" name="last_name"
+                     class="form-control"
+                     value="{{ user.last_name }}"
+                     placeholder="Your last name">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Username</label>
+              <div class="input-group">
+                <span class="input-group-text"
+                      style="background:#F9FAFB;border:1px solid var(--border);
+                             border-right:none;border-radius:8px 0 0 8px;
+                             color:var(--muted);">
+                  <i class="bi bi-at"></i>
+                </span>
+                <input type="text" name="username"
+                       class="form-control"
+                       value="{{ user.username }}"
+                       style="border-radius:0 8px 8px 0;"
+                       required>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Email</label>
+              <div class="input-group">
+                <span class="input-group-text"
+                      style="background:#F9FAFB;border:1px solid var(--border);
+                             border-right:none;border-radius:8px 0 0 8px;
+                             color:var(--muted);">
+                  <i class="bi bi-envelope"></i>
+                </span>
+                <input type="email" name="email"
+                       class="form-control"
+                       value="{{ user.email }}"
+                       style="border-radius:0 8px 8px 0;"
+                       placeholder="your@email.com">
+              </div>
+            </div>
+            {% if customer %}
+            <div class="col-md-6">
+              <label class="form-label">Phone Number</label>
+              <div class="input-group">
+                <span class="input-group-text"
+                      style="background:#F9FAFB;border:1px solid var(--border);
+                             border-right:none;border-radius:8px 0 0 8px;
+                             color:var(--muted);">
+                  <i class="bi bi-phone"></i>
+                </span>
+                <input type="text" name="phone_number"
+                       class="form-control"
+                       value="{{ customer.phone_number }}"
+                       style="border-radius:0 8px 8px 0;"
+                       placeholder="+254 700 000 000">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Address</label>
+              <div class="input-group">
+                <span class="input-group-text"
+                      style="background:#F9FAFB;border:1px solid var(--border);
+                             border-right:none;border-radius:8px 0 0 8px;
+                             color:var(--muted);">
+                  <i class="bi bi-geo-alt"></i>
+                </span>
+                <input type="text" name="address"
+                       class="form-control"
+                       value="{{ customer.address }}"
+                       style="border-radius:0 8px 8px 0;"
+                       placeholder="Your address">
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg me-1"></i> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-lock me-2"></i>Change Password
+      </div>
+      <div class="card-body p-4">
+        <form method="POST" action="{% url 'profile_page' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="change_password">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Current Password</label>
+              <input type="password" name="current_password"
+                     class="form-control"
+                     placeholder="Enter current password">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">New Password</label>
+              <input type="password" name="new_password"
+                     class="form-control"
+                     placeholder="Enter new password">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" name="confirm_password"
+                     class="form-control"
+                     placeholder="Repeat new password">
+            </div>
+          </div>
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-lock me-1"></i> Update Password
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="row g-3">
+      <div class="col-md-4">
+        <a href="{% url 'orders_list' %}"
+           class="card p-3 text-decoration-none d-flex flex-row
+                  align-items:center gap-3"
+           style="transition:all 0.2s ease;"
+           onmouseover="this.style.transform='translateY(-3px)';"
+           onmouseout="this.style.transform='translateY(0)';">
+          <div style="width:44px;height:44px;border-radius:12px;
+                      background:#EEF2FF;display:flex;align-items:center;
+                      justify-content:center;flex-shrink:0;">
+            <i class="bi bi-receipt" style="color:#4F46E5;"></i>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:0.875rem;
+                        color:var(--text);">My Orders</div>
+            <div style="font-size:0.75rem;color:var(--muted);">
+              View history
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="{% url 'cart_view' %}"
+           class="card p-3 text-decoration-none d-flex flex-row
+                  align-items:center gap-3"
+           style="transition:all 0.2s ease;"
+           onmouseover="this.style.transform='translateY(-3px)';"
+           onmouseout="this.style.transform='translateY(0)';">
+          <div style="width:44px;height:44px;border-radius:12px;
+                      background:#D1FAE5;display:flex;align-items:center;
+                      justify-content:center;flex-shrink:0;">
+            <i class="bi bi-cart3" style="color:#10B981;"></i>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:0.875rem;
+                        color:var(--text);">My Cart</div>
+            <div style="font-size:0.75rem;color:var(--muted);">
+              View items
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="{% url 'debts_list' %}"
+           class="card p-3 text-decoration-none d-flex flex-row
+                  align-items:center gap-3"
+           style="transition:all 0.2s ease;"
+           onmouseover="this.style.transform='translateY(-3px)';"
+           onmouseout="this.style.transform='translateY(0)';">
+          <div style="width:44px;height:44px;border-radius:12px;
+                      background:#FEF3C7;display:flex;align-items:center;
+                      justify-content:center;flex-shrink:0;">
+            <i class="bi bi-wallet2" style="color:#F59E0B;"></i>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:0.875rem;
+                        color:var(--text);">My Debts</div>
+            <div style="font-size:0.75rem;color:var(--muted);">
+              Outstanding balance
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
