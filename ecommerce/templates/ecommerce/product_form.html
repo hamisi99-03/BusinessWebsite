@@ -78,7 +78,9 @@
                {% for image in product.images.all %}
                <div class="col-4 col-md-3 position-relative">
                  <div style="border-radius:10px;overflow:hidden;border:1px solid #E5E7EB;">
+                   {% if image.image %}
                    <img src="{{ image.image.url }}" style="width:100%;aspect-ratio:1;object-fit:cover;">
+                   {% endif %}
                  </div>
                  <button type="button" onclick="toggleDelete(this, {{ image.id }})" class="btn btn-sm btn-danger position-absolute delete-btn" style="top:6px;right:6px;padding:4px 8px;border-radius:6px;font-size:0.7rem;cursor:pointer;" title="Mark for deletion" data-image-id="{{ image.id }}">
                    <i class="bi bi-trash"></i>

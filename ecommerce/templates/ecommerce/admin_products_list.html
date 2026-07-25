@@ -98,7 +98,9 @@
       <div class="product-gallery" data-product-id="{{ product.id }}">
         <div class="gallery-container">
           {% for image in product.images.all %}
+          {% if image.image %}
           <img src="{{ image.image.url }}" alt="{{ product.name }}" class="gallery-image {% if not forloop.first %}hidden{% endif %}">
+          {% endif %}
           {% endfor %}
           {% if not product.images.all %}
           <div class="placeholder-image" style="aspect-ratio:1;background:#F3F4F6;display:flex;align-items:center;justify-content:center;">

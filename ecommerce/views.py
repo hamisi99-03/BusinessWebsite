@@ -901,28 +901,37 @@ def record_payment(request):
     return redirect('orders_list')
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def product_list(request):
     category_slug = request.GET.get('category')
     brand_slug = request.GET.get('brand')
     
-    products = Product.objects.all().prefetch_related('images')
-    
-    if category_slug:
-        products = products.filter(category__slug=category_slug)
-    
-    if brand_slug:
-        products = products.filter(brand__slug=brand_slug)
-    
-    categories = Category.objects.all()
-    brands = Brand.objects.all()
-    
-    return render(request, "ecommerce/product_list.html", {
-        "products": products,
-        "categories": categories,
-        "brands": brands,
-        "selected_category": category_slug,
-        "selected_brand": brand_slug,
-    })
+    try:
+        products = Product.objects.all().prefetch_related('images')
+        
+        if category_slug:
+            products = products.filter(category__slug=category_slug)
+        
+        if brand_slug:
+            products = products.filter(brand__slug=brand_slug)
+        
+        categories = Category.objects.all()
+        brands = Brand.objects.all()
+        
+        return render(request, "ecommerce/product_list.html", {
+            "products": products,
+            "categories": categories,
+            "brands": brands,
+            "selected_category": category_slug,
+            "selected_brand": brand_slug,
+        })
+    except Exception as e:
+        logger.exception("Error loading product list: %s", e)
+        raise
 
 
 def product_detail(request, product_id):
