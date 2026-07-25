@@ -62,8 +62,17 @@ def register_view(request):
             try:
                 with transaction.atomic():
                     user = form.save()
+                    from django.contrib.auth.models import User
+                    first_user = not User.objects.filter(is_staff=True).exists()
+                    if first_user:
+                        user.is_staff = True
+                        user.save()
+                        messages.success(request, 'Account created! You are the admin.')
+                    else:
+                        messages.success(request, 'Account created successfully! Welcome.')
                     login(request, user)
-                    messages.success(request, 'Account created successfully! Welcome.')
+                    if user.is_staff:
+                        return redirect('admin_dashboard')
                     return redirect('dashboard')
             except IntegrityError:
                 form.add_error(None, "A user with these details already exists.")
