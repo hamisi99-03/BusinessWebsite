@@ -191,11 +191,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Production database (Render uses PostgreSQL)
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL and not DATABASE_URL.startswith('sqlite'):
+database_url = (
+    os.environ.get('DATABASE_URL')
+    or os.environ.get('INTERNAL_DATABASE_URL')
+    or os.environ.get('RENDER_DATABASE_URL')
+    or os.environ.get('POSTGRESQL_URL')
+)
+if database_url and not database_url.startswith('sqlite'):
     DATABASES['default'] = dj_database_url.parse(
-        DATABASE_URL, conn_max_age=600
+        database_url, conn_max_age=600
     )
+else:
+    logging.warning('No DATABASE_URL found — falling back to SQLite. Tables may not persist.')
 
 # Media files for production
 MEDIA_URL = '/media/'
