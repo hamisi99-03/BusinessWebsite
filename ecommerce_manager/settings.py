@@ -10,8 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +24,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-puotfrycxcw+&6aj_6l8f3=it$=f!y22sfigl#idezy#3p(tlk'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-dev-key-change-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '10.63.232.71']
+ALLOWED_HOSTS = os.environ.get(
+    'ALLOWED_HOSTS', '127.0.0.1,localhost,10.63.232.71'
+).split(',')
 
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000',
     'http://localhost:8000',]
