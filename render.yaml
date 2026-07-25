@@ -3,7 +3,7 @@ services:
     name: h-and-i-store
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn ecommerce_manager.wsgi:application"
+    startCommand: "./start.sh"
     envVars:
       - key: SECRET_KEY
         generateValue: true
@@ -11,3 +11,8 @@ services:
         value: False
       - key: PYTHON_VERSION
         value: 3.11.1
+
+databases:
+  - name: handistore
+    databaseName: handistore
+    user: handistore

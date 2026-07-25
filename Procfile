@@ -1,1 +1,1 @@
-web: gunicorn ecommerce_manager.wsgi:application
+web: ./start.sh
