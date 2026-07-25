@@ -9,30 +9,32 @@ https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
 
 import os
 import sys
+import subprocess
 import logging
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecommerce_manager.settings')
 
-# Run migrations before handling any requests
 import django
+from django.conf import settings
+
 django.setup()
 
-from django.core.management import call_command
-from django.db import connection
+db = settings.DATABASES['default']
+logging.warning('Database engine: %s', db['ENGINE'])
 
-try:
-    # Check if the database needs migrations by trying a simple query
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT 1")
-except Exception:
-    pass  # Database might not exist yet, let migrate handle it
-
-try:
-    call_command('migrate', '--no-input', verbosity=1)
-    logging.warning('Migrations completed successfully on startup')
-except Exception as e:
-    logging.error('Migration failed on startup: %s', e)
-    raise
+# Run migrations via subprocess — most reliable method
+logging.warning('Running migrations...')
+result = subprocess.run(
+    [sys.executable, 'manage.py', 'migrate', '--no-input'],
+    capture_output=True, text=True, cwd=settings.BASE_DIR
+)
+logging.warning('Migration stdout: %s', result.stdout)
+if result.stderr:
+    logging.warning('Migration stderr: %s', result.stderr)
+if result.returncode != 0:
+    logging.error('Migration failed with code %d', result.returncode)
+    raise RuntimeError(f'Migration failed: {result.stderr}')
+logging.warning('Migrations completed successfully')
 
 from django.core.wsgi import get_wsgi_application
 
