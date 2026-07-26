@@ -25,10 +25,42 @@
     <p>Placed on {{ order.order_date|date:"M d, Y" }} at
        {{ order.order_date|time:"g:i A" }}</p>
   </div>
-  <span class="badge-status badge-{{ order.status|lower }}"
-        style="font-size:0.875rem;padding:0.5em 1.25em;">
-    {{ order.status|title }}
-  </span>
+  <div class="d-flex gap-2 align-items-center flex-wrap">
+    {% if order.payment_type == 'credit' %}
+    <span class="badge-status badge-{{ order.payment_status }}"
+          style="font-size:0.875rem;padding:0.5em 1.25em;">
+      {% if order.payment_status == 'pending_approval' %}
+        <i class="bi bi-hourglass-split me-1"></i>Pending Approval
+      {% elif order.payment_status == 'approved' %}
+        <i class="bi bi-check-circle me-1"></i>Approved
+      {% elif order.payment_status == 'paid' %}
+        <i class="bi bi-check-circle-fill me-1"></i>Paid
+      {% endif %}
+    </span>
+    {% endif %}
+    <span class="badge-status badge-{{ order.status|lower }}"
+          style="font-size:0.875rem;padding:0.5em 1.25em;">
+      {% if order.status == 'pending_payment' %}
+        <i class="bi bi-clock me-1"></i>Awaiting Payment
+      {% elif order.status == 'pending_approval' %}
+        <i class="bi bi-hourglass-split me-1"></i>Pending Approval
+      {% elif order.status == 'pending' %}
+        <i class="bi bi-box me-1"></i>Pending Shipment
+      {% elif order.status == 'processing' %}
+        <i class="bi bi-gear me-1"></i>Processing
+      {% elif order.status == 'shipped' %}
+        <i class="bi bi-truck me-1"></i>Shipped
+      {% elif order.status == 'delivered' %}
+        <i class="bi bi-check-circle-fill me-1"></i>Delivered
+      {% elif order.status == 'rejected' %}
+        <i class="bi bi-x-circle me-1"></i>Rejected
+      {% elif order.status == 'cancelled' %}
+        <i class="bi bi-x-circle me-1"></i>Cancelled
+      {% else %}
+        {{ order.status|title }}
+      {% endif %}
+    </span>
+  </div>
 </div>
 
 <div class="row g-4">

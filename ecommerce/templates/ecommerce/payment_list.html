@@ -198,11 +198,18 @@
             </td>
             <td>
               <div class="d-flex gap-1">
+                {% if payment.order.get_outstanding_balance > 0 %}
                 <a href="{% url 'edit_payment' payment.id %}"
                    class="btn btn-sm btn-outline-primary"
                    title="Edit Payment">
                   <i class="bi bi-pencil"></i>
                 </a>
+                {% else %}
+                <span class="badge-status badge-delivered"
+                      style="font-size:0.7rem;">
+                  <i class="bi bi-check-circle-fill me-1"></i>Fully Paid
+                </span>
+                {% endif %}
                 <a href="{% url 'delete_payment' payment.id %}"
                    class="btn btn-sm btn-outline-danger"
                    title="Delete Payment"

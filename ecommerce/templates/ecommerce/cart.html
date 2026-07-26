@@ -133,14 +133,169 @@
           </span>
         </div>
 
-        <form method="POST" action="{% url 'checkout_from_cart' %}">
+        <form method="POST" action="{% url 'checkout_from_cart' %}"
+              id="checkoutForm">
           {% csrf_token %}
+
+          <div style="margin-bottom:1rem;">
+            <label style="font-size:0.8rem;font-weight:700;
+                          color:var(--muted);text-transform:uppercase;
+                          letter-spacing:0.06em;display:block;
+                          margin-bottom:0.75rem;">
+              Payment Method
+            </label>
+
+            <!-- Cash -->
+            <label style="display:flex;align-items:center;gap:12px;
+                          padding:0.875rem;border-radius:12px;
+                          border:2px solid var(--border);cursor:pointer;
+                          margin-bottom:8px;transition:all 0.15s ease;"
+                   id="cashLabel">
+              <input type="radio" name="payment_type" value="cash"
+                     checked onchange="updatePaymentUI()"
+                     style="accent-color:var(--primary);width:18px;height:18px;">
+              <div style="width:36px;height:36px;border-radius:10px;
+                          background:#FEF3C7;display:flex;align-items:center;
+                          justify-content:center;flex-shrink:0;">
+                <i class="bi bi-cash-coin" style="color:#F59E0B;"></i>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:0.875rem;">Cash</div>
+                <div style="font-size:0.75rem;color:var(--muted);">
+                  Pay cash, admin confirms receipt
+                </div>
+              </div>
+            </label>
+
+            <!-- M-Pesa -->
+            <label style="display:flex;align-items:center;gap:12px;
+                          padding:0.875rem;border-radius:12px;
+                          border:2px solid var(--border);cursor:pointer;
+                          margin-bottom:8px;transition:all 0.15s ease;"
+                   id="mpesaLabel">
+              <input type="radio" name="payment_type" value="mpesa"
+                     onchange="updatePaymentUI()"
+                     style="accent-color:var(--primary);width:18px;height:18px;">
+              <div style="width:36px;height:36px;border-radius:10px;
+                          background:#D1FAE5;display:flex;align-items:center;
+                          justify-content:center;flex-shrink:0;">
+                <i class="bi bi-phone" style="color:#10B981;"></i>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:0.875rem;">M-Pesa</div>
+                <div style="font-size:0.75rem;color:var(--muted);">
+                  Send to till/paybill, admin confirms
+                </div>
+              </div>
+            </label>
+
+            <!-- M-Pesa code input -->
+            <div id="mpesaCodeBox"
+                 style="display:none;margin-bottom:8px;padding:0 0.5rem;">
+              <input type="text" name="mpesa_code"
+                     class="form-control" id="mpesaCode"
+                     placeholder="Enter M-Pesa transaction code e.g. QGH7YTR456"
+                     style="border-radius:10px;">
+              <div style="font-size:0.75rem;color:var(--muted);margin-top:4px;">
+                <i class="bi bi-info-circle me-1"></i>
+                Optional but helps admin confirm faster
+              </div>
+            </div>
+
+            <!-- Credit -->
+            <label style="display:flex;align-items:center;gap:12px;
+                          padding:0.875rem;border-radius:12px;
+                          border:2px solid var(--border);cursor:pointer;
+                          transition:all 0.15s ease;"
+                   id="creditLabel">
+              <input type="radio" name="payment_type" value="credit"
+                     onchange="updatePaymentUI()"
+                     style="accent-color:var(--primary);width:18px;height:18px;">
+              <div style="width:36px;height:36px;border-radius:10px;
+                          background:#EEF2FF;display:flex;align-items:center;
+                          justify-content:center;flex-shrink:0;">
+                <i class="bi bi-clock-history" style="color:#4F46E5;"></i>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:0.875rem;">Credit</div>
+                <div style="font-size:0.75rem;color:var(--muted);">
+                  Request credit — requires admin approval
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Payment notice -->
+          <div id="paymentNotice"
+               style="background:#FEF3C7;border-radius:10px;
+                      padding:0.75rem;margin-bottom:1rem;
+                      font-size:0.8rem;color:#92400E;">
+            <i class="bi bi-info-circle me-1"></i>
+            <span id="noticeText">
+              Your order will be confirmed once admin verifies payment.
+            </span>
+          </div>
+
           <button type="submit" class="btn btn-primary w-100"
-                  style="padding:0.75rem;font-size:1rem;">
+                  id="checkoutBtn"
+                  style="padding:0.85rem;font-size:1rem;">
             <i class="bi bi-bag-check me-2"></i>
-            Place Order
+            <span id="btnText">Place Order</span>
           </button>
         </form>
+
+        <script>
+        function updatePaymentUI() {
+          const selected = document.querySelector(
+            'input[name="payment_type"]:checked'
+          ).value;
+          const mpesaBox = document.getElementById('mpesaCodeBox');
+          const noticeText = document.getElementById('noticeText');
+          const btnText = document.getElementById('btnText');
+          const notice = document.getElementById('paymentNotice');
+
+          const labels = {
+            cash: document.getElementById('cashLabel'),
+            mpesa: document.getElementById('mpesaLabel'),
+            credit: document.getElementById('creditLabel'),
+          };
+
+          Object.keys(labels).forEach(key => {
+            labels[key].style.borderColor = key === selected
+              ? 'var(--primary)' : 'var(--border)';
+            labels[key].style.background = key === selected
+              ? 'rgba(224,122,95,0.05)' : 'white';
+          });
+
+          if (selected === 'mpesa') {
+            mpesaBox.style.display = 'block';
+            noticeText.textContent =
+              'Send payment to our M-Pesa number, then place order. ' +
+              'Admin will confirm receipt.';
+            notice.style.background = '#D1FAE5';
+            notice.style.color = '#065F46';
+            btnText.textContent = 'Place Order';
+          } else if (selected === 'credit') {
+            mpesaBox.style.display = 'none';
+            noticeText.textContent =
+              'Credit request will be reviewed by admin before ' +
+              'your order is processed.';
+            notice.style.background = '#EEF2FF';
+            notice.style.color = '#3730A3';
+            btnText.textContent = 'Submit Credit Request';
+          } else {
+            mpesaBox.style.display = 'none';
+            noticeText.textContent =
+              'Your order will be confirmed once admin verifies ' +
+              'cash payment.';
+            notice.style.background = '#FEF3C7';
+            notice.style.color = '#92400E';
+            btnText.textContent = 'Place Order';
+          }
+        }
+        // Init on load
+        updatePaymentUI();
+        </script>
 
         <a href="{% url 'product_list' %}"
            class="btn btn-outline-secondary w-100 mt-2">

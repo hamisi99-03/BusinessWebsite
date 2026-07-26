@@ -76,11 +76,57 @@ class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     order_date = models.DateTimeField(auto_now_add=True)
     shipped_date = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=50, choices=[
+
+    STATUS_CHOICES = [
+        ('pending_payment', 'Pending Payment'),
+        ('pending_approval', 'Pending Approval'),
         ('pending', 'Pending'),
+        ('processing', 'Processing'),
         ('shipped', 'Shipped'),
         ('delivered', 'Delivered'),
-        ('canceled', 'Canceled')], default='pending')
+        ('cancelled', 'Cancelled'),
+        ('rejected', 'Rejected'),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ('pending_approval', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('paid', 'Paid'),
+    ]
+
+    PAYMENT_TYPE_CHOICES = [
+        ('cash', 'Cash'),
+        ('mpesa', 'M-Pesa'),
+        ('credit', 'Credit'),
+    ]
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending_payment'
+    )
+    payment_type = models.CharField(
+        max_length=10,
+        choices=PAYMENT_TYPE_CHOICES,
+        default='cash'
+    )
+    mpesa_code = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text='M-Pesa transaction code if applicable'
+    )
+    admin_note = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Admin note for approval/rejection'
+    )
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='pending_approval'
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Order {self.id} by {self.customer.user.username}"
@@ -134,16 +180,27 @@ class OrderItem(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Restore old stock then deduct new quantity
-        self.product.stock += old_quantity
-        self.product.stock -= self.quantity
-        if self.product.stock < 0:
-            self.product.stock = 0
-        self.product.save()
+        # Don't deduct stock for credit orders still pending approval
+        is_credit_pending = (
+            self.order.payment_type == 'credit' and
+            self.order.status == 'pending_approval'
+        )
+        if not is_credit_pending:
+            self.product.stock += old_quantity
+            self.product.stock -= self.quantity
+            if self.product.stock < 0:
+                self.product.stock = 0
+            self.product.save()
 
     def delete(self, *args, **kwargs):
-        self.product.stock += self.quantity
-        self.product.save()
+        # Don't restore stock for credit orders that never had it deducted
+        is_credit_pending = (
+            self.order.payment_type == 'credit' and
+            self.order.status == 'pending_approval'
+        )
+        if not is_credit_pending:
+            self.product.stock += self.quantity
+            self.product.save()
         super().delete(*args, **kwargs)
 
 
@@ -212,6 +269,8 @@ class Debt(models.Model):
                 if not self.paid_at:
                     from django.utils import timezone
                     self.paid_at = timezone.now().date()
+                self.order.payment_status = 'paid'
+                self.order.save()
         else:
             self.is_paid = False
             self.paid_at = None
