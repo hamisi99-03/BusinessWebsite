@@ -1199,20 +1199,10 @@ def approve_order(request, order_id):
         if action == 'approve':
             if order.payment_type == 'credit':
                 order.status = 'pending'
-                order.payment_status = 'paid'
+                order.payment_status = 'approved'
                 order.admin_note = note
                 order.confirmed_at = timezone.now()
                 order.save()
-                # Create a payment record for the credit amount (skip if already fully paid)
-                if order.get_total_paid() < order.get_total_amount():
-                    Payment.objects.create(
-                        order=order,
-                        amount=order.get_total_amount(),
-                        payment_method='credit',
-                        status='completed',
-                        created_by=request.user,
-                        notes=note or 'Credit approved by admin'
-                    )
                 # Deduct stock for credit orders now that approved
                 for item in order.items.all():
                     if item.quantity <= item.product.stock:
@@ -1232,7 +1222,7 @@ def approve_order(request, order_id):
                 )
                 messages.success(
                     request,
-                    f"Credit order #{order.id} approved and marked as paid."
+                    f"Credit order #{order.id} approved. Add payments to complete."
                 )
             else:
                 # Cash/M-Pesa: confirm payment received

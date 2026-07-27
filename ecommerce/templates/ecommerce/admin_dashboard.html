@@ -255,12 +255,17 @@
              <td>{{ order.get_payment_type_display }}</td>
                 <td>
                  <div class="d-flex flex-column gap-1">
-                   {% if order.payment_status == 'paid' %}
-                   <span class="badge-status badge-paid"
-                         style="display:inline-block;white-space:nowrap;">
-                     <i class="bi bi-check-circle-fill me-1"></i>Paid
-                   </span>
-                   {% endif %}
+                    {% if order.payment_status == 'approved' %}
+                    <span class="badge-status badge-approved"
+                          style="display:inline-block;white-space:nowrap;">
+                      <i class="bi bi-check-circle me-1"></i>Approved
+                    </span>
+                    {% elif order.payment_status == 'paid' %}
+                    <span class="badge-status badge-paid"
+                          style="display:inline-block;white-space:nowrap;">
+                      <i class="bi bi-check-circle-fill me-1"></i>Paid
+                    </span>
+                    {% endif %}
 
                   <!-- Fulfillment Status -->
                   <span class="badge-status badge-{{ order.status }}"
@@ -335,6 +340,13 @@
                            title="Confirm Payment">
                      <i class="bi bi-check-circle"></i> Approve
                    </button>
+                   {% elif order.payment_status == 'approved' and order.payment_type == 'credit' %}
+                   <!-- Credit approved, awaiting payments -->
+                   <a href="{% url 'add_payment' order.id %}"
+                      class="btn btn-sm btn-outline-success"
+                      title="Add Payment">
+                     <i class="bi bi-plus-circle"></i> Add Payment
+                   </a>
                    {% endif %}
                    <a href="{% url 'admin_update_order' order.id %}"
                       class="btn btn-sm btn-outline-secondary"

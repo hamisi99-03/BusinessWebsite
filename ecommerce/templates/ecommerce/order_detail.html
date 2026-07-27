@@ -26,7 +26,12 @@
        {{ order.order_date|time:"g:i A" }}</p>
   </div>
   <div class="d-flex gap-2 align-items-center flex-wrap">
-    {% if order.payment_status == 'paid' %}
+    {% if order.payment_status == 'approved' %}
+    <span class="badge-status badge-approved"
+          style="font-size:0.875rem;padding:0.5em 1.25em;">
+      <i class="bi bi-check-circle me-1"></i>Approved
+    </span>
+    {% elif order.payment_status == 'paid' %}
     <span class="badge-status badge-paid"
           style="font-size:0.875rem;padding:0.5em 1.25em;">
       <i class="bi bi-check-circle-fill me-1"></i>Paid

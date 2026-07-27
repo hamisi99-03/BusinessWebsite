@@ -184,22 +184,26 @@
                      <i class="bi bi-check-circle"></i> Approve
                    </button>
                  </form>
-                 {% elif order.payment_status == 'pending_approval' and order.payment_type == 'credit' and order.status == 'pending_approval' %}
-                 <form method="POST" action="{% url 'approve_order' order.id %}" style="display:inline;">
-                   {% csrf_token %}
-                   <input type="hidden" name="action" value="approve">
-                   <button type="submit" class="btn btn-sm btn-outline-success ms-1" title="Approve Credit">
-                     <i class="bi bi-check-lg"></i> Approve
-                   </button>
-                 </form>
-                 <form method="POST" action="{% url 'approve_order' order.id %}" style="display:inline;" onsubmit="return confirm('Reject this order?')">
-                   {% csrf_token %}
-                   <input type="hidden" name="action" value="reject">
-                   <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Reject Credit">
-                     <i class="bi bi-x-lg"></i>
-                   </button>
-                 </form>
-                 {% endif %}
+                  {% elif order.payment_status == 'pending_approval' and order.payment_type == 'credit' and order.status == 'pending_approval' %}
+                  <form method="POST" action="{% url 'approve_order' order.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="approve">
+                    <button type="submit" class="btn btn-sm btn-outline-success ms-1" title="Approve Credit">
+                      <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                  </form>
+                  <form method="POST" action="{% url 'approve_order' order.id %}" style="display:inline;" onsubmit="return confirm('Reject this order?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="reject">
+                    <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Reject Credit">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </form>
+                  {% elif order.payment_status == 'approved' and order.payment_type == 'credit' %}
+                  <a href="{% url 'add_payment' order.id %}" class="btn btn-sm btn-outline-success ms-1" title="Add Payment">
+                    <i class="bi bi-plus-circle"></i> Add Payment
+                  </a>
+                  {% endif %}
                  <a href="{% url 'admin_update_order' order.pk %}" class="btn btn-sm btn-outline-secondary ms-1">Edit</a>
                  <a href="{% url 'admin_delete_order' order.pk %}" class="btn btn-sm btn-outline-danger ms-1">Delete</a>
                {% endif %}
