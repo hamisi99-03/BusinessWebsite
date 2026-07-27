@@ -1,266 +1,203 @@
 {% extends "ecommerce/base.html" %}
-{% block title %}{% if payment %}Edit Payment{% else %}Add Payment{% endif %} — H&I Store{% endblock %}
+{% block title %}Add Payment — Order #{{ order.id }}{% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center">
   <div>
-    <h1>{% if payment %}Edit Payment{% else %}Add Payment{% endif %}</h1>
-    <p>{% if payment %}Update payment details{% else %}Record a new payment for an order{% endif %}</p>
+    <h1>Add Payment — Order #{{ order.id }}</h1>
+    <p>{{ order.customer.user.get_full_name|default:order.customer.user.username }}
+       &middot; {{ order.get_payment_type_display }}
+       &middot; {{ order.order_date|date:"M d, Y" }}</p>
   </div>
-  <a href="{% url 'payment_list' %}" class="btn btn-outline-primary">
-    <i class="bi bi-arrow-left me-1"></i> Back to Payments
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary">
+    <i class="bi bi-speedometer2 me-1"></i> Dashboard
   </a>
 </div>
 
 <div class="row g-4">
   <div class="col-lg-8">
-    <form method="POST" enctype="multipart/form-data">
-      {% csrf_token %}
 
-      <!-- ORDER SELECTION -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <i class="bi bi-receipt me-2"></i>Order Information
-        </div>
-        <div class="card-body p-4">
-          <div class="mb-3">
-            <label class="form-label">
-              Order <span style="color:#EF4444;">*</span>
-            </label>
-            <div class="input-group">
-              <span class="input-group-text"
-                    style="background:#F9FAFB;border:1px solid #E5E7EB;
-                           border-right:none;border-radius:8px 0 0 8px;
-                           font-weight:600;color:#6B7280;">
-                #
-              </span>
-              <select name="order" id="orderSelect" class="form-select"
-                      style="border-radius:0 8px 8px 0;" required>
-                <option value="">Select an order with balance...</option>
-                {% for o in orders %}
-                <option value="{{ o.id }}"
-                        data-balance="{{ o.get_outstanding_balance }}"
-                        data-total="{{ o.get_total_amount }}"
-                        data-paid="{{ o.get_total_paid }}"
-                        {% if order and order.id == o.id %}selected{% endif %}>
-                  #{{ o.id }} — {{ o.customer.user.username }}
-                  (KSh {{ o.get_outstanding_balance }} outstanding)
-                </option>
-                {% endfor %}
-              </select>
-            </div>
+    <!-- ORDER SUMMARY -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt me-2"></i>Order Summary</span>
+        <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-box-arrow-up-right me-1"></i> Full Details
+        </a>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-6 col-md-3">
+            <div style="font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Order Total</div>
+            <div style="font-weight:800;font-size:1.1rem;color:#1F2937;">KSh {{ order.get_total_amount|floatformat:0 }}</div>
           </div>
-
-          <!-- BALANCE DISPLAY BOX -->
-          <div id="balanceBox"
-               style="display:{% if order %}block{% else %}none{% endif %};
-                      background:#FEF3C7;border:1px solid #FDE68A;
-                      border-radius:10px;padding:1rem;margin-top:0.5rem;">
-            <div class="row g-2 text-center">
-              <div class="col-4">
-                <div style="font-size:0.72rem;color:#92400E;font-weight:600;
-                            text-transform:uppercase;letter-spacing:0.05em;">
-                  Order Total
-                </div>
-                <div style="font-weight:800;color:#111827;"
-                     id="displayTotal">
-                  {% if order %}KSh {{ order.get_total_amount }}{% endif %}
-                </div>
-              </div>
-              <div class="col-4">
-                <div style="font-size:0.72rem;color:#92400E;font-weight:600;
-                            text-transform:uppercase;letter-spacing:0.05em;">
-                  Already Paid
-                </div>
-                <div style="font-weight:800;color:#10B981;"
-                     id="displayPaid">
-                  {% if order %}KSh {{ order.get_total_paid }}{% endif %}
-                </div>
-              </div>
-              <div class="col-4">
-                <div style="font-size:0.72rem;color:#92400E;font-weight:600;
-                            text-transform:uppercase;letter-spacing:0.05em;">
-                  Outstanding
-                </div>
-                <div style="font-weight:800;color:#EF4444;"
-                     id="displayBalance">
-                  {% if order %}KSh {{ order.get_outstanding_balance }}{% endif %}
-                </div>
-              </div>
+          <div class="col-6 col-md-3">
+            <div style="font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Paid So Far</div>
+            <div style="font-weight:800;font-size:1.1rem;color:#10B981;">KSh {{ order.get_total_paid|floatformat:0 }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div style="font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Outstanding</div>
+            <div style="font-weight:800;font-size:1.1rem;color:#EF4444;">KSh {{ order.get_outstanding_balance|floatformat:0 }}</div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div style="font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Payment</div>
+            <div style="font-weight:600;font-size:1rem;">
+              {% if order.payment_status == 'approved' %}
+                <span style="color:#1E40AF;">Approved (Credit)</span>
+              {% elif order.payment_status == 'paid' %}
+                <span style="color:#065F46;">Fully Paid</span>
+              {% else %}
+                {{ order.get_payment_status_display }}
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-
-      <!-- PAYMENT DETAILS -->
-      <div class="card mb-4">
-        <div class="card-header">
-          <i class="bi bi-cash-coin me-2"></i>Payment Details
+    <!-- PAYMENT FORM -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-cash-coin me-2"></i>Record Payment
+      </div>
+      <div class="card-body p-4">
+        {% if order.get_outstanding_balance <= 0 %}
+        <div class="alert alert-success mb-0">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          This order is already fully paid. No additional payments needed.
         </div>
-        <div class="card-body p-4">
-           <div class="row g-3">
-             <div class="col-12 col-md-6">
+        {% else %}
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
               <label class="form-label">Amount (KSh) <span style="color:#EF4444;">*</span></label>
               <div class="input-group">
-                <span class="input-group-text"
-                      style="background:#F9FAFB;border:1px solid #E5E7EB;
-                             border-right:none;border-radius:8px 0 0 8px;
-                             font-weight:600;color:#6B7280;">
-                  KSh
-                </span>
+                <span class="input-group-text">KSh</span>
                 <input type="number" name="amount" class="form-control"
                        placeholder="0.00" step="0.01" min="0"
-                       value="{{ payment.amount|default:'' }}" required>
-               </div>
-               <div id="amountWarning" class="alert alert-warning d-none mt-2">Amount exceeds outstanding balance. Admin override allowed.</div>
-             </div>
+                       value="{{ order.get_outstanding_balance }}" required>
+              </div>
+            </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Payment Method <span style="color:#EF4444;">*</span></label>
               <select name="payment_method" class="form-select" required>
-                <option value="">Select method...</option>
-                <option value="cash" {% if payment and payment.payment_method == 'cash' %}selected{% endif %}>Cash</option>
-                <option value="mpesa" {% if payment and payment.payment_method == 'mpesa' %}selected{% endif %}>M-Pesa</option>
-                <option value="bank" {% if payment and payment.payment_method == 'bank' %}selected{% endif %}>Bank Transfer</option>
+                <option value="">Select...</option>
+                <option value="cash">Cash</option>
+                <option value="mpesa">M-Pesa</option>
+                <option value="bank">Bank Transfer</option>
               </select>
             </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Payment Date <span style="color:#EF4444;">*</span></label>
+              <input type="date" name="payment_date" class="form-control"
+                     value="{% now "Y-m-d" %}" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Notes</label>
+              <textarea name="notes" class="form-control" rows="2"
+                        placeholder="Optional notes about this payment..."></textarea>
+            </div>
           </div>
-          
-          <div class="mb-3">
-            <label class="form-label">Payment Date <span style="color:#EF4444;">*</span></label>
-            <input type="date" name="payment_date" class="form-control"
-                   value="{{ payment.payment_date|date:'Y-m-d' }}" required>
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary px-4">
+              <i class="bi bi-check-lg me-1"></i> Record Payment
+            </button>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary px-4">Cancel</a>
           </div>
-          
-          <div class="mb-3">
-            <label class="form-label">Notes</label>
-            <textarea name="notes" class="form-control" rows="3"
-                      placeholder="Any additional information about this payment...">{{ payment.notes|default:'' }}</textarea>
-          </div>
-        </div>
+        </form>
+        {% endif %}
       </div>
+    </div>
 
-      <!-- SUBMIT -->
-      <div class="d-flex gap-3">
-        <button type="submit" class="btn btn-primary px-4">
-          <i class="bi bi-{% if payment %}check-lg{% else %}plus-lg{% endif %} me-1"></i>
-          {% if payment %}Update Payment{% else %}Add Payment{% endif %}
-        </button>
-        <a href="{% url 'payment_list' %}"
-           class="btn btn-outline-secondary px-4">
-          Cancel
-        </a>
+    <!-- PAYMENT HISTORY (INSTALLMENTS) -->
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-clock-history me-2"></i>Payment History
+        <span style="font-size:0.8rem;color:#6B7280;font-weight:400;margin-left:8px;">
+          {{ payments|length }} payment{{ payments|length|pluralize }}
+        </span>
       </div>
-    </form>
+      <div class="card-body p-0">
+        {% if payments %}
+        <div class="table-responsive">
+          <table class="table table-borderless mb-0">
+            <thead>
+              <tr style="border-bottom:2px solid #F3F4F6;">
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">#</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">Date</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">Method</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;text-align:right;">Amount</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in payments %}
+              <tr style="border-bottom:1px solid #F3F4F6;">
+                <td style="padding:0.75rem 1.25rem;font-weight:600;color:#4F46E5;">{{ forloop.revcounter }}</td>
+                <td style="padding:0.75rem 1.25rem;color:#374151;">{{ p.payment_date|date:"M d, Y" }}</td>
+                <td style="padding:0.75rem 1.25rem;">
+                  <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:0.75rem;font-weight:600;
+                              background:{% if p.payment_method == 'cash' %}#FEF3C7;color:#92400E{% elif p.payment_method == 'mpesa' %}#D1FAE5;color:#065F46{% else %}#DBEAFE;color:#1E40AF{% endif %};">
+                    {{ p.get_payment_method_display }}
+                  </span>
+                </td>
+                <td style="padding:0.75rem 1.25rem;text-align:right;font-weight:700;color:#10B981;">KSh {{ p.amount|floatformat:0 }}</td>
+                <td style="padding:0.75rem 1.25rem;color:#9CA3AF;font-size:0.85rem;">{{ p.notes|default:'—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr style="border-top:2px solid #E5E7EB;">
+                <td colspan="3" style="padding:0.75rem 1.25rem;font-weight:700;text-align:right;">Total Paid</td>
+                <td style="padding:0.75rem 1.25rem;text-align:right;font-weight:800;color:#10B981;">KSh {{ order.get_total_paid|floatformat:0 }}</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td colspan="3" style="padding:0.75rem 1.25rem;font-weight:700;text-align:right;{% if order.get_outstanding_balance == 0 %}color:#10B981{% endif %};">
+                  {% if order.get_outstanding_balance == 0 %}
+                    <i class="bi bi-check-circle-fill me-1"></i> Fully Paid
+                  {% else %}
+                    Outstanding Balance
+                  {% endif %}
+                </td>
+                <td style="padding:0.75rem 1.25rem;text-align:right;font-weight:800;color:{% if order.get_outstanding_balance == 0 %}#10B981{% else %}#EF4444{% endif %};">
+                  KSh {{ order.get_outstanding_balance|floatformat:0 }}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:2.5rem;">
+          <div style="width:64px;height:64px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="bi bi-wallet2" style="font-size:1.5rem;color:#F59E0B;"></i>
+          </div>
+          <div style="font-weight:600;color:#374151;margin-bottom:4px;">No payments yet</div>
+          <div style="font-size:0.875rem;color:#9CA3AF;">Record the first payment using the form above.</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
 
-  <!-- TIPS COLUMN -->
+  <!-- RIGHT COLUMN: TIPS & QUICK INFO -->
   <div class="col-lg-4">
     <div class="card mb-3">
-      <div class="card-header">
-        <i class="bi bi-lightbulb me-2"></i>Tips
-      </div>
+      <div class="card-header"><i class="bi bi-lightbulb me-2"></i>Quick Info</div>
       <div class="card-body p-4">
-        <ul style="font-size:0.875rem;color:#6B7280;
-                   padding-left:1.2rem;margin:0;line-height:2;">
-          <li>Amount should not exceed the order's outstanding balance</li>
-          <li>Payment date defaults to today if left blank</li>
-          <li>Notes are optional but helpful for reference</li>
-          <li>Once saved, payment amount cannot be decreased below zero</li>
+        <ul style="font-size:0.875rem;color:#6B7280;padding-left:1.2rem;margin:0;line-height:2.2;">
+          <li>Order total: <strong>KSh {{ order.get_total_amount|floatformat:0 }}</strong></li>
+          <li>Amount paid: <strong style="color:#10B981;">KSh {{ order.get_total_paid|floatformat:0 }}</strong></li>
+          <li>Remaining: <strong style="color:#EF4444;">KSh {{ order.get_outstanding_balance|floatformat:0 }}</strong></li>
+          <li>Payment type: <strong>{{ order.get_payment_type_display }}</strong></li>
+          <li>Status: <strong>{{ order.get_payment_status_display }}</strong></li>
+          <li>Items: <strong>{{ order.items.count }}</strong></li>
         </ul>
       </div>
     </div>
-
-    {% if payment and payment.order %}
-    <div class="card">
-      <div class="card-header">
-        <i class="bi bi-bar-chart me-2"></i>Payment Summary
-      </div>
-      <div class="card-body p-4">
-        <div class="d-flex justify-content-between mb-2"
-             style="font-size:0.875rem;">
-          <span style="color:#6B7280;">Order Total</span>
-          <span style="font-weight:700;">KSh {{ payment.order.get_total_amount }}</span>
-        </div>
-        <div class="d-flex justify-content-between mb-2"
-             style="font-size:0.875rem;">
-          <span style="color:#6B7280;">Already Paid</span>
-          <span style="font-weight:700; color:#10B981;">
-            KSh {{ payment.order.get_total_paid }}
-          </span>
-        </div>
-        <div class="d-flex justify-content-between mb-2"
-             style="font-size:0.875rem;">
-          <span style="color:#6B7280;">This Payment</span>
-          <span style="font-weight:700;">
-            KSh {{ payment.amount|default:0 }}
-          </span>
-        </div>
-          <div class="d-flex justify-content-between"
-             style="font-size:0.875rem;">
-          <span style="color:#6B7280;">New Balance</span>
-          <span style="font-weight:700; 
-                  color:{% if payment.order.get_outstanding_balance <= 0 %}#10B981;{% else %}#EF4444;{% endif %}">
-            KSh {{ payment.order.get_outstanding_balance }}
-          </span>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-   </div>
- </div>
-
- <script>
-  const orderSelect = document.getElementById('orderSelect');
-  const balanceBox = document.getElementById('balanceBox');
-  const displayTotal = document.getElementById('displayTotal');
-  const displayPaid = document.getElementById('displayPaid');
-  const displayBalance = document.getElementById('displayBalance');
-  const amountInput = document.querySelector('input[name="amount"]');
-  const amountWarning = document.getElementById('amountWarning');
-
-  function updateBalanceBox() {
-    const selected = orderSelect.options[orderSelect.selectedIndex];
-    if (!selected || !selected.value) {
-      balanceBox.style.display = 'none';
-      return;
-    }
-    const balance = parseFloat(selected.dataset.balance) || 0;
-    const total = parseFloat(selected.dataset.total) || 0;
-    const paid = parseFloat(selected.dataset.paid) || 0;
-
-    displayTotal.textContent = 'KSh ' + total.toLocaleString();
-    displayPaid.textContent = 'KSh ' + paid.toLocaleString();
-    displayBalance.textContent = 'KSh ' + balance.toLocaleString();
-    balanceBox.style.display = 'block';
-
-    // Pre-fill amount with outstanding balance
-    if (amountInput && !amountInput.value) {
-      amountInput.value = balance;
-    }
-  }
-
-  if (orderSelect) {
-    orderSelect.addEventListener('change', function() {
-      if (amountInput) amountInput.value = '';
-      updateBalanceBox();
-    });
-    // Run on page load if order is pre-selected
-    if (orderSelect.value) updateBalanceBox();
-  }
-
-  if (amountInput) {
-    amountInput.addEventListener('input', function() {
-      const selected = orderSelect.options[orderSelect.selectedIndex];
-      if (!selected || !selected.value) return;
-      const balance = parseFloat(selected.dataset.balance) || 0;
-      const amount = parseFloat(this.value) || 0;
-      if (amount > balance && balance > 0) {
-        amountWarning.classList.remove('d-none');
-      } else {
-        amountWarning.classList.add('d-none');
-      }
-    });
-  }
-</script>
+  </div>
+</div>
 {% endblock %}

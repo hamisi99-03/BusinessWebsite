@@ -725,35 +725,35 @@ def add_payment_standalone(request):
 def add_payment(request, order_id=None):
     order = get_object_or_404(Order, id=order_id)
     orders = Order.objects.all().order_by('-order_date')
-    # Only show orders with outstanding balance
     unpaid_orders = [o for o in orders if o.get_outstanding_balance() > 0]
 
     if request.method == 'POST':
-        amount = request.POST.get('amount')
+        raw_amount = request.POST.get('amount')
         payment_method = request.POST.get('payment_method')
         payment_date = request.POST.get('payment_date')
 
-        if amount and payment_method:
+        if raw_amount and payment_method:
+            amount = Decimal(raw_amount)
             Payment.objects.create(
                 order=order,
-                amount=Decimal(amount),
+                amount=amount,
                 payment_method=payment_method,
                 payment_date=payment_date or timezone.now(),
                 status='completed'
             )
             # Update debt
-            try:
-                debt = Debt.objects.get(order=order)
+            debt = Debt.objects.filter(order=order).first()
+            if debt:
                 debt.calculate_outstanding_balance()
-            except Debt.DoesNotExist:
-                pass
             messages.success(request, f"Payment of KSh {amount} recorded successfully.")
             return redirect('admin_dashboard')
 
+    payments = order.payments.all().order_by('-payment_date')
     return render(request, 'ecommerce/payment_form.html', {
         'order': order,
         'orders': unpaid_orders,
         'payment': None,
+        'payments': payments,
     })
 
 
