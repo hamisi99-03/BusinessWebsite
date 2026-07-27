@@ -736,7 +736,7 @@ def add_payment(request, order_id=None):
         if amount and payment_method:
             Payment.objects.create(
                 order=order,
-                amount=amount,
+                amount=Decimal(amount),
                 payment_method=payment_method,
                 payment_date=payment_date or timezone.now(),
                 status='completed'

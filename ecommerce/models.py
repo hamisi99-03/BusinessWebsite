@@ -222,15 +222,18 @@ class Payment(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_created')
 
     def clean(self):
+        from decimal import Decimal
+        amount = Decimal(self.amount) if not isinstance(self.amount, Decimal) else self.amount
         total_paid_excluding_current = sum(
             p.amount for p in self.order.payments.exclude(pk=self.pk)
         )
-        new_total_paid = total_paid_excluding_current + self.amount
+        new_total_paid = total_paid_excluding_current + amount
 
         if new_total_paid > self.order.get_total_amount():
+            max_allowed = self.order.get_total_amount() - total_paid_excluding_current
             raise ValidationError(
                 f"Payment exceeds order total ({self.order.get_total_amount()}). "
-                f"Max allowed is {self.order.get_total_amount() - total_paid_excluding_current}."
+                f"Max allowed is {max_allowed}."
             )
 
     def save(self, *args, **kwargs):
