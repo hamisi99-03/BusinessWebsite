@@ -337,15 +337,29 @@ def order_product_view(request):
                 })
 
             customer, _ = Customer.objects.get_or_create(user=request.user)
-            order = Order.objects.create(customer=customer, status='pending')
+            order = Order.objects.create(
+                customer=customer,
+                status='pending_payment',
+                payment_type='cash',
+                payment_status='pending_approval'
+            )
             OrderItem.objects.create(
                 order=order, product=product,
                 quantity=quantity, price=product.price
             )
-            product.stock -= quantity
-            product.save()
 
-            messages.success(request, f'Order #{order.id} placed successfully for {product.name} x{quantity}!')
+            Notification.objects.create(
+                notification_type='new_order',
+                order=order,
+                message=f"New order #{order.id} from {customer.user.username} "
+                        f"for KSh {order.get_total_amount()} via CASH"
+            )
+
+            messages.success(
+                request,
+                f'Order #{order.id} placed successfully for {product.name} x{quantity}! '
+                'Awaiting payment confirmation.'
+            )
             return redirect('order_detail', pk=order.id)
         else:
             messages.error(request, 'Please correct the errors below.')
@@ -832,28 +846,24 @@ def admin_update_order(request, pk):
     order = get_object_or_404(Order, pk=pk)
     
     if request.method == "POST":
-        payment_status = request.POST.get("payment_status")
         fulfillment_status = request.POST.get("fulfillment_status")
-        
-        if payment_status in dict(Order.PAYMENT_STATUS_CHOICES):
-            order.payment_status = payment_status
         
         if fulfillment_status in dict(Order.STATUS_CHOICES):
             order.status = fulfillment_status
+            if fulfillment_status == 'delivered':
+                order.shipped_date = timezone.now()
         
         order.save()
-        messages.success(request, f"Order #{order.pk} updated.")
+        messages.success(request, f"Order #{order.pk} fulfillment updated to {order.get_status_display()}.")
         return redirect('orders_list')
     
     # GET request
-    payment_status_choices = Order.PAYMENT_STATUS_CHOICES
     fulfillment_choices = [
         c for c in Order.STATUS_CHOICES
         if c[0] not in ('pending_payment', 'pending_approval')
     ]
     return render(request, 'ecommerce/admin_order_edit.html', {
         'order': order,
-        'payment_status_choices': payment_status_choices,
         'fulfillment_choices': fulfillment_choices,
     })
 
@@ -1187,18 +1197,23 @@ def approve_order(request, order_id):
         from django.utils import timezone
 
         if action == 'approve':
-            # Credit orders are approved and await payment
             if order.payment_type == 'credit':
-                order.status = 'pending'
-                order.payment_status = 'approved'
-            else:
                 order.status = 'pending'
                 order.payment_status = 'paid'
-            order.admin_note = note
-            order.confirmed_at = timezone.now()
-            order.save()
-            # Deduct stock for credit orders now that approved
-            if order.payment_type == 'credit':
+                order.admin_note = note
+                order.confirmed_at = timezone.now()
+                order.save()
+                # Create a payment record for the credit amount (skip if already fully paid)
+                if order.get_total_paid() < order.get_total_amount():
+                    Payment.objects.create(
+                        order=order,
+                        amount=order.get_total_amount(),
+                        payment_method='credit',
+                        status='completed',
+                        created_by=request.user,
+                        notes=note or 'Credit approved by admin'
+                    )
+                # Deduct stock for credit orders now that approved
                 for item in order.items.all():
                     if item.quantity <= item.product.stock:
                         item.product.stock -= item.quantity
@@ -1208,26 +1223,59 @@ def approve_order(request, order_id):
                             request,
                             f"Warning: {item.product.name} has insufficient stock."
                         )
-            Notification.objects.create(
-                notification_type='new_order',
-                order=order,
-                message=f"Credit order #{order.id} approved for "
-                        f"{order.customer.user.username}. "
-                        f"Stock deducted."
-            )
-            messages.success(
-                request,
-                f"Order #{order.id} approved and waiting for payment."
-            )
+                Notification.objects.create(
+                    notification_type='new_order',
+                    order=order,
+                    message=f"Credit order #{order.id} approved for "
+                            f"{order.customer.user.username}. "
+                            f"Stock deducted."
+                )
+                messages.success(
+                    request,
+                    f"Credit order #{order.id} approved and marked as paid."
+                )
+            else:
+                # Cash/M-Pesa: confirm payment received
+                order.status = 'pending'
+                order.payment_status = 'paid'
+                order.admin_note = note
+                order.confirmed_at = timezone.now()
+                order.save()
+                # Create a payment record for accounting (skip if already fully paid)
+                if order.get_total_paid() < order.get_total_amount():
+                    Payment.objects.create(
+                        order=order,
+                        amount=order.get_total_amount(),
+                        payment_method=order.payment_type,
+                        status='completed',
+                        created_by=request.user,
+                        notes=note or 'Payment confirmed by admin'
+                    )
+                Notification.objects.create(
+                    notification_type='new_order',
+                    order=order,
+                    message=f"Payment confirmed for order #{order.id} "
+                            f"({order.payment_type.upper()}) from "
+                            f"{order.customer.user.username}."
+                )
+                messages.success(
+                    request,
+                    f"Payment confirmed for Order #{order.id} via {order.get_payment_type_display()}."
+                )
         elif action == 'reject':
             order.status = 'rejected'
             order.admin_note = note
             order.save()
-            # Restore stock if already deducted
+            # Restore stock if already deducted (cash/mpesa deducts at creation)
             if order.payment_type != 'credit':
                 for item in order.items.all():
                     item.product.stock += item.quantity
                     item.product.save()
+            Notification.objects.create(
+                notification_type='new_order',
+                order=order,
+                message=f"Order #{order.id} rejected by admin."
+            )
             messages.warning(
                 request,
                 f"Order #{order.id} rejected."
@@ -1238,20 +1286,47 @@ def approve_order(request, order_id):
             order.admin_note = note
             order.confirmed_at = timezone.now()
             order.save()
+            # Create a payment record for accounting (skip if already fully paid)
+            if order.get_total_paid() < order.get_total_amount():
+                Payment.objects.create(
+                    order=order,
+                    amount=order.get_total_amount(),
+                    payment_method=order.payment_type,
+                    status='completed',
+                    created_by=request.user,
+                    notes=note or 'Payment confirmed by admin'
+                )
+            Notification.objects.create(
+                notification_type='new_order',
+                order=order,
+                message=f"Payment confirmed for order #{order.id} "
+                        f"({order.payment_type.upper()}) from "
+                        f"{order.customer.user.username}."
+            )
             messages.success(
                 request,
-                f"Payment confirmed for Order #{order.id}."
+                f"Payment confirmed for Order #{order.id} via {order.get_payment_type_display()}."
             )
     return redirect('admin_dashboard')
 
 
 @staff_member_required
 def notifications_view(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'mark_all_read':
+            Notification.objects.filter(is_read=False).update(is_read=True)
+            messages.success(request, 'All notifications marked as read.')
+        elif action == 'mark_read':
+            notif_id = request.POST.get('notification_id')
+            Notification.objects.filter(pk=notif_id, is_read=False).update(is_read=True)
+        return redirect('notifications')
+
     notifications = Notification.objects.all()
-    # Mark all as read when viewed
-    Notification.objects.filter(is_read=False).update(is_read=True)
+    unread_count = Notification.objects.filter(is_read=False).count()
     return render(request, 'ecommerce/notifications.html', {
         'notifications': notifications,
+        'unread_count': unread_count,
     })
 
 

@@ -23,18 +23,6 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        {% if order.payment_type == 'credit' %}
-                        <div class="mb-3">
-                            <label for="payment_status" class="form-label">Credit Approval</label>
-                            <select name="payment_status" id="payment_status" class="form-select">
-                                {% for value, label in payment_status_choices %}
-                                    <option value="{{ value }}" {% if value == order.payment_status %}selected{% endif %}>
-                                        {{ label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        {% endif %}
                         <div class="d-flex gap-2">
                             <button type="submit" class="btn btn-primary flex-fill">Update Order</button>
                             <a href="{% url 'orders_list' %}" class="btn btn-outline-secondary">Cancel</a>

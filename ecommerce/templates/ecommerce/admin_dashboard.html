@@ -253,21 +253,14 @@
              <td>{{ order.customer.user.username }}</td>
              <td class="fw-bold">KSh {{ order.get_total_amount|floatformat:0 }}</td>
              <td>{{ order.get_payment_type_display }}</td>
-               <td>
-                <div class="d-flex flex-column gap-1">
-                  <!-- Credit Approval Status -->
-                  {% if order.payment_type == 'credit' %}
-                  <span class="badge-status badge-{{ order.payment_status }}"
-                        style="display:inline-block;white-space:nowrap;">
-                    {% if order.payment_status == 'pending_approval' %}
-                      <i class="bi bi-hourglass-split me-1"></i>Pending Approval
-                    {% elif order.payment_status == 'approved' %}
-                      <i class="bi bi-check-circle me-1"></i>Approved
-                    {% elif order.payment_status == 'paid' %}
-                      <i class="bi bi-check-circle-fill me-1"></i>Paid
-                    {% endif %}
-                  </span>
-                  {% endif %}
+                <td>
+                 <div class="d-flex flex-column gap-1">
+                   {% if order.payment_status == 'paid' %}
+                   <span class="badge-status badge-paid"
+                         style="display:inline-block;white-space:nowrap;">
+                     <i class="bi bi-check-circle-fill me-1"></i>Paid
+                   </span>
+                   {% endif %}
 
                   <!-- Fulfillment Status -->
                   <span class="badge-status badge-{{ order.status }}"
@@ -317,54 +310,44 @@
               </td>
              <td>{{ order.order_date|date:"d M Y" }}</td>
              <td>
-               <div class="d-flex gap-1 flex-wrap">
-                 <a href="{% url 'order_detail' order.id %}"
-                    class="btn btn-sm btn-outline-primary"
-                    title="View Order">
-                   <i class="bi bi-eye"></i>
-                 </a>
-                  {% if order.status == 'pending_approval' %}
-                  <button class="btn btn-sm btn-outline-success"
-                          onclick="showApprovalModal({{ order.id }}, 'approve')"
-                          title="Approve Credit">
-                    <i class="bi bi-check-lg"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger"
-                          onclick="showApprovalModal({{ order.id }}, 'reject')"
-                          title="Reject Credit">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
-                  {% elif order.payment_status == 'unpaid' and order.payment_type == 'credit' %}
-                  <a href="{% url 'add_payment' order.id %}"
-                     class="btn btn-sm btn-outline-success"
-                     title="Add Payment">
-                    <i class="bi bi-plus-circle"></i>
+                <div class="d-flex gap-1 flex-wrap">
+                  <a href="{% url 'order_detail' order.id %}"
+                     class="btn btn-sm btn-outline-primary"
+                     title="View Order">
+                    <i class="bi bi-eye"></i>
                   </a>
-                  {% elif order.payment_status == 'unpaid' %}
-                  <form method="POST"
-                        action="{% url 'approve_order' order.id %}"
-                        style="display:inline;">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="confirm_payment">
-                    <button type="submit"
-                            class="btn btn-sm btn-outline-success"
-                            title="Confirm Payment Received">
-                      <i class="bi bi-check-circle"></i>
-                    </button>
-                  </form>
-                  {% elif order.payment_status == 'paid' %}
-                  <span class="badge-status badge-delivered"
-                        style="font-size:0.7rem;">
-                    <i class="bi bi-check-circle-fill me-1"></i>Paid
-                  </span>
-                  {% else %}
-                  <a href="{% url 'add_payment' order.id %}"
-                     class="btn btn-sm btn-outline-success"
-                     title="Add Payment">
-                    <i class="bi bi-plus-circle"></i>
-                  </a>
-                  {% endif %}
-               </div>
+                   {% if order.payment_status == 'pending_approval' and order.payment_type == 'credit' and order.status == 'pending_approval' %}
+                   <!-- Credit order awaiting admin approval -->
+                   <button class="btn btn-sm btn-outline-success"
+                           onclick="showApprovalModal({{ order.id }}, 'approve')"
+                           title="Approve Credit">
+                     <i class="bi bi-check-lg"></i>
+                   </button>
+                   <button class="btn btn-sm btn-outline-danger"
+                           onclick="showApprovalModal({{ order.id }}, 'reject')"
+                           title="Reject Credit">
+                     <i class="bi bi-x-lg"></i>
+                   </button>
+                   {% elif order.payment_status == 'pending_approval' and order.payment_type != 'credit' %}
+                   <!-- Cash/M-Pesa: approve payment -->
+                   <button class="btn btn-sm btn-outline-success"
+                           onclick="showApprovalModal({{ order.id }}, 'confirm_payment')"
+                           title="Confirm Payment">
+                     <i class="bi bi-check-circle"></i> Approve
+                   </button>
+                   {% endif %}
+                   <a href="{% url 'admin_update_order' order.id %}"
+                      class="btn btn-sm btn-outline-secondary"
+                      title="Edit Fulfillment">
+                     <i class="bi bi-pencil"></i> Edit
+                   </a>
+                   <a href="{% url 'admin_delete_order' order.id %}"
+                      class="btn btn-sm btn-outline-danger"
+                      title="Delete Order"
+                      onclick="return confirm('Delete this order?')">
+                     <i class="bi bi-trash"></i>
+                   </a>
+                 </div>
              </td>
            </tr>
            {% endfor %}
@@ -436,9 +419,14 @@ function showApprovalModal(orderId, action) {
     desc.textContent = 'Approving will confirm the order and deduct stock.';
     confirmBtn.className = 'btn btn-primary flex-fill';
     confirmBtn.textContent = 'Approve Order';
+  } else if (action === 'confirm_payment') {
+    title.textContent = 'Confirm Payment';
+    desc.textContent = 'Confirm that payment has been received for this order. This will mark the order as paid and create a payment record.';
+    confirmBtn.className = 'btn btn-success flex-fill';
+    confirmBtn.textContent = 'Confirm Payment';
   } else {
-    title.textContent = 'Reject Credit Request';
-    desc.textContent = 'Rejecting will cancel the order. Stock will not be deducted.';
+    title.textContent = 'Reject Order';
+    desc.textContent = 'Rejecting will cancel the order and restore stock if already deducted.';
     confirmBtn.className = 'btn btn-danger flex-fill';
     confirmBtn.textContent = 'Reject Order';
   }

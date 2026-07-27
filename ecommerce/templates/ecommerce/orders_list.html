@@ -141,19 +141,13 @@
                {% endif %}
              </td>
              <td>
-               <div class="d-flex flex-column gap-1">
-                 {% if order.payment_type == 'credit' %}
-                 <span class="badge-status badge-{{ order.payment_status }}"
-                       style="display:inline-block;white-space:nowrap;">
-                   {% if order.payment_status == 'pending_approval' %}
-                     <i class="bi bi-hourglass-split me-1"></i>Pending Approval
-                   {% elif order.payment_status == 'approved' %}
-                     <i class="bi bi-check-circle me-1"></i>Approved
-                   {% elif order.payment_status == 'paid' %}
-                     <i class="bi bi-check-circle-fill me-1"></i>Paid
-                   {% endif %}
-                 </span>
-                 {% endif %}
+                <div class="d-flex flex-column gap-1">
+                  {% if order.payment_status == 'paid' %}
+                  <span class="badge-status badge-paid"
+                        style="display:inline-block;white-space:nowrap;">
+                    <i class="bi bi-check-circle-fill me-1"></i>Paid
+                  </span>
+                  {% endif %}
                  <span class="badge-status badge-{{ order.status }}"
                        style="display:inline-block;white-space:nowrap;">
                    {% if order.status == 'pending_payment' %}
@@ -176,21 +170,40 @@
                  </span>
                </div>
              </td>
-            <td>
-              <a href="{% url 'order_detail' order.id %}"
-                 class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-eye me-1"></i> View
-              </a>
-              {% if is_admin %}
-                <a href="{% url 'admin_update_order' order.pk %}" class="btn btn-sm btn-outline-secondary ms-1">Edit</a>
-                {% if order.get_outstanding_balance > 0 %}
-                <button type="button" class="btn btn-sm btn-outline-success ms-1" onclick="openPayPopup({{ order.id }}, '{{ order.get_outstanding_balance }}')">
-                  <i class="bi bi-cash me-1"></i> Pay
-                </button>
-                {% endif %}
-                <a href="{% url 'admin_delete_order' order.pk %}" class="btn btn-sm btn-outline-danger ms-1">Delete</a>
-              {% endif %}
-            </td>
+             <td>
+               <a href="{% url 'order_detail' order.id %}"
+                  class="btn btn-sm btn-outline-primary">
+                 <i class="bi bi-eye me-1"></i> View
+               </a>
+               {% if is_admin %}
+                 {% if order.payment_status == 'pending_approval' and order.payment_type != 'credit' %}
+                 <form method="POST" action="{% url 'approve_order' order.id %}" style="display:inline;">
+                   {% csrf_token %}
+                   <input type="hidden" name="action" value="confirm_payment">
+                   <button type="submit" class="btn btn-sm btn-outline-success ms-1" title="Approve Payment">
+                     <i class="bi bi-check-circle"></i> Approve
+                   </button>
+                 </form>
+                 {% elif order.payment_status == 'pending_approval' and order.payment_type == 'credit' and order.status == 'pending_approval' %}
+                 <form method="POST" action="{% url 'approve_order' order.id %}" style="display:inline;">
+                   {% csrf_token %}
+                   <input type="hidden" name="action" value="approve">
+                   <button type="submit" class="btn btn-sm btn-outline-success ms-1" title="Approve Credit">
+                     <i class="bi bi-check-lg"></i> Approve
+                   </button>
+                 </form>
+                 <form method="POST" action="{% url 'approve_order' order.id %}" style="display:inline;" onsubmit="return confirm('Reject this order?')">
+                   {% csrf_token %}
+                   <input type="hidden" name="action" value="reject">
+                   <button type="submit" class="btn btn-sm btn-outline-danger ms-1" title="Reject Credit">
+                     <i class="bi bi-x-lg"></i>
+                   </button>
+                 </form>
+                 {% endif %}
+                 <a href="{% url 'admin_update_order' order.pk %}" class="btn btn-sm btn-outline-secondary ms-1">Edit</a>
+                 <a href="{% url 'admin_delete_order' order.pk %}" class="btn btn-sm btn-outline-danger ms-1">Delete</a>
+               {% endif %}
+             </td>
           </tr>
           {% empty %}
            <tr>

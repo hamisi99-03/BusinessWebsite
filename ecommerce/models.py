@@ -90,7 +90,6 @@ class Order(models.Model):
 
     PAYMENT_STATUS_CHOICES = [
         ('pending_approval', 'Pending Approval'),
-        ('approved', 'Approved'),
         ('paid', 'Paid'),
     ]
 
