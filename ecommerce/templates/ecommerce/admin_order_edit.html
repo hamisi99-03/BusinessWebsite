@@ -14,20 +14,20 @@
                     <form method="post">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select name="status" id="status" class="form-select">
-                                {% for value, label in status_choices %}
+                            <label for="fulfillment_status" class="form-label">Fulfillment Status</label>
+                            <select name="fulfillment_status" id="fulfillment_status" class="form-select">
+                                {% for value, label in fulfillment_choices %}
                                     <option value="{{ value }}" {% if value == order.status %}selected{% endif %}>
                                         {{ label }}
                                     </option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Update Status</button>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-fill">Update Order</button>
+                            <a href="{% url 'orders_list' %}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </form>
-                    <a href="{% url 'orders_list' %}" class="btn btn-link mt-3">Cancel</a>
                 </div>
             </div>
         </div>

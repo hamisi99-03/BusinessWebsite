@@ -159,16 +159,27 @@ class OrderItem(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Restore old stock then deduct new quantity
-        self.product.stock += old_quantity
-        self.product.stock -= self.quantity
-        if self.product.stock < 0:
-            self.product.stock = 0
-        self.product.save()
+        # Don't deduct stock for credit orders still pending approval
+        is_credit_pending = (
+            self.order.payment_type == 'credit' and
+            self.order.status == 'pending_approval'
+        )
+        if not is_credit_pending:
+            self.product.stock += old_quantity
+            self.product.stock -= self.quantity
+            if self.product.stock < 0:
+                self.product.stock = 0
+            self.product.save()
 
     def delete(self, *args, **kwargs):
-        self.product.stock += self.quantity
-        self.product.save()
+        # Don't restore stock for credit orders that never had it deducted
+        is_credit_pending = (
+            self.order.payment_type == 'credit' and
+            self.order.status == 'pending_approval'
+        )
+        if not is_credit_pending:
+            self.product.stock += self.quantity
+            self.product.save()
         super().delete(*args, **kwargs)
 
 
@@ -190,15 +201,18 @@ class Payment(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments_created')
 
     def clean(self):
+        from decimal import Decimal
+        amount = Decimal(self.amount) if not isinstance(self.amount, Decimal) else self.amount
         total_paid_excluding_current = sum(
             p.amount for p in self.order.payments.exclude(pk=self.pk)
         )
-        new_total_paid = total_paid_excluding_current + self.amount
+        new_total_paid = total_paid_excluding_current + amount
 
         if new_total_paid > self.order.get_total_amount():
+            max_allowed = self.order.get_total_amount() - total_paid_excluding_current
             raise ValidationError(
                 f"Payment exceeds order total ({self.order.get_total_amount()}). "
-                f"Max allowed is {self.order.get_total_amount() - total_paid_excluding_current}."
+                f"Max allowed is {max_allowed}."
             )
 
     def save(self, *args, **kwargs):
@@ -237,6 +251,8 @@ class Debt(models.Model):
                 if not self.paid_at:
                     from django.utils import timezone
                     self.paid_at = timezone.now().date()
+                self.order.payment_status = 'paid'
+                self.order.save()
         else:
             self.is_paid = False
             self.paid_at = None

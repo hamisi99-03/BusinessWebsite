@@ -7,9 +7,18 @@
     <h1>Notifications</h1>
     <p>Order alerts and system updates</p>
   </div>
-  <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary">
-    <i class="bi bi-speedometer2 me-1"></i> Dashboard
-  </a>
+  <div class="d-flex gap-2">
+    <form method="POST" style="display:inline;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="mark_all_read">
+      <button type="submit" class="btn btn-outline-primary" {% if unread_count == 0 %}disabled{% endif %}>
+        <i class="bi bi-check-all me-1"></i> Mark all read
+      </button>
+    </form>
+    <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-speedometer2 me-1"></i> Dashboard
+    </a>
+  </div>
 </div>
 
 <div class="card">
@@ -17,34 +26,53 @@
     <span><i class="bi bi-bell me-2"></i>All Notifications</span>
     <span style="font-size:0.8rem;color:#6B7280;">
       {{ notifications|length }} total
+      {% if unread_count > 0 %}
+        &middot; <strong style="color:#E07A5F;">{{ unread_count }} unread</strong>
+      {% endif %}
     </span>
   </div>
   <div class="card-body p-0">
     {% for notification in notifications %}
     <div style="padding:1.25rem;border-bottom:1px solid #F3F4F6;
                 display:flex;align-items:flex-start;gap:16px;
-                background:{% if not notification.is_read %}#FFFBF5{% else %}white{% endif %};">
+                background:{% if not notification.is_read %}#FFFAF5{% else %}#FFFFFF{% endif %};
+                {% if not notification.is_read %}border-left:4px solid #E07A5F;{% endif %}">
       <div style="width:44px;height:44px;border-radius:12px;
                   background:{% if notification.notification_type == 'new_order' %}#EEF2FF{% elif notification.notification_type == 'payment' %}#D1FAE5{% else %}#FEF3C7{% endif %};
                   display:flex;align-items:center;justify-content:center;
                   flex-shrink:0;">
-<i class="bi bi-bell" style="color:#4F46E5;font-size:1.1rem;"></i>
+        <i class="bi {% if notification.notification_type == 'new_order' %}bi-cart{% elif notification.notification_type == 'payment' %}bi-credit-card{% else %}bi-exclamation-triangle{% endif %}"
+           style="color:#4F46E5;font-size:1.1rem;"></i>
       </div>
       <div style="flex:1;">
-        <div style="font-weight:600;font-size:0.9rem;margin-bottom:2px;">
+        <div style="font-weight:{% if not notification.is_read %}700{% else %}400{% endif %};
+                    font-size:0.9rem;margin-bottom:2px;
+                    color:{% if not notification.is_read %}#1F2937{% else %}#6B7280{% endif %};">
           {{ notification.message }}
         </div>
-        <div style="font-size:0.78rem;color:#6B7280;">
+        <div style="font-size:0.78rem;color:#9CA3AF;">
           {{ notification.created_at|date:"M d, Y" }} at
           {{ notification.created_at|time:"g:i A" }}
         </div>
       </div>
-      {% if notification.order %}
-      <a href="{% url 'order_detail' notification.order.id %}"
-         class="btn btn-sm btn-outline-primary flex-shrink-0">
-        <i class="bi bi-eye me-1"></i> View Order
-      </a>
-      {% endif %}
+      <div class="d-flex gap-1 align-items-center">
+        {% if notification.order %}
+        <a href="{% url 'order_detail' notification.order.id %}"
+           class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-eye"></i>
+        </a>
+        {% endif %}
+        {% if not notification.is_read %}
+        <form method="POST" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="mark_read">
+          <input type="hidden" name="notification_id" value="{{ notification.id }}">
+          <button type="submit" class="btn btn-sm btn-outline-secondary" title="Mark as read">
+            <i class="bi bi-check"></i>
+          </button>
+        </form>
+        {% endif %}
+      </div>
     </div>
     {% empty %}
     <div style="text-align:center;padding:5rem 2rem;">
@@ -62,7 +90,7 @@
       <p style="color:var(--muted);font-size:0.875rem;margin-bottom:0;
                 max-width:280px;margin-left:auto;margin-right:auto;
                 line-height:1.7;">
-        Notifications will appear here when 
+        Notifications will appear here when
         customers place orders.
       </p>
     </div>
@@ -70,4 +98,3 @@
   </div>
 </div>
 {% endblock %}
-
