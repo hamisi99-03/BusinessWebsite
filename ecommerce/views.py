@@ -23,6 +23,7 @@ from django.core.exceptions import ValidationError
 
 from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense, Cart, CartItem, Notification
 from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm, ConsignmentForm, SupplierForm, ExpenseForm
+from .notifications_util import send_notification_email
 from .serializers import (
     CustomerSerializer, ProductSerializer, OrderSerializer,
     OrderItemSerializer, PaymentSerializer, DebtSerializer
@@ -361,6 +362,14 @@ def order_product_view(request):
                 message=f"Order #{order.id} placed successfully for "
                         f"{product.name} x{quantity}. Awaiting payment confirmation."
             )
+            send_notification_email(
+                user=request.user,
+                subject=f"Order #{order.id} Placed - H&I Store",
+                message=f"Your order #{order.id} for {product.name} x{quantity} has been placed. "
+                        f"Total: KSh {order.get_total_amount()}. Awaiting payment confirmation.",
+                order=order,
+                request=request,
+            )
 
             messages.success(
                 request,
@@ -618,6 +627,15 @@ def update_order_status(request, pk):
                 order=order,
                 message=f"Your order #{order.id} has been shipped! "
                         f"Track your delivery for updates."
+            )
+            send_notification_email(
+                user=order.customer.user,
+                subject=f"Order #{order.id} Shipped - H&I Store",
+                message=f"Your order #{order.id} has been shipped! "
+                        f"Total: KSh {order.get_total_amount()}. "
+                        f"Track your delivery for updates.",
+                order=order,
+                request=request,
             )
         messages.success(request, f"Order #{order.id} status updated to {new_status}.")
     return redirect("admin_dashboard")
@@ -1189,6 +1207,14 @@ def checkout_from_cart(request):
                     message=f"Credit request #{order.id} submitted. "
                             f"Waiting for admin approval."
                 )
+                send_notification_email(
+                    user=request.user,
+                    subject=f"Credit Request #{order.id} Submitted - H&I Store",
+                    message=f"Your credit request #{order.id} for KSh {order.get_total_amount()} "
+                            f"has been submitted. Waiting for admin approval.",
+                    order=order,
+                    request=request,
+                )
             else:
                 Notification.objects.create(
                     notification_type='new_order',
@@ -1196,6 +1222,15 @@ def checkout_from_cart(request):
                     order=order,
                     message=f"Order #{order.id} placed. "
                             f"Awaiting payment confirmation."
+                )
+                send_notification_email(
+                    user=request.user,
+                    subject=f"Order #{order.id} Placed - H&I Store",
+                    message=f"Your order #{order.id} for KSh {order.get_total_amount()} "
+                            f"has been placed via {payment_type.upper()}. "
+                            f"Awaiting payment confirmation.",
+                    order=order,
+                    request=request,
                 )
 
             if payment_type == 'credit':
@@ -1260,6 +1295,14 @@ def approve_order(request, order_id):
                             f"for KSh {order.get_total_amount()}. "
                             f"Please arrange payment."
                 )
+                send_notification_email(
+                    user=order.customer.user,
+                    subject=f"Credit Order #{order.id} Approved - H&I Store",
+                    message=f"Your credit order #{order.id} for KSh {order.get_total_amount()} "
+                            f"has been approved. Please arrange payment.",
+                    order=order,
+                    request=request,
+                )
                 messages.success(
                     request,
                     f"Credit order #{order.id} approved. Add payments to complete."
@@ -1296,6 +1339,15 @@ def approve_order(request, order_id):
                             f"via {order.get_payment_type_display()}. "
                             f"KSh {order.get_total_amount()} received."
                 )
+                send_notification_email(
+                    user=order.customer.user,
+                    subject=f"Payment Confirmed for Order #{order.id} - H&I Store",
+                    message=f"Payment of KSh {order.get_total_amount()} for your order "
+                            f"#{order.id} via {order.get_payment_type_display()} "
+                            f"has been confirmed.",
+                    order=order,
+                    request=request,
+                )
                 messages.success(
                     request,
                     f"Payment confirmed for Order #{order.id} via {order.get_payment_type_display()}."
@@ -1320,6 +1372,14 @@ def approve_order(request, order_id):
                 order=order,
                 message=f"Your order #{order.id} has been rejected. "
                         f"{'Reason: ' + note if note else 'Contact admin for details.'}"
+            )
+            send_notification_email(
+                user=order.customer.user,
+                subject=f"Order #{order.id} Rejected - H&I Store",
+                message=f"Your order #{order.id} has been rejected. "
+                        f"{'Reason: ' + note if note else 'Please contact admin for more information.'}",
+                order=order,
+                request=request,
             )
             messages.warning(
                 request,
@@ -1355,6 +1415,15 @@ def approve_order(request, order_id):
                 message=f"Payment confirmed for your order #{order.id} "
                         f"via {order.get_payment_type_display()}. "
                         f"KSh {order.get_total_amount()} received."
+            )
+            send_notification_email(
+                user=order.customer.user,
+                subject=f"Payment Confirmed for Order #{order.id} - H&I Store",
+                message=f"Payment of KSh {order.get_total_amount()} for your order "
+                        f"#{order.id} via {order.get_payment_type_display()} "
+                        f"has been confirmed.",
+                order=order,
+                request=request,
             )
             messages.success(
                 request,
