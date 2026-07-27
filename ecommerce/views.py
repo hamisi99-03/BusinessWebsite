@@ -1084,6 +1084,8 @@ def checkout_from_cart(request):
             customer = Customer.objects.get(user=request.user)
             cart = Cart.objects.get(customer=customer)
             items = cart.items.select_related('product').all()
+            payment_type = request.POST.get('payment_type', 'cash')
+            mpesa_code = request.POST.get('mpesa_code', '').strip()
 
             if not items:
                 messages.error(request, "Your cart is empty.")
@@ -1098,10 +1100,19 @@ def checkout_from_cart(request):
                     )
                     return redirect('cart_view')
 
+            # Set status based on payment type
+            if payment_type == 'credit':
+                status = 'pending_approval'
+            else:
+                status = 'pending_payment'
+
             # Create one order with all cart items
             order = Order.objects.create(
                 customer=customer,
-                status='pending'
+                status=status,
+                payment_type=payment_type,
+                payment_status='pending_approval',
+                mpesa_code=mpesa_code if payment_type == 'mpesa' else None
             )
             for item in items:
                 OrderItem.objects.create(

@@ -73,14 +73,39 @@ class ProductImage(models.Model):
 
 
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending_payment', 'Pending Payment'),
+        ('pending_approval', 'Pending Approval'),
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+        ('rejected', 'Rejected'),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ('pending_approval', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('paid', 'Paid'),
+    ]
+
+    PAYMENT_TYPE_CHOICES = [
+        ('cash', 'Cash'),
+        ('mpesa', 'M-Pesa'),
+        ('credit', 'Credit'),
+    ]
+
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     order_date = models.DateTimeField(auto_now_add=True)
     shipped_date = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=50, choices=[
-        ('pending', 'Pending'),
-        ('shipped', 'Shipped'),
-        ('delivered', 'Delivered'),
-        ('canceled', 'Canceled')], default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
+    payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, default='cash')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending_approval')
+    admin_note = models.TextField(blank=True, null=True, help_text='Admin note for approval/rejection')
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    mpesa_code = models.CharField(max_length=20, blank=True, null=True, help_text='M-Pesa transaction code if applicable')
+    mpesa_checkout_request_id = models.CharField(max_length=100, blank=True, null=True, help_text='M-Pesa STK Push CheckoutRequestID')
 
     def __str__(self):
         return f"Order {self.id} by {self.customer.user.username}"
@@ -348,13 +373,19 @@ class CartItem(models.Model):
 class Notification(models.Model):
     TYPES = [
         ('new_order', 'New Order'),
-        ('payment', 'New Payment'),
+        ('order_approved', 'Order Approved'),
+        ('order_shipped', 'Order Shipped'),
+        ('payment_received', 'Payment Received'),
         ('low_stock', 'Low Stock'),
     ]
     notification_type = models.CharField(
         max_length=20, choices=TYPES, default='new_order'
     )
     message = models.TextField()
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='notifications'
+    )
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE,
         null=True, blank=True, related_name='notifications'

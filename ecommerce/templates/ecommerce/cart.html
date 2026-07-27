@@ -135,12 +135,38 @@
 
         <form method="POST" action="{% url 'checkout_from_cart' %}">
           {% csrf_token %}
+          <div class="mb-3">
+            <label style="font-weight:600;font-size:0.85rem;margin-bottom:6px;display:block;">
+              Payment Method
+            </label>
+            <select name="payment_type" class="form-select"
+                    style="border-radius:8px;font-size:0.9rem;padding:0.5rem 0.75rem;">
+              <option value="cash">Cash</option>
+              <option value="mpesa">M-Pesa</option>
+              <option value="credit">Credit</option>
+            </select>
+          </div>
+          <div id="mpesa_code_group" style="display:none;" class="mb-3">
+            <label style="font-weight:600;font-size:0.85rem;margin-bottom:6px;display:block;">
+              M-Pesa Transaction Code
+            </label>
+            <input type="text" name="mpesa_code" class="form-control"
+                   placeholder="e.g. WSQ123ABC"
+                   style="border-radius:8px;font-size:0.9rem;padding:0.5rem 0.75rem;">
+          </div>
           <button type="submit" class="btn btn-primary w-100"
                   style="padding:0.75rem;font-size:1rem;">
             <i class="bi bi-bag-check me-2"></i>
             Place Order
           </button>
         </form>
+
+<script>
+document.querySelector('[name="payment_type"]').addEventListener('change', function() {
+  document.getElementById('mpesa_code_group').style.display =
+    this.value === 'mpesa' ? 'block' : 'none';
+});
+</script>
 
         <a href="{% url 'product_list' %}"
            class="btn btn-outline-secondary w-100 mt-2">
