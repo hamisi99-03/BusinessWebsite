@@ -152,44 +152,66 @@
       </div>
     </div>
 
-    <!-- PAYMENT HISTORY -->
+    <!-- PAYMENT HISTORY / INSTALLMENTS -->
     <div class="card">
-      <div class="card-header">
-        <i class="bi bi-credit-card me-2"></i>Payment History
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2"></i>Payment History</span>
+        <span style="font-size:0.8rem;color:#6B7280;">
+          {{ order.payments.count }} payment{{ order.payments.count|pluralize }}
+        </span>
       </div>
       <div class="card-body p-0">
-        {% for payment in order.payment_set.all %}
-        <div style="padding:1rem 1.25rem;
-                    border-bottom:1px solid var(--border);
-                    display:flex;align-items:center;gap:12px;">
-          <div style="width:40px;height:40px;border-radius:10px;
-                      background:{% if payment.payment_method == 'mpesa' %}#D1FAE5{% else %}#FEF3C7{% endif %};
-                      display:flex;align-items:center;
-                      justify-content:center;flex-shrink:0;">
-            <i class="bi bi-{% if payment.payment_method == 'mpesa' %}phone{% else %}cash-coin{% endif %}"
-               style="color:{% if payment.payment_method == 'mpesa' %}#10B981{% else %}#F59E0B{% endif %};
-                      font-size:1rem;"></i>
-          </div>
-          <div style="flex:1;">
-            <div style="font-weight:600;font-size:0.875rem;">
-              {{ payment.payment_method|title }} Payment
-            </div>
-            <div style="font-size:0.78rem;color:var(--muted);">
-              {{ payment.payment_date|date:"M d, Y" }} at
-              {{ payment.payment_date|time:"g:i A" }}
-            </div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-weight:800;color:#10B981;">
-              KSh {{ payment.amount|floatformat:0 }}
-            </div>
-            <span class="badge-status badge-{{ payment.status|lower }}"
-                  style="font-size:0.7rem;">
-              {{ payment.status|title }}
-            </span>
-          </div>
+        {% if order.payments.all %}
+        <div class="table-responsive">
+          <table class="table table-borderless mb-0">
+            <thead>
+              <tr style="border-bottom:2px solid #F3F4F6;">
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">#</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">Date</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">Method</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;text-align:right;">Amount</th>
+                <th style="padding:0.75rem 1.25rem;font-size:0.72rem;color:#6B7280;font-weight:600;text-transform:uppercase;">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in order.payments.all %}
+              <tr style="border-bottom:1px solid #F3F4F6;">
+                <td style="padding:0.75rem 1.25rem;font-weight:600;color:#4F46E5;">{{ forloop.revcounter }}</td>
+                <td style="padding:0.75rem 1.25rem;color:#374151;">{{ p.payment_date|date:"M d, Y" }}</td>
+                <td style="padding:0.75rem 1.25rem;">
+                  <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:0.75rem;font-weight:600;
+                              background:{% if p.payment_method == 'cash' %}#FEF3C7;color:#92400E{% elif p.payment_method == 'mpesa' %}#D1FAE5;color:#065F46{% else %}#DBEAFE;color:#1E40AF{% endif %};">
+                    {{ p.get_payment_method_display }}
+                  </span>
+                </td>
+                <td style="padding:0.75rem 1.25rem;text-align:right;font-weight:700;color:#10B981;">KSh {{ p.amount|floatformat:0 }}</td>
+                <td style="padding:0.75rem 1.25rem;color:#9CA3AF;font-size:0.85rem;">{{ p.notes|default:'—' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr style="border-top:2px solid #E5E7EB;">
+                <td colspan="3" style="padding:0.75rem 1.25rem;font-weight:700;text-align:right;">Total Paid</td>
+                <td style="padding:0.75rem 1.25rem;text-align:right;font-weight:800;color:#10B981;">KSh {{ order.get_total_paid|floatformat:0 }}</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td colspan="3" style="padding:0.75rem 1.25rem;font-weight:700;text-align:right;{% if order.get_outstanding_balance == 0 %}color:#10B981{% endif %};">
+                  {% if order.get_outstanding_balance == 0 %}
+                    <i class="bi bi-check-circle-fill me-1"></i> Fully Paid
+                  {% else %}
+                    Outstanding Balance
+                  {% endif %}
+                </td>
+                <td style="padding:0.75rem 1.25rem;text-align:right;font-weight:800;color:{% if order.get_outstanding_balance == 0 %}#10B981{% else %}#EF4444{% endif %};">
+                  KSh {{ order.get_outstanding_balance|floatformat:0 }}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-        {% empty %}
+        {% else %}
         <div style="text-align:center;padding:2.5rem;">
           <div style="width:80px;height:80px;border-radius:50%;
                       background:#FEF3C7;display:flex;
@@ -205,7 +227,7 @@
             Payments will appear here once recorded
           </div>
         </div>
-        {% endfor %}
+        {% endif %}
       </div>
     </div>
   </div>
