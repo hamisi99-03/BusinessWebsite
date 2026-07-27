@@ -609,8 +609,7 @@
     <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 w-100">
 
       {% if user.is_authenticated %}
-        {% if user.is_staff %}
-        <!-- Notification Bell -->
+        <!-- Notification Bell (all authenticated users) -->
         <a href="{% url 'notifications' %}"
            class="nav-link position-relative"
            style="padding:0.4rem 0.6rem !important;">
@@ -626,6 +625,7 @@
           </span>
           {% endif %}
         </a>
+        {% if user.is_staff %}
         <a href="{% url 'admin_dashboard' %}"
            class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
           <i class="bi bi-speedometer2 me-1"></i> Admin

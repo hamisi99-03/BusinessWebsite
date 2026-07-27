@@ -354,6 +354,13 @@ def order_product_view(request):
                 message=f"New order #{order.id} from {customer.user.username} "
                         f"for KSh {order.get_total_amount()} via CASH"
             )
+            Notification.objects.create(
+                notification_type='new_order',
+                user=request.user,
+                order=order,
+                message=f"Order #{order.id} placed successfully for "
+                        f"{product.name} x{quantity}. Awaiting payment confirmation."
+            )
 
             messages.success(
                 request,
@@ -604,6 +611,14 @@ def update_order_status(request, pk):
             except Debt.DoesNotExist:
                 pass
         
+        if new_status == 'shipped':
+            Notification.objects.create(
+                notification_type='order_shipped',
+                user=order.customer.user,
+                order=order,
+                message=f"Your order #{order.id} has been shipped! "
+                        f"Track your delivery for updates."
+            )
         messages.success(request, f"Order #{order.id} status updated to {new_status}.")
     return redirect("admin_dashboard")
 
@@ -1165,6 +1180,23 @@ def checkout_from_cart(request):
                         f"for KSh {order.get_total_amount()} "
                         f"via {payment_type.upper()}"
             )
+            # Notify customer
+            if payment_type == 'credit':
+                Notification.objects.create(
+                    notification_type='new_order',
+                    user=request.user,
+                    order=order,
+                    message=f"Credit request #{order.id} submitted. "
+                            f"Waiting for admin approval."
+                )
+            else:
+                Notification.objects.create(
+                    notification_type='new_order',
+                    user=request.user,
+                    order=order,
+                    message=f"Order #{order.id} placed. "
+                            f"Awaiting payment confirmation."
+                )
 
             if payment_type == 'credit':
                 messages.success(
@@ -1220,6 +1252,14 @@ def approve_order(request, order_id):
                             f"{order.customer.user.username}. "
                             f"Stock deducted."
                 )
+                Notification.objects.create(
+                    notification_type='order_approved',
+                    user=order.customer.user,
+                    order=order,
+                    message=f"Your credit order #{order.id} has been approved "
+                            f"for KSh {order.get_total_amount()}. "
+                            f"Please arrange payment."
+                )
                 messages.success(
                     request,
                     f"Credit order #{order.id} approved. Add payments to complete."
@@ -1248,6 +1288,14 @@ def approve_order(request, order_id):
                             f"({order.payment_type.upper()}) from "
                             f"{order.customer.user.username}."
                 )
+                Notification.objects.create(
+                    notification_type='payment_received',
+                    user=order.customer.user,
+                    order=order,
+                    message=f"Payment confirmed for your order #{order.id} "
+                            f"via {order.get_payment_type_display()}. "
+                            f"KSh {order.get_total_amount()} received."
+                )
                 messages.success(
                     request,
                     f"Payment confirmed for Order #{order.id} via {order.get_payment_type_display()}."
@@ -1265,6 +1313,13 @@ def approve_order(request, order_id):
                 notification_type='new_order',
                 order=order,
                 message=f"Order #{order.id} rejected by admin."
+            )
+            Notification.objects.create(
+                notification_type='new_order',
+                user=order.customer.user,
+                order=order,
+                message=f"Your order #{order.id} has been rejected. "
+                        f"{'Reason: ' + note if note else 'Contact admin for details.'}"
             )
             messages.warning(
                 request,
@@ -1293,6 +1348,14 @@ def approve_order(request, order_id):
                         f"({order.payment_type.upper()}) from "
                         f"{order.customer.user.username}."
             )
+            Notification.objects.create(
+                notification_type='payment_received',
+                user=order.customer.user,
+                order=order,
+                message=f"Payment confirmed for your order #{order.id} "
+                        f"via {order.get_payment_type_display()}. "
+                        f"KSh {order.get_total_amount()} received."
+            )
             messages.success(
                 request,
                 f"Payment confirmed for Order #{order.id} via {order.get_payment_type_display()}."
@@ -1300,20 +1363,23 @@ def approve_order(request, order_id):
     return redirect('admin_dashboard')
 
 
-@staff_member_required
+@login_required
 def notifications_view(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'mark_all_read':
-            Notification.objects.filter(is_read=False).update(is_read=True)
+            Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
             messages.success(request, 'All notifications marked as read.')
         elif action == 'mark_read':
             notif_id = request.POST.get('notification_id')
-            Notification.objects.filter(pk=notif_id, is_read=False).update(is_read=True)
+            Notification.objects.filter(pk=notif_id, user=request.user, is_read=False).update(is_read=True)
         return redirect('notifications')
 
-    notifications = Notification.objects.all()
-    unread_count = Notification.objects.filter(is_read=False).count()
+    if request.user.is_staff:
+        notifications = Notification.objects.all()
+    else:
+        notifications = Notification.objects.filter(user=request.user)
+    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
     return render(request, 'ecommerce/notifications.html', {
         'notifications': notifications,
         'unread_count': unread_count,

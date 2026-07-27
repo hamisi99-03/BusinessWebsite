@@ -410,13 +410,19 @@ class CartItem(models.Model):
 class Notification(models.Model):
     TYPES = [
         ('new_order', 'New Order'),
-        ('payment', 'New Payment'),
+        ('order_approved', 'Order Approved'),
+        ('order_shipped', 'Order Shipped'),
+        ('payment_received', 'Payment Received'),
         ('low_stock', 'Low Stock'),
     ]
     notification_type = models.CharField(
         max_length=20, choices=TYPES, default='new_order'
     )
     message = models.TextField()
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        null=True, blank=True, related_name='notifications'
+    )
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE,
         null=True, blank=True, related_name='notifications'
