@@ -340,13 +340,13 @@
                            title="Confirm Payment">
                      <i class="bi bi-check-circle"></i> Approve
                    </button>
-                   {% elif order.payment_status == 'approved' and order.payment_type == 'credit' %}
-                   <!-- Credit approved, awaiting payments -->
-                   <a href="{% url 'add_payment' order.id %}"
-                      class="btn btn-sm btn-outline-success"
-                      title="Add Payment">
-                     <i class="bi bi-plus-circle"></i> Add Payment
-                   </a>
+                    {% elif order.payment_status == 'approved' and order.payment_type == 'credit' and order.get_outstanding_balance %}
+                    <!-- Credit approved, awaiting payments -->
+                    <a href="{% url 'add_payment' order.id %}"
+                       class="btn btn-sm btn-outline-success"
+                       title="Add Payment">
+                      <i class="bi bi-plus-circle"></i> Add Payment
+                    </a>
                    {% endif %}
                    <a href="{% url 'admin_update_order' order.id %}"
                       class="btn btn-sm btn-outline-secondary"

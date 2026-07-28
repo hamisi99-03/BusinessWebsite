@@ -199,10 +199,10 @@
                       <i class="bi bi-x-lg"></i>
                     </button>
                   </form>
-                  {% elif order.payment_status == 'approved' and order.payment_type == 'credit' %}
-                  <a href="{% url 'add_payment' order.id %}" class="btn btn-sm btn-outline-success ms-1" title="Add Payment">
-                    <i class="bi bi-plus-circle"></i> Add Payment
-                  </a>
+                   {% elif order.payment_status == 'approved' and order.payment_type == 'credit' and order.get_outstanding_balance %}
+                   <a href="{% url 'add_payment' order.id %}" class="btn btn-sm btn-outline-success ms-1" title="Add Payment">
+                     <i class="bi bi-plus-circle"></i> Add Payment
+                   </a>
                   {% endif %}
                  <a href="{% url 'admin_update_order' order.pk %}" class="btn btn-sm btn-outline-secondary ms-1">Edit</a>
                  <a href="{% url 'admin_delete_order' order.pk %}" class="btn btn-sm btn-outline-danger ms-1">Delete</a>

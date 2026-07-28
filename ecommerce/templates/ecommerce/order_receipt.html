@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipt — Order #{{ order.id }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #fff;
+      padding: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    .no-print { display: block; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header h1 { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+    .header .sub { font-size: 11px; color: #666; margin-top: 4px; }
+    .divider {
+      border-top: 1px dashed #333;
+      margin: 12px 0;
+    }
+    .thick-divider {
+      border-top: 2px solid #333;
+      margin: 12px 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+    .info-row .label { color: #666; }
+    .items-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    .items-table th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #333;
+      padding: 6px 0;
+    }
+    .items-table th:last-child,
+    .items-table td:last-child { text-align: right; }
+    .items-table td {
+      padding: 6px 0;
+      border-bottom: 1px dotted #ccc;
+      vertical-align: top;
+    }
+    .items-table .item-name { max-width: 180px; word-break: break-word; }
+    .items-table .item-qty { text-align: center; }
+    .items-table .item-price { text-align: right; }
+    .totals { margin-top: 8px; }
+    .totals .row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+    }
+    .totals .grand-total {
+      font-weight: 800;
+      font-size: 15px;
+      border-top: 2px solid #333;
+      padding-top: 6px;
+      margin-top: 4px;
+    }
+    .payment-history { margin-top: 16px; }
+    .payment-history h3 {
+      font-size: 12px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #333;
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+    .payment-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 2px 0;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 11px;
+      color: #999;
+    }
+    .actions {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .actions button {
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      padding: 10px 32px;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    .actions button:hover { background: #333; }
+    .paid-stamp {
+      text-align: center;
+      margin: 10px 0;
+    }
+    .paid-stamp span {
+      display: inline-block;
+      border: 3px double #1a1a1a;
+      padding: 4px 20px;
+      font-weight: 800;
+      font-size: 16px;
+      letter-spacing: 3px;
+    }
+    @media print {
+      .no-print { display: none; }
+      body { padding: 0; max-width: 100%; }
+      @page { margin: 12mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>H&amp;I STORE</h1>
+    <div class="sub">Mombasa, Kenya</div>
+    <div class="sub">+254 700 000 000 &bull; info@bizstore.co.ke</div>
+  </div>
+
+  <div class="paid-stamp">
+    <span>PAID</span>
+  </div>
+
+  <div class="thick-divider"></div>
+
+  <div style="text-align:center;margin-bottom:10px;">
+    <strong>RECEIPT</strong>
+  </div>
+
+  <div class="info-row">
+    <span class="label">Receipt No:</span>
+    <span>RCT-{{ order.id }}-{{ order.order_date|date:"Ymd" }}</span>
+  </div>
+  <div class="info-row">
+    <span class="label">Order No:</span>
+    <span>#{{ order.id }}</span>
+  </div>
+  <div class="info-row">
+    <span class="label">Date:</span>
+    <span>{{ order.order_date|date:"M d, Y" }}</span>
+  </div>
+  <div class="info-row">
+    <span class="label">Customer:</span>
+    <span>{{ order.customer.user.get_full_name|default:order.customer.user.username }}</span>
+  </div>
+  <div class="info-row">
+    <span class="label">Payment:</span>
+    <span>{{ order.get_payment_type_display }}</span>
+  </div>
+  {% if order.mpesa_code %}
+  <div class="info-row">
+    <span class="label">M-Pesa Code:</span>
+    <span>{{ order.mpesa_code }}</span>
+  </div>
+  {% endif %}
+
+  <div class="thick-divider"></div>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th style="text-align:center;">Qty</th>
+        <th style="text-align:right;">Price</th>
+        <th style="text-align:right;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="item-name">{{ item.product.name }}</td>
+        <td class="item-qty">{{ item.quantity }}</td>
+        <td class="item-price">{{ item.price|floatformat:0 }}</td>
+        <td>{{ item.total|floatformat:0 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+
+  <div class="totals">
+    <div class="row">
+      <span>Subtotal</span>
+      <span>KSh {{ order.get_total_amount|floatformat:0 }}</span>
+    </div>
+    {% if order.get_outstanding_balance == 0 and order.get_total_paid > 0 %}
+    <div class="row">
+      <span>Total Paid</span>
+      <span>KSh {{ order.get_total_paid|floatformat:0 }}</span>
+    </div>
+    {% endif %}
+    <div class="row grand-total">
+      <span>TOTAL</span>
+      <span>KSh {{ order.get_total_amount|floatformat:0 }}</span>
+    </div>
+  </div>
+
+  {% if order.payments.all %}
+  <div class="payment-history">
+    <h3>Payment Breakdown</h3>
+    {% for p in order.payments.all %}
+    <div class="payment-row">
+      <span>{{ p.payment_date|date:"M d, Y" }} &mdash; {{ p.get_payment_method_display }}</span>
+      <span>KSh {{ p.amount|floatformat:0 }}</span>
+    </div>
+    {% endfor %}
+    <div class="divider"></div>
+    <div class="payment-row" style="font-weight:800;">
+      <span>Total Paid</span>
+      <span>KSh {{ order.get_total_paid|floatformat:0 }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    <div class="divider"></div>
+    <p>Thank you for your business!</p>
+    <p style="margin-top:4px;">Items sold are non-returnable.</p>
+  </div>
+
+  <div class="actions no-print">
+    <button onclick="window.print()">Print Receipt</button>
+    <br><br>
+    <a href="{% url 'order_detail' order.pk %}" style="color:#666;font-size:12px;">&larr; Back to Order</a>
+  </div>
+</body>
+</html>

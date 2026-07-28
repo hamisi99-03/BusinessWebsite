@@ -105,7 +105,6 @@ class Order(models.Model):
     admin_note = models.TextField(blank=True, null=True, help_text='Admin note for approval/rejection')
     confirmed_at = models.DateTimeField(null=True, blank=True)
     mpesa_code = models.CharField(max_length=20, blank=True, null=True, help_text='M-Pesa transaction code if applicable')
-    mpesa_checkout_request_id = models.CharField(max_length=100, blank=True, null=True, help_text='M-Pesa STK Push CheckoutRequestID')
 
     def __str__(self):
         return f"Order {self.id} by {self.customer.user.username}"
