@@ -73,10 +73,6 @@ class ProductImage(models.Model):
 
 
 class Order(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    order_date = models.DateTimeField(auto_now_add=True)
-    shipped_date = models.DateTimeField(null=True, blank=True)
-
     STATUS_CHOICES = [
         ('pending_payment', 'Pending Payment'),
         ('pending_approval', 'Pending Approval'),
@@ -100,33 +96,15 @@ class Order(models.Model):
         ('credit', 'Credit'),
     ]
 
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pending_payment'
-    )
-    payment_type = models.CharField(
-        max_length=10,
-        choices=PAYMENT_TYPE_CHOICES,
-        default='cash'
-    )
-    mpesa_code = models.CharField(
-        max_length=20,
-        blank=True,
-        null=True,
-        help_text='M-Pesa transaction code if applicable'
-    )
-    admin_note = models.TextField(
-        blank=True,
-        null=True,
-        help_text='Admin note for approval/rejection'
-    )
-    payment_status = models.CharField(
-        max_length=20,
-        choices=PAYMENT_STATUS_CHOICES,
-        default='pending_approval'
-    )
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    order_date = models.DateTimeField(auto_now_add=True)
+    shipped_date = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_payment')
+    payment_type = models.CharField(max_length=10, choices=PAYMENT_TYPE_CHOICES, default='cash')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending_approval')
+    admin_note = models.TextField(blank=True, null=True, help_text='Admin note for approval/rejection')
     confirmed_at = models.DateTimeField(null=True, blank=True)
+    mpesa_code = models.CharField(max_length=20, blank=True, null=True, help_text='M-Pesa transaction code if applicable')
 
     def __str__(self):
         return f"Order {self.id} by {self.customer.user.username}"

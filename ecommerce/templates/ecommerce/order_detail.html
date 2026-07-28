@@ -353,6 +353,12 @@
 
     <!-- ACTIONS -->
     <div class="d-flex flex-column gap-2">
+      {% if order.payment_status == 'paid' and order.get_outstanding_balance == 0 %}
+      <a href="{% url 'order_receipt' order.pk %}"
+         class="btn btn-success w-100">
+        <i class="bi bi-receipt me-1"></i> Print Receipt
+      </a>
+      {% endif %}
       <a href="{% url 'orders_list' %}"
          class="btn btn-outline-primary w-100">
         <i class="bi bi-arrow-left me-1"></i> Back to Orders

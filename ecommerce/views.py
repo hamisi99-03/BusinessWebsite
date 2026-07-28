@@ -1162,12 +1162,12 @@ def checkout_from_cart(request):
             else:
                 status = 'pending_payment'
 
-            # Create order
+            # Create one order with all cart items
             order = Order.objects.create(
                 customer=customer,
                 status=status,
                 payment_type=payment_type,
-                payment_status='pending_approval' if payment_type == 'credit' else 'pending_approval',
+                payment_status='pending_approval',
                 mpesa_code=mpesa_code if payment_type == 'mpesa' else None
             )
 
@@ -1580,3 +1580,32 @@ def financial_report(request):
     }
 
     return render(request, 'ecommerce/financial_report.html', context)
+
+
+# -------------------
+# Receipt / Invoice
+# -------------------
+@login_required
+def receipt_view(request, pk):
+    if request.user.is_staff:
+        order = get_object_or_404(Order, pk=pk)
+    else:
+        try:
+            customer = Customer.objects.get(user=request.user)
+        except Customer.DoesNotExist:
+            messages.error(request, 'Customer profile not found.')
+            return redirect('dashboard')
+        order = get_object_or_404(Order, pk=pk, customer=customer)
+
+    if order.payment_status != 'paid' or order.get_outstanding_balance() > 0:
+        messages.error(request, 'Receipt is only available for fully paid orders.')
+        return redirect('order_detail', pk=order.pk)
+
+    items = order.items.all()
+    for item in items:
+        item.total = item.price * item.quantity
+
+    return render(request, 'ecommerce/order_receipt.html', {
+        'order': order,
+        'items': items,
+    })

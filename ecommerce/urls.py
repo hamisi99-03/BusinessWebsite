@@ -15,7 +15,7 @@ from .views import (
     admin_update_order, admin_delete_order, adjust_stock, record_payment, create_category, create_brand, cart_view, add_to_cart, remove_from_cart, update_cart_item, checkout_from_cart,
     product_detail, mark_payment_paid,
     consignment_list, add_consignment, add_supplier, add_expense, expense_list, financial_report,
-    notifications_view, approve_order
+    notifications_view, approve_order, receipt_view
 )
 
 router = DefaultRouter()
@@ -39,6 +39,7 @@ urlpatterns = [
     path('dashboard/', dashboard_view, name='dashboard'),
     path('orders/list', orders_list_view, name='orders_list'),
     path('orders/detail/<int:pk>/', order_detail_view, name='order_detail'),
+    path('orders/receipt/<int:pk>/', receipt_view, name='order_receipt'),
     path('my-debts/', debts_list_view, name='debts_list'),
     path('profile-page/', profile_view, name='profile_page'),
     path('auth/change-password/', change_password_view, name='change_password'),
