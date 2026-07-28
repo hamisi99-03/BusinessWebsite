@@ -666,7 +666,7 @@
         <a href="{% url 'cart_view' %}"
            class="nav-link position-relative {% if request.resolver_match.url_name == 'cart_view' %}active{% endif %}"
            style="padding:0.4rem 0.6rem !important;">
-          <i class="bi bi-cart3" style="font-size:1.1rem;"></i>
+          <i class="bi bi-cart3 me-1" style="font-size:1.1rem;"></i> Cart
           {% if request.user.customer.cart %}
             {% with request.user.customer.cart.get_item_count as count %}
               {% if count and count > 0 %}
