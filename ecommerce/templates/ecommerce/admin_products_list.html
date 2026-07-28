@@ -122,21 +122,39 @@
       </div>
       <div class="product-info">
         <div class="d-flex justify-content-between align-items-start mb-1">
-          <div class="product-name">{{ product.name }}</div>
-          {% if product.stock == 0 %}
+          <div class="product-name">
+            {% if product.featured %}<i class="bi bi-star-fill" style="color:#F2CC8F;font-size:0.8rem;"></i>{% endif %}
+            {{ product.name }}
+          </div>
+          <div class="d-flex gap-1 flex-wrap justify-content-end">
+            {% if product.featured %}
+            <span class="badge" style="background:#FEF3C7;color:#92400E;font-size:0.65rem;">Featured</span>
+            {% endif %}
+            {% if product.stock == 0 %}
             <span class="badge bg-danger">Out of Stock (0)</span>
-          {% elif product.stock <= 5 %}
+            {% elif product.stock <= 5 %}
             <span class="badge bg-warning text-dark">Low Stock ({{ product.stock }})</span>
-          {% else %}
+            {% else %}
             <span class="badge bg-success">In Stock ({{ product.stock }})</span>
-          {% endif %}
+            {% endif %}
+          </div>
         </div>
+        {% if product.sku %}
+        <div style="font-size:0.72rem;color:#9CA3AF;margin-bottom:4px;font-family:monospace;">SKU: {{ product.sku }}</div>
+        {% endif %}
         <p style="font-size:0.78rem;color:#6B7280;margin-bottom:8px;
                     display:-webkit-box;-webkit-line-clamp:2;
                     -webkit-box-orient:vertical;overflow:hidden;">
           {{ product.description }}
         </p>
-        <div class="product-price mb-3">KSh {{ product.price }}</div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <div class="product-price">KSh {{ product.price }}</div>
+            {% if product.cost_price %}
+            <div style="font-size:0.7rem;color:#9CA3AF;">Cost: KSh {{ product.cost_price|floatformat:0 }} &bull; Profit: KSh {{ product.get_profit|floatformat:0 }} ({{ product.get_margin_percent }}%)</div>
+            {% endif %}
+          </div>
+        </div>
         <div class="d-flex gap-2">
           <a href="{% url 'update_product' product.pk %}"
              style="flex:1;padding:8px 12px;border-radius:50px;border:1px solid var(--border,#F2E8DA);background:white;color:var(--text,#3D405B);text-decoration:none;font-size:0.78rem;font-weight:600;font-family:'Quicksand',sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:4px;transition:all 0.15s;"

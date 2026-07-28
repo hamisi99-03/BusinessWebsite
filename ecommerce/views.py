@@ -1022,12 +1022,18 @@ def create_brand(request):
     if not name:
         return JsonResponse({'error': 'Name is required.'}, status=400)
     category_id = request.POST.get('category_id')
-    kwargs = {'name': name}
+
+    brand = Brand.objects.filter(name=name).first()
+    if brand:
+        if category_id and str(brand.category_id or '') != category_id:
+            brand.category_id = category_id
+            brand.save()
+        return JsonResponse({'success': True, 'id': brand.id, 'name': brand.name, 'category_id': brand.category_id})
+
+    brand = Brand(name=name)
     if category_id:
-        kwargs['category_id'] = category_id
-    brand, created = Brand.objects.get_or_create(**kwargs)
-    if not created:
-        return JsonResponse({'error': 'Brand already exists.'}, status=400)
+        brand.category_id = category_id
+    brand.save()
     return JsonResponse({'success': True, 'id': brand.id, 'name': brand.name, 'category_id': brand.category_id})
 
 

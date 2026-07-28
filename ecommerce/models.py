@@ -23,19 +23,26 @@ class Category(models.Model):
 
 
 class Brand(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=110, unique=True, blank=True)
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=110, blank=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='brands', null=True, blank=True)
 
     class Meta:
         ordering = ['name']
+        unique_together = [['name', 'category']]
 
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+            while Brand.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
 
@@ -52,10 +59,23 @@ class Customer(models.Model):
 class Product(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
+    sku = models.CharField(max_length=50, unique=True, blank=True, null=True, help_text='Stock Keeping Unit / Product Code')
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, help_text='Supplier cost price for profit calculation')
     stock = models.PositiveIntegerField()
+    featured = models.BooleanField(default=False, help_text='Show as featured/best seller on the storefront')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
+
+    def get_profit(self):
+        if self.cost_price is not None:
+            return self.price - self.cost_price
+        return None
+
+    def get_margin_percent(self):
+        if self.cost_price and self.cost_price > 0:
+            return int((self.get_profit() / self.cost_price) * 100)
+        return None
 
     def __str__(self):
         return self.name

@@ -248,8 +248,14 @@
     <div class="product-card h-100">
 
       <!-- Product Category/Brand Tags -->
-      {% if product.category or product.brand %}
+      {% if product.featured or product.category or product.brand %}
       <div class="p-2 pb-0 d-flex gap-1 flex-wrap">
+        {% if product.featured %}
+        <span class="badge"
+              style="background:#FEF3C7;color:#92400E;font-size:0.7rem;">
+          <i class="bi bi-star-fill" style="font-size:0.6rem;"></i> Featured
+        </span>
+        {% endif %}
         {% if product.category %}
           <span class="badge"
                 style="background:#EEF2FF;color:#4F46E5;font-size:0.7rem;">

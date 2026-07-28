@@ -148,8 +148,21 @@
     <div style="margin-bottom:1rem;">
       <h1 style="font-size:clamp(1.5rem,3vw,2rem);font-weight:800;
                  margin-bottom:0.5rem;">
+        {% if product.featured %}<i class="bi bi-star-fill" style="color:#F2CC8F;font-size:1.3rem;"></i>{% endif %}
         {{ product.name }}
       </h1>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+        {% if product.featured %}
+        <span class="badge-status" style="background:#FEF3C7;color:#92400E;">
+          <i class="bi bi-star-fill" style="font-size:0.7rem;"></i> Best Seller
+        </span>
+        {% endif %}
+        {% if product.sku %}
+        <span class="badge-status" style="background:#F3F4F6;color:#6B7280;font-family:monospace;">
+          SKU: {{ product.sku }}
+        </span>
+        {% endif %}
+      </div>
       {% if product.stock > 0 %}
         <span class="badge-status badge-delivered">
           <i class="bi bi-check-circle-fill me-1"></i>
@@ -177,6 +190,12 @@
                   letter-spacing:-0.02em;">
         KSh {{ product.price|floatformat:0 }}
       </div>
+      {% if product.cost_price %}
+      <div style="font-size:0.82rem;color:#6B7280;margin-top:6px;">
+        Cost: KSh {{ product.cost_price|floatformat:0 }} &bull;
+        Profit: KSh {{ product.get_profit|floatformat:0 }} ({{ product.get_margin_percent }}%)
+      </div>
+      {% endif %}
     </div>
 
     <!-- Description -->
