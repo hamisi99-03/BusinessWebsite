@@ -108,6 +108,17 @@ def logout_view(request):
 
 @login_required
 def dashboard_view(request):
+    products = Product.objects.filter(stock__gt=0).prefetch_related('images').order_by('-featured', 'name')[:12]
+    categories = Category.objects.all()
+
+    return render(request, 'ecommerce/dashboard.html', {
+        'products': products,
+        'categories': categories,
+    })
+
+
+@login_required
+def my_stats_view(request):
     try:
         customer = Customer.objects.get(user=request.user)
         orders = Order.objects.filter(customer=customer).order_by('-order_date')
@@ -125,7 +136,7 @@ def dashboard_view(request):
         pending_orders = 0
         recent_orders = []
 
-    return render(request, 'ecommerce/dashboard.html', {
+    return render(request, 'ecommerce/my_stats.html', {
         'total_orders': total_orders,
         'total_spent': total_spent,
         'outstanding': outstanding,

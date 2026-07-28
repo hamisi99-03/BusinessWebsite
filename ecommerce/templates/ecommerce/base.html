@@ -663,6 +663,10 @@
            class="nav-link {% if request.resolver_match.url_name == 'debts_list' %}active{% endif %}">
           <i class="bi bi-wallet2 me-1"></i> Debts
         </a>
+        <a href="{% url 'my_stats' %}"
+           class="nav-link {% if request.resolver_match.url_name == 'my_stats' %}active{% endif %}">
+          <i class="bi bi-bar-chart me-1"></i> Activity
+        </a>
         <a href="{% url 'cart_view' %}"
            class="nav-link position-relative {% if request.resolver_match.url_name == 'cart_view' %}active{% endif %}"
            style="padding:0.4rem 0.6rem !important;">
