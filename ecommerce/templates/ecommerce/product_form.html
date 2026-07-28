@@ -35,22 +35,47 @@
             {{ form.description }}
             {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
           </div>
+          <div class="mb-3">
+            <label class="form-label">SKU / Product Code</label>
+            {{ form.sku }}
+            {% if form.sku.errors %}<div class="text-danger small">{{ form.sku.errors }}</div>{% endif %}
+            <div style="font-size:0.78rem;color:#9CA3AF;margin-top:4px;">Unique product code for inventory tracking (e.g. SAM-GAL-S22-128)</div>
+          </div>
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">Price (KSh) <span style="color:#EF4444;">*</span></label>
+              <label class="form-label">Selling Price (KSh) <span style="color:#EF4444;">*</span></label>
               <div class="input-group">
                 <span class="input-group-text" style="background:#F9FAFB;border:1px solid #E5E7EB;border-right:none;border-radius:8px 0 0 8px;font-weight:600;color:#6B7280;">KSh</span>
                 {{ form.price }}
               </div>
               {% if form.price.errors %}<div class="text-danger small">{{ form.price.errors }}</div>{% endif %}
             </div>
-            <div class="col-12 col-md-6">
+            <div class="col-md-6">
+              <label class="form-label">Cost Price (KSh)</label>
+              <div class="input-group">
+                <span class="input-group-text" style="background:#F9FAFB;border:1px solid #E5E7EB;border-right:none;border-radius:8px 0 0 8px;font-weight:600;color:#6B7280;">KSh</span>
+                {{ form.cost_price }}
+              </div>
+              {% if form.cost_price.errors %}<div class="text-danger small">{{ form.cost_price.errors }}</div>{% endif %}
+              <div style="font-size:0.78rem;color:#9CA3AF;margin-top:4px;">What you paid the supplier — used to calculate profit margin</div>
+            </div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
               <label class="form-label">Stock Quantity <span style="color:#EF4444;">*</span></label>
               <div class="input-group">
                 <span class="input-group-text" style="background:#F9FAFB;border:1px solid #E5E7EB;border-right:none;border-radius:8px 0 0 8px;font-weight:600;color:#6B7280;"><i class="bi bi-box-seam"></i></span>
                 {{ form.stock }}
               </div>
               {% if form.stock.errors %}<div class="text-danger small">{{ form.stock.errors }}</div>{% endif %}
+            </div>
+            <div class="col-md-6 d-flex align-items-end pb-2">
+              <div class="form-check">
+                {{ form.featured }}
+                <label class="form-check-label" for="id_featured" style="font-weight:600;cursor:pointer;">
+                  <i class="bi bi-star-fill" style="color:#F2CC8F;"></i> Featured / Best Seller
+                </label>
+              </div>
             </div>
           </div>
           <div class="mb-3 mt-3">
