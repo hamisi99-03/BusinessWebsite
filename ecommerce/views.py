@@ -985,7 +985,7 @@ def product_list(request):
             products = products.filter(brand__slug=brand_slug)
         
         categories = Category.objects.all()
-        brands = Brand.objects.all()
+        brands = Brand.objects.all().select_related('category')
         
         return render(request, "ecommerce/product_list.html", {
             "products": products,
@@ -1022,7 +1022,7 @@ def admin_products_list(request):
     out_of_stock_count = products.filter(stock=0).count()
     total_value = sum(p.price * p.stock for p in products)
     categories = Category.objects.all()
-    brands = Brand.objects.all()
+    brands = Brand.objects.all().select_related('category')
 
     return render(request, 'ecommerce/admin_products_list.html', {
         'products': products,
@@ -1054,10 +1054,14 @@ def create_brand(request):
     name = request.POST.get('name', '').strip()
     if not name:
         return JsonResponse({'error': 'Name is required.'}, status=400)
-    brand, created = Brand.objects.get_or_create(name=name)
+    category_id = request.POST.get('category_id')
+    kwargs = {'name': name}
+    if category_id:
+        kwargs['category_id'] = category_id
+    brand, created = Brand.objects.get_or_create(**kwargs)
     if not created:
         return JsonResponse({'error': 'Brand already exists.'}, status=400)
-    return JsonResponse({'success': True, 'id': brand.id, 'name': brand.name})
+    return JsonResponse({'success': True, 'id': brand.id, 'name': brand.name, 'category_id': brand.category_id})
 
 
 @login_required

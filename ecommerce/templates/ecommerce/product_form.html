@@ -60,7 +60,12 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Brand</label>
-            {{ form.brand }}
+            <select name="brand" id="id_brand" class="form-select">
+              <option value="">---------</option>
+              {% for b in form.fields.brand.queryset %}
+              <option value="{{ b.pk }}" data-category-id="{{ b.category_id|default:'' }}" {% if form.initial.brand == b.pk or form.data.brand|stringformat:"s" == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+              {% endfor %}
+            </select>
             {% if form.brand.errors %}<div class="text-danger small">{{ form.brand.errors }}</div>{% endif %}
           </div>
         </div>
@@ -197,5 +202,33 @@
       btn.dataset.marked = 'true';
     }
   };
+
+  const catSelect = document.getElementById('id_category');
+  const brandSelect = document.getElementById('id_brand');
+  const brandData = [];
+
+  Array.from(brandSelect.options).forEach(function(opt) {
+    if (opt.value) {
+      brandData.push({ value: opt.value, text: opt.text, categoryId: opt.dataset.categoryId });
+    }
+  });
+
+  function filterBrands() {
+    const catId = catSelect.value;
+    const currentVal = brandSelect.value;
+    brandSelect.innerHTML = '<option value="">---------</option>';
+    brandData.forEach(function(b) {
+      if (!catId || b.categoryId === catId) {
+        var opt = document.createElement('option');
+        opt.value = b.value;
+        opt.textContent = b.text;
+        if (b.value === currentVal) opt.selected = true;
+        brandSelect.appendChild(opt);
+      }
+    });
+  }
+
+  catSelect.addEventListener('change', filterBrands);
+  filterBrands();
 </script>
 {% endblock %}
