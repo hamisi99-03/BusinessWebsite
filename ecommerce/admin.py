@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
 from django.utils.html import format_html
 from .models import Customer, Product, ProductImage, Order, OrderItem, Payment, Debt, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense
 from .widgets import DragDropFileInput
@@ -40,6 +42,27 @@ class ExpenseAdmin(admin.ModelAdmin):
     list_display = ('category', 'description', 'amount', 'date', 'recorded_by')
     list_filter = ('category', 'date')
     search_fields = ('description',)
+
+# --- User (Auth) ---
+class UserAdmin(BaseUserAdmin):
+    list_display = ('username', 'email', 'is_staff', 'is_active', 'date_joined')
+    list_filter = ('is_staff', 'is_active', 'groups')
+    search_fields = ('username', 'email')
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2'),
+        }),
+    )
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
 
 # --- Customer ---
 @admin.register(Customer)
