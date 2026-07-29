@@ -22,10 +22,10 @@ from .views import (
 router = DefaultRouter()
 router.register(r'customers', CustomerViewSet)
 router.register(r'products', ProductViewSet)
-router.register(r'orders', OrderViewSet)
-router.register(r'order-items', OrderItemViewSet)
-router.register(r'payments', PaymentViewSet)
-router.register(r'debts', DebtViewSet)
+router.register(r'orders', OrderViewSet, basename='order')
+router.register(r'order-items', OrderItemViewSet, basename='orderitem')
+router.register(r'payments', PaymentViewSet, basename='payment')
+router.register(r'debts', DebtViewSet, basename='debt')
 
 urlpatterns = [
     path('debts/', lambda request: redirect('/api/my-debts/')),

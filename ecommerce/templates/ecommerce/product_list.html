@@ -592,9 +592,9 @@
     brandFilter.innerHTML = '<option value="">All Brands</option>';
     {% for brand in brands %}
     var opt = document.createElement('option');
-    opt.value = '{{ brand.slug }}';
-    opt.textContent = '{{ brand.name }}';
-    opt.dataset.categorySlug = '{{ brand.category.slug|default:'' }}';
+    opt.value = '{{ brand.slug|escapejs }}';
+    opt.textContent = '{{ brand.name|escapejs }}';
+    opt.dataset.categorySlug = '{{ brand.category.slug|default:''|escapejs }}';
     if (!cat || opt.dataset.categorySlug === cat) {
       brandFilter.appendChild(opt);
     }

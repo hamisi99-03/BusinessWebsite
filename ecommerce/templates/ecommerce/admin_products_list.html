@@ -451,9 +451,9 @@
     brandFilter.innerHTML = '<option value="">All Brands</option>';
     {% for b in brands %}
     var opt = document.createElement('option');
-    opt.value = '{{ b.name }}';
-    opt.textContent = '{{ b.name }}';
-    opt.dataset.categoryName = '{{ b.category.name|default:'' }}';
+    opt.value = '{{ b.name|escapejs }}';
+    opt.textContent = '{{ b.name|escapejs }}';
+    opt.dataset.categoryName = '{{ b.category.name|default:''|escapejs }}';
     if (!cat || opt.dataset.categoryName === cat) {
       brandFilter.appendChild(opt);
     }

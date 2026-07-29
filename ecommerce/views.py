@@ -2,10 +2,10 @@ import json
 from django.db.models import Sum, Count
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
@@ -33,29 +33,65 @@ from .serializers import (
 # -------------------
 # DRF ViewSets
 # -------------------
+class StaffOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_staff
+
+class StaffOrReadPublic(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user and request.user.is_staff
+
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    permission_classes = [StaffOnly]
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
+    permission_classes = [StaffOrReadPublic]
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Order.objects.all()
+        return Order.objects.filter(customer__user=user)
 
 class OrderItemViewSet(viewsets.ModelViewSet):
-    queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return OrderItem.objects.all()
+        return OrderItem.objects.filter(order__customer__user=user)
 
 class PaymentViewSet(viewsets.ModelViewSet):
-    queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Payment.objects.all()
+        return Payment.objects.filter(order__customer__user=user)
 
 class DebtViewSet(viewsets.ModelViewSet):
-    queryset = Debt.objects.all()
     serializer_class = DebtSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Debt.objects.all()
+        return Debt.objects.filter(customer__user=user)
 
 def register_view(request):
     if request.method == 'POST':
@@ -830,14 +866,26 @@ def add_payment(request, order_id=None):
     })
 
 
-@staff_member_required
+ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+
+def validate_image(file):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise ValidationError(f'Invalid file type "{file.content_type}". Allowed: JPEG, PNG, GIF, WebP.')
+    if file.size > MAX_IMAGE_SIZE:
+        raise ValidationError(f'File too large ({file.size // 1024} KB). Max: {MAX_IMAGE_SIZE // 1024 // 1024} MB.')
+
 def add_product(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
         if form.is_valid():
             product = form.save()
             for image in request.FILES.getlist('images'):
-                ProductImage.objects.create(product=product, image=image)
+                try:
+                    validate_image(image)
+                    ProductImage.objects.create(product=product, image=image)
+                except ValidationError as e:
+                    messages.error(request, f"Image '{image.name}': {e.message}")
             messages.success(request, f"Product '{product.name}' added successfully.")
             return redirect("admin_products_list")
     else:
@@ -846,6 +894,7 @@ def add_product(request):
     return render(request, "ecommerce/product_form.html", {"form": form})
 
 
+@staff_member_required
 def update_product(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == "POST":
@@ -853,7 +902,11 @@ def update_product(request, pk):
         if form.is_valid():
             form.save()
             for image in request.FILES.getlist('images'):
-                ProductImage.objects.create(product=product, image=image)
+                try:
+                    validate_image(image)
+                    ProductImage.objects.create(product=product, image=image)
+                except ValidationError as e:
+                    messages.error(request, f"Image '{image.name}': {e.message}")
             delete_ids = request.POST.getlist('delete_images')
             if delete_ids:
                 ProductImage.objects.filter(id__in=delete_ids).delete()
