@@ -115,8 +115,8 @@ def register_view(request):
                     return redirect('dashboard')
             except IntegrityError:
                 form.add_error(None, "A user with these details already exists.")
-            except Exception as e:
-                form.add_error(None, f"Registration failed: {str(e)}")
+            except Exception:
+                form.add_error(None, "Registration failed. Please try again later.")
         else:
             form.add_error(None, "Please correct the errors below.")
     else:
