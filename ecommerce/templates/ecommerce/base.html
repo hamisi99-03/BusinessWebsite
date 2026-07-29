@@ -594,7 +594,7 @@
 <body>
 
 <nav class="navbar navbar-expand-lg container mt-3 rounded-pill shadow-sm bg-white border-0 px-4">
-  <a class="navbar-brand me-4" href="{% if user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'product_list' %}{% endif %}"
+  <a class="navbar-brand me-4" href="{% if user.is_staff %}{% url 'admin_dashboard' %}{% elif user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'product_list' %}{% endif %}"
      style="font-family:'Quicksand';font-weight:700;color:var(--primary);font-size:1.5rem;">
     <i class="bi bi-bag-fill me-1"></i> H&I Store
   </a>
@@ -626,19 +626,20 @@
           {% endif %}
         </a>
         {% if user.is_staff %}
-        <a href="{% url 'admin_dashboard' %}"
-           class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
-          <i class="bi bi-speedometer2 me-1"></i> Admin
-        </a>
         <a href="{% url 'payment_list' %}"
            class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}">
           <i class="bi bi-credit-card me-1"></i> Payments
         </a>
-        {% endif %}
+        <a href="{% url 'admin_dashboard' %}"
+           class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+          <i class="bi bi-house me-1"></i> Home
+        </a>
+        {% else %}
         <a href="{% url 'dashboard' %}"
            class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
           <i class="bi bi-house me-1"></i> Home
         </a>
+        {% endif %}
       {% endif %}
 
       {% if user.is_staff %}
