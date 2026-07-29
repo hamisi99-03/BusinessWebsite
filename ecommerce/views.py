@@ -1540,10 +1540,11 @@ def expense_list(request):
 # Financial Reports
 # -------------------
 @staff_member_required
+@staff_member_required
 def financial_report(request):
     from datetime import datetime
 
-    # Get date range from request or default to today
+    # Get date range from request or default to last 30 days
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
@@ -1552,8 +1553,8 @@ def financial_report(request):
         start = datetime.strptime(start_date, '%Y-%m-%d').date()
         end = datetime.strptime(end_date, '%Y-%m-%d').date()
     else:
-        start = today
         end = today
+        start = end - relativedelta(days=30)
 
     # Calculate metrics
     consignments = Consignment.objects.filter(date_received__range=[start, end])
@@ -1583,8 +1584,11 @@ def financial_report(request):
     gross_profit = total_sales - cogs
     net_profit = gross_profit - total_expenses
 
-    # Low stock alerts
+    # Low stock alerts & current stock value
     low_stock_products = Product.objects.filter(stock__lte=5, stock__gt=0)
+    current_stock_value = sum(
+        (p.cost_price or 0) * p.stock for p in Product.objects.all()
+    ) if total_units_received > 0 else 0
 
     context = {
         'start_date': start,
@@ -1598,6 +1602,7 @@ def financial_report(request):
         'total_expenses': total_expenses,
         'net_profit': net_profit,
         'low_stock_products': low_stock_products,
+        'current_stock_value': current_stock_value,
     }
 
     return render(request, 'ecommerce/financial_report.html', context)

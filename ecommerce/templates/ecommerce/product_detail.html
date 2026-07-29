@@ -176,7 +176,7 @@
       {% endif %}
     </div>
 
-    <!-- Price -->
+    <!-- Price (visible to all) -->
     <div style="background:linear-gradient(135deg,#FFFBF5,#FEF3C7);
                 border-radius:16px;padding:1.25rem;
                 border:1px solid var(--border);margin-bottom:1.5rem;">
@@ -190,7 +190,7 @@
                   letter-spacing:-0.02em;">
         KSh {{ product.price|floatformat:0 }}
       </div>
-      {% if product.cost_price %}
+      {% if product.cost_price and user.is_staff %}
       <div style="font-size:0.82rem;color:#6B7280;margin-top:6px;">
         Cost: KSh {{ product.cost_price|floatformat:0 }} &bull;
         Profit: KSh {{ product.get_profit|floatformat:0 }} ({{ product.get_margin_percent }}%)
