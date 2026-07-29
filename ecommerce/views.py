@@ -1572,23 +1572,30 @@ def financial_report(request):
     expenses = Expense.objects.filter(date__range=[start, end])
     total_expenses = sum(e.amount for e in expenses)
 
-    # Calculate average product cost from consignments
+    # Current stock value (based on product cost_price, independent of consignments)
+    current_stock_value = sum((p.cost_price or 0) * p.stock for p in Product.objects.all())
+
+    # COGS — use consignment average if available, otherwise fall back to product cost_price
     total_units_received = sum(
         sum(item.quantity for item in c.items.all())
         for c in Consignment.objects.all()
     )
     total_cost_all = sum(c.get_total_cost() for c in Consignment.objects.all())
-    avg_unit_cost = (total_cost_all / total_units_received) if total_units_received > 0 else 0
-    cogs = stock_sold * avg_unit_cost
+    if total_units_received > 0:
+        avg_unit_cost = total_cost_all / total_units_received
+        cogs = stock_sold * avg_unit_cost
+    else:
+        cogs = sum(
+            (item.product.cost_price or 0) * item.quantity
+            for o in orders
+            for item in o.items.all()
+        )
 
     gross_profit = total_sales - cogs
     net_profit = gross_profit - total_expenses
 
-    # Low stock alerts & current stock value
+    # Low stock alerts
     low_stock_products = Product.objects.filter(stock__lte=5, stock__gt=0)
-    current_stock_value = sum(
-        (p.cost_price or 0) * p.stock for p in Product.objects.all()
-    ) if total_units_received > 0 else 0
 
     context = {
         'start_date': start,
