@@ -16,3 +16,9 @@ databases:
   - name: handistore
     databaseName: handistore
     user: handistore
+
+  - type: redis
+    name: handistore-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
