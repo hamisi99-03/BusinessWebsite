@@ -15,7 +15,8 @@ from .views import (
     admin_update_order, admin_delete_order, adjust_stock, record_payment, create_category, create_brand, cart_view, add_to_cart, remove_from_cart, update_cart_item, checkout_from_cart,
     product_detail, mark_payment_paid,
     consignment_list, add_consignment, add_supplier, add_expense, expense_list, financial_report,
-    notifications_view, approve_order, receipt_view
+    notifications_view, approve_order, receipt_view,
+    admin_users_list, admin_reset_user_password
 )
 
 router = DefaultRouter()
@@ -83,6 +84,8 @@ urlpatterns = [
     path('admin-dashboard/orders/<int:order_id>/approve/',
          approve_order,
          name='approve_order'),
+    path('admin-dashboard/users/', admin_users_list, name='admin_users_list'),
+    path('admin-dashboard/users/<int:user_id>/reset-password/', admin_reset_user_password, name='admin_reset_user_password'),
     path('admin-dashboard/notifications/', notifications_view, name='notifications'),
     path('ordering/payment/record/', record_payment, name='record_payment'),
     path('category/create/', create_category, name='create_category'),

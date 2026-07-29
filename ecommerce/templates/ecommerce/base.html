@@ -626,9 +626,9 @@
           {% endif %}
         </a>
         {% if user.is_staff %}
-        <a href="/admin/"
-           class="nav-link">
-          <i class="bi bi-shield-lock me-1"></i> Admin
+        <a href="{% url 'admin_users_list' %}"
+           class="nav-link {% if request.resolver_match.url_name == 'admin_users_list' %}active{% endif %}">
+          <i class="bi bi-people me-1"></i> Users
         </a>
         <a href="{% url 'payment_list' %}"
            class="nav-link {% if request.resolver_match.url_name == 'payment_list' %}active{% endif %}">

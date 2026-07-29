@@ -1,0 +1,62 @@
+{% extends "ecommerce/base.html" %}
+{% block title %}Users — H&I Store{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+  <div>
+    <h1>Users</h1>
+    <p>Manage all registered users</p>
+  </div>
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+  </a>
+</div>
+
+<div class="card shadow-sm rounded-3">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-borderless mb-0">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Full Name</th>
+            <th>Joined</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td class="fw-bold">{{ u.username }}</td>
+            <td>{{ u.email|default:'—' }}</td>
+            <td>{{ u.get_full_name|default:'—' }}</td>
+            <td>{{ u.date_joined|date:"d M Y" }}</td>
+            <td>
+              {% if u.is_superuser %}
+                <span class="badge-status" style="background:#FEE2E2;color:#991B1B;">Superuser</span>
+              {% elif u.is_staff %}
+                <span class="badge-status" style="background:#DBEAFE;color:#1E40AF;">Staff</span>
+              {% else %}
+                <span class="badge-status" style="background:#F3F4F6;color:#6B7280;">Customer</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'admin_reset_user_password' u.id %}"
+                 class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-key me-1"></i> Change Password
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-4 text-muted">No users found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

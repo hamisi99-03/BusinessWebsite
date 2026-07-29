@@ -6,6 +6,7 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from django.db import transaction, IntegrityError
 from django.utils import timezone
@@ -479,6 +480,34 @@ def admin_dashboard(request):
         'order_status_breakdown': order_status_breakdown,
         'status_choices': status_choices,
         'orders': orders,
+    })
+
+
+@staff_member_required
+def admin_users_list(request):
+    users = User.objects.all().order_by('-date_joined')
+    return render(request, 'ecommerce/admin_users_list.html', {
+        'users': users,
+    })
+
+
+@staff_member_required
+def admin_reset_user_password(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        if not new_password or len(new_password) < 8:
+            messages.error(request, 'Password must be at least 8 characters.')
+        elif new_password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+        else:
+            user.set_password(new_password)
+            user.save()
+            messages.success(request, f'Password for {user.username} has been reset.')
+            return redirect('admin_users_list')
+    return render(request, 'ecommerce/admin_reset_user_password.html', {
+        'target_user': user,
     })
 
 
