@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
+from django.utils.html import format_html
 from .models import Product, OrderItem, Payment, Customer, Consignment, ConsignmentItem, Expense, Supplier, ProductImage
 
 User = get_user_model()
@@ -63,7 +64,7 @@ class CustomAuthenticationForm(AuthenticationForm):
 class ProductChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         if obj.image:
-            return f'<img src="{obj.image.url}" style="height:40px;width:auto;"> {obj.name}'
+            return format_html('<img src="{}" style="height:40px;width:auto;"> {}', obj.image.url, obj.name)
         return obj.name
 
 

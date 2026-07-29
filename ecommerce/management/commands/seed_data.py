@@ -1,13 +1,20 @@
+import secrets
+import string
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from ecommerce.models import Customer, Product, ProductImage, Order, OrderItem, Payment, Debt, StockAdjustment
 from django.db import transaction
 import sys
 
+def _random_password(length=12):
+    chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(chars) for _ in range(length))
+
 class Command(BaseCommand):
     help = 'Seed the database with test data'
 
     def handle(self, *args, **options):
+        passwords = {}
         with transaction.atomic():
             # Check if data already exists (more than just admin)
             if User.objects.count() > 1:
@@ -20,6 +27,7 @@ class Command(BaseCommand):
                     return
 
             # Admin user
+            admin_pw = _random_password()
             admin, created = User.objects.get_or_create(
                 username='admin',
                 defaults={
@@ -31,8 +39,9 @@ class Command(BaseCommand):
                 }
             )
             if created:
-                admin.set_password('admin123')
+                admin.set_password(admin_pw)
                 admin.save()
+                passwords['admin'] = admin_pw
                 self.stdout.write(self.style.SUCCESS('Created admin user'))
             else:
                 self.stdout.write(self.style.WARNING('Admin user already exists'))
@@ -57,8 +66,10 @@ class Command(BaseCommand):
                     }
                 )
                 if created:
-                    user.set_password('test1234')
+                    pw = _random_password()
+                    user.set_password(pw)
                     user.save()
+                    passwords[data['username']] = pw
                 # Create or get customer profile
                 customer, _ = Customer.objects.get_or_create(
                     user=user,
@@ -176,11 +187,12 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS('✅ Seed complete!'))
             self.stdout.write('─' * 40)
             self.stdout.write('ADMIN LOGIN')
-            self.stdout.write('  Username: admin')
-            self.stdout.write('  Password: admin123')
+            self.stdout.write(f'  Username: admin')
+            self.stdout.write(f'  Password: {passwords.get("admin", "(existing)")}')
             self.stdout.write('─' * 40)
-            self.stdout.write('CUSTOMER LOGINS (password for all: test1234)')
-            self.stdout.write('  alice | bob | carol | david | eve')
+            self.stdout.write('CUSTOMER LOGINS')
+            for username in ['alice', 'bob', 'carol', 'david', 'eve']:
+                self.stdout.write(f'  {username}: {passwords.get(username, "(existing)")}')
             self.stdout.write('─' * 40)
             self.stdout.write(f'  Products created: {len(products)}')
             self.stdout.write(f'  Orders created:   {orders_created}')

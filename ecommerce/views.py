@@ -18,6 +18,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -663,7 +664,7 @@ def custom_login(request):
             if user is not None:
                 login(request, user)
                 next_url = request.POST.get('next') or request.GET.get('next')
-                if next_url:
+                if next_url and url_has_allowed_host_and_scheme(next_url, request.get_host()):
                     return redirect(next_url)
                 if user.is_staff:
                     return redirect('admin_dashboard')
