@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from django.db.models import Sum, Count
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -22,6 +23,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from PIL import Image, UnidentifiedImageError
 
 from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense, Cart, CartItem, Notification
 from .forms import OrderForm, PaymentForm, ProductForm, ProductImageFormSet, CustomUserCreationForm, CustomAuthenticationForm, ConsignmentForm, SupplierForm, ExpenseForm
@@ -44,6 +46,13 @@ class StaffOrReadPublic(permissions.BasePermission):
             return True
         return request.user and request.user.is_staff
 
+
+class AuthenticatedReadStaffWrite(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        return request.method in SAFE_METHODS or request.user.is_staff
+
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -56,7 +65,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AuthenticatedReadStaffWrite]
 
     def get_queryset(self):
         user = self.request.user
@@ -66,7 +75,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     serializer_class = OrderItemSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AuthenticatedReadStaffWrite]
 
     def get_queryset(self):
         user = self.request.user
@@ -76,7 +85,7 @@ class OrderItemViewSet(viewsets.ModelViewSet):
 
 class PaymentViewSet(viewsets.ModelViewSet):
     serializer_class = PaymentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AuthenticatedReadStaffWrite]
 
     def get_queryset(self):
         user = self.request.user
@@ -86,7 +95,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
 class DebtViewSet(viewsets.ModelViewSet):
     serializer_class = DebtSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AuthenticatedReadStaffWrite]
 
     def get_queryset(self):
         user = self.request.user
@@ -101,17 +110,8 @@ def register_view(request):
             try:
                 with transaction.atomic():
                     user = form.save()
-                    from django.contrib.auth.models import User
-                    first_user = not User.objects.filter(is_staff=True).exists()
-                    if first_user:
-                        user.is_staff = True
-                        user.save()
-                        messages.success(request, 'Account created! You are the admin.')
-                    else:
-                        messages.success(request, 'Account created successfully! Welcome.')
+                    messages.success(request, 'Account created successfully! Welcome.')
                     login(request, user)
-                    if user.is_staff:
-                        return redirect('admin_dashboard')
                     return redirect('dashboard')
             except IntegrityError:
                 form.add_error(None, "A user with these details already exists.")
@@ -141,6 +141,7 @@ def login_view(request):
 
 
 @login_required
+@require_POST
 def logout_view(request):
     logout(request)
     return HttpResponseRedirect(reverse('login'))
@@ -531,6 +532,9 @@ def admin_users_list(request):
 @staff_member_required
 def admin_reset_user_password(request, user_id):
     user = get_object_or_404(User, pk=user_id)
+    if user.is_superuser and not request.user.is_superuser:
+        messages.error(request, 'Only a superuser can reset another superuser password.')
+        return redirect('admin_users_list')
     if request.method == 'POST':
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
@@ -867,15 +871,31 @@ def add_payment(request, order_id=None):
     })
 
 
-ALLOWED_IMAGE_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
-MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5 MB
+ALLOWED_IMAGE_TYPES = {
+    'image/jpeg': {'.jpg', '.jpeg'},
+    'image/png': {'.png'},
+    'image/gif': {'.gif'},
+    'image/webp': {'.webp'},
+}
+MAX_IMAGE_SIZE = 5 * 1024 * 1024
 
 def validate_image(file):
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
-        raise ValidationError(f'Invalid file type "{file.content_type}". Allowed: JPEG, PNG, GIF, WebP.')
+    allowed_extensions = ALLOWED_IMAGE_TYPES.get(file.content_type)
+    extension = Path(file.name).suffix.lower()
+    if not allowed_extensions or extension not in allowed_extensions:
+        raise ValidationError('Upload a valid JPG, PNG, GIF, or WEBP image.')
     if file.size > MAX_IMAGE_SIZE:
-        raise ValidationError(f'File too large ({file.size // 1024} KB). Max: {MAX_IMAGE_SIZE // 1024 // 1024} MB.')
+        raise ValidationError('Images must be 5 MB or smaller.')
+    try:
+        file.seek(0)
+        with Image.open(file) as image:
+            image.verify()
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError):
+        raise ValidationError('The uploaded file is not a valid image.')
+    finally:
+        file.seek(0)
 
+@staff_member_required
 def add_product(request):
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -886,7 +906,7 @@ def add_product(request):
                     validate_image(image)
                     ProductImage.objects.create(product=product, image=image)
                 except ValidationError as e:
-                    messages.error(request, f"Image '{image.name}': {e.message}")
+                    messages.error(request, f"Image '{image.name}': {e}")
             messages.success(request, f"Product '{product.name}' added successfully.")
             return redirect("admin_products_list")
     else:
@@ -907,7 +927,7 @@ def update_product(request, pk):
                     validate_image(image)
                     ProductImage.objects.create(product=product, image=image)
                 except ValidationError as e:
-                    messages.error(request, f"Image '{image.name}': {e.message}")
+                    messages.error(request, f"Image '{image.name}': {e}")
             delete_ids = request.POST.getlist('delete_images')
             if delete_ids:
                 ProductImage.objects.filter(id__in=delete_ids).delete()
@@ -1204,6 +1224,7 @@ def add_to_cart(request, product_id):
 
 
 @login_required
+@require_POST
 def remove_from_cart(request, item_id):
     try:
         customer = Customer.objects.get(user=request.user)
