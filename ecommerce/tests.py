@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from .models import Cart, CartItem, Order, Product, ProductImage
+from .models import Cart, CartItem, Customer, Order, Product, ProductImage
 
 
 User = get_user_model()
@@ -166,6 +166,15 @@ class SecurityRegressionTests(TestCase):
         self.assertEqual(response.status_code, 302)
         product = Product.objects.get(name='Valid image product')
         self.assertTrue(ProductImage.objects.filter(product=product).exists())
+
+    def test_product_and_profile_media_use_separate_storage_buckets(self):
+        product_storage = ProductImage._meta.get_field('image').storage
+        profile_storage = Customer._meta.get_field('profile_picture').storage
+
+        self.assertEqual(product_storage.bucket_name, 'product-media')
+        self.assertTrue(product_storage.public)
+        self.assertEqual(profile_storage.bucket_name, 'profile-media')
+        self.assertFalse(profile_storage.public)
 
     def test_non_superuser_staff_cannot_reset_superuser_password(self):
         superuser = User.objects.create_superuser(
