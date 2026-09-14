@@ -99,6 +99,12 @@ BusinessWebsite/
 
 ---
 
+## Storage
+
+See [SUPABASE_STORAGE.md](SUPABASE_STORAGE.md) for persistent product and profile image storage configuration.
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome!  
