@@ -266,6 +266,7 @@
               {{ form.username }}
               {{ form.username.errors }}
             </div>
+            <div class="form-text" id="username-status"></div>
           </div>
           <div class="col-12">
             <label class="form-label">Email</label>
@@ -327,6 +328,80 @@
   </div>
 
   <script>
+    (function () {
+      var username = document.getElementById('id_username');
+      var firstName = document.getElementById('id_first_name');
+      var lastName = document.getElementById('id_last_name');
+      var status = document.getElementById('username-status');
+      if (!username || !status) return;
+
+      var autoFilled = false;
+      var checkTimer = null;
+      var suggestTimer = null;
+
+      function setStatus(text, cls) {
+        status.textContent = text || '';
+        status.className = 'form-text' + (cls ? ' ' + cls : '');
+      }
+
+      function checkAvailability(value) {
+        if (!value) { setStatus(''); return; }
+        fetch('{% url "check_username" %}?username=' + encodeURIComponent(value))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.username !== username.value.trim()) return;
+            if (!data.valid) {
+              setStatus('That username contains invalid characters.', 'text-danger');
+            } else if (data.available) {
+              setStatus('"' + data.username + '" is available.', 'text-success');
+            } else {
+              setStatus('"' + data.username + '" is already taken.', 'text-danger');
+            }
+          })
+          .catch(function () {});
+      }
+
+      function suggest() {
+        var f = firstName ? firstName.value.trim() : '';
+        var l = lastName ? lastName.value.trim() : '';
+        if (!f && !l) return;
+        if (username.value.trim() && !autoFilled) return;
+        fetch('{% url "suggest_username" %}?first_name=' + encodeURIComponent(f) +
+              '&last_name=' + encodeURIComponent(l))
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data.suggestions || !data.suggestions.length) return;
+            if (username.value.trim() && !autoFilled) return;
+            username.value = data.suggestions[0];
+            autoFilled = true;
+            setStatus('Suggested "' + data.suggestions[0] + '" — available.', 'text-success');
+          })
+          .catch(function () {});
+      }
+
+      [firstName, lastName].forEach(function (field) {
+        if (!field) return;
+        field.addEventListener('blur', suggest);
+        field.addEventListener('input', function () {
+          clearTimeout(suggestTimer);
+          suggestTimer = setTimeout(suggest, 500);
+        });
+      });
+
+      username.addEventListener('input', function () {
+        autoFilled = false;
+        clearTimeout(checkTimer);
+        checkTimer = setTimeout(function () { checkAvailability(username.value.trim()); }, 400);
+      });
+      username.addEventListener('blur', function () {
+        checkAvailability(username.value.trim());
+      });
+
+      if (!username.value.trim() && ((firstName && firstName.value) || (lastName && lastName.value))) {
+        suggest();
+      }
+    })();
+
     document.querySelectorAll('.password-toggle').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var wrap = btn.closest('.input-icon-wrap');
