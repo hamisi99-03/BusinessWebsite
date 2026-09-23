@@ -103,6 +103,8 @@ BusinessWebsite/
 
 See [SUPABASE_STORAGE.md](SUPABASE_STORAGE.md) for persistent product and profile image storage configuration.
 
+See [DEPLOYMENT_TESTING.md](DEPLOYMENT_TESTING.md) for the post-deployment Render and Supabase testing checklist.
+
 ---
 
 ## 🤝 Contributing
