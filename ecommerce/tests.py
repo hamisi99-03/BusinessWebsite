@@ -43,6 +43,30 @@ class SecurityRegressionTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(User.objects.get(username='new-customer').is_staff)
 
+    def test_check_username_reports_availability(self):
+        taken = self.client.get(reverse('check_username'), {'username': 'customer'})
+        self.assertEqual(taken.status_code, 200)
+        self.assertTrue(taken.json()['valid'])
+        self.assertFalse(taken.json()['available'])
+
+        free = self.client.get(reverse('check_username'), {'username': 'brand-new-name'})
+        self.assertTrue(free.json()['available'])
+
+    def test_check_username_rejects_invalid_characters(self):
+        response = self.client.get(reverse('check_username'), {'username': 'bad name!'})
+        self.assertFalse(response.json()['valid'])
+
+    def test_suggest_username_returns_available_names(self):
+        response = self.client.get(reverse('suggest_username'), {
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+        })
+        self.assertEqual(response.status_code, 200)
+        suggestions = response.json()['suggestions']
+        self.assertTrue(suggestions)
+        self.assertEqual(suggestions[0], 'janedoe')
+        self.assertFalse(User.objects.filter(username__iexact=suggestions[0]).exists())
+
     def test_customers_cannot_write_to_management_apis(self):
         api_client = APIClient()
         api_client.force_authenticate(user=self.customer)

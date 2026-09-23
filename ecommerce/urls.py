@@ -8,7 +8,7 @@ from django.shortcuts import redirect
 from .views import (
     CustomerViewSet, ProductViewSet, OrderViewSet, OrderItemViewSet,
     PaymentViewSet, DebtViewSet, add_payment, add_payment_standalone, update_payment, delete_payment,
-    register_view, login_view, logout_view,
+    register_view, login_view, logout_view, check_username, suggest_username,
     dashboard_view, my_stats_view, orders_list_view, order_detail_view, debts_list_view,
     profile_view, ProfileView, order_product_view, change_password_view,
     custom_login, admin_dashboard, payment_list_view, update_order_status, add_product, update_product, delete_product, product_list, admin_products_list, reports_view,
@@ -33,6 +33,8 @@ urlpatterns = [
 
     path('auth/login/', obtain_auth_token, name='api_token_auth'),
     path('auth/register/', register_view, name='register'),
+    path('auth/check-username/', check_username, name='check_username'),
+    path('auth/suggest-username/', suggest_username, name='suggest_username'),
     path('auth/login-page/', custom_login, name='login'),
     path('auth/logout/', logout_view, name='logout'),
     path('auth/profile/', ProfileView.as_view(), name='profile'),

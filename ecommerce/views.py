@@ -23,6 +23,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from PIL import Image, UnidentifiedImageError
 
 from .models import Customer, Product, Order, OrderItem, Payment, Debt, ProductImage, StockAdjustment, Category, Brand, Supplier, Consignment, ConsignmentItem, Expense, Cart, CartItem, Notification
@@ -123,6 +124,74 @@ def register_view(request):
         form = CustomUserCreationForm()
 
     return render(request, 'auth/register.html', {'form': form})
+
+
+USERNAME_MAX_LENGTH = 150
+
+
+def _username_available(username):
+    if not username:
+        return False
+    return not User.objects.filter(username__iexact=username).exists()
+
+
+def _suggest_usernames(first_name, last_name, count=5):
+    """Build available username suggestions from a user's name."""
+    first = ''.join(c for c in (first_name or '').lower() if c.isalnum())
+    last = ''.join(c for c in (last_name or '').lower() if c.isalnum())
+
+    if first and last:
+        bases = [first + last, f"{first}.{last}", f"{first}_{last}",
+                 first + last[0], first[0] + last]
+    elif first:
+        bases = [first]
+    elif last:
+        bases = [last]
+    else:
+        bases = ['user']
+
+    candidates = list(bases)
+    for base in bases:
+        for i in range(1, 100):
+            candidates.append(f"{base}{i}")
+
+    suggestions = []
+    seen = set()
+    for candidate in candidates:
+        candidate = candidate[:USERNAME_MAX_LENGTH]
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        if _username_available(candidate):
+            suggestions.append(candidate)
+            if len(suggestions) >= count:
+                break
+    return suggestions
+
+
+def check_username(request):
+    """Return whether a username is valid and still available."""
+    username = (request.GET.get('username') or '').strip()
+    if not username:
+        return JsonResponse({'username': username, 'valid': False, 'available': False})
+    try:
+        UnicodeUsernameValidator()(username)
+    except ValidationError:
+        return JsonResponse({'username': username, 'valid': False, 'available': False})
+    return JsonResponse({
+        'username': username,
+        'valid': True,
+        'available': _username_available(username),
+    })
+
+
+def suggest_username(request):
+    """Return available username suggestions based on first/last name."""
+    suggestions = _suggest_usernames(
+        request.GET.get('first_name', ''),
+        request.GET.get('last_name', ''),
+    )
+    return JsonResponse({'suggestions': suggestions})
 
 
 def login_view(request):
